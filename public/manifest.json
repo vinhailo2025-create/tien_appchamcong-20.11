@@ -1,0 +1,48 @@
+{
+  "name": "NP ONE - Nguyên Phát Human Resources",
+  "short_name": "NP ONE",
+  "description": "Ứng dụng Chấm công Camera GPS, Quản lý Quân số & Tính lương 5 cấp - Công ty Nguyên Phát",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#071e3d",
+  "theme_color": "#0b2e46",
+  "icons": [
+    {
+      "src": "/assets/logo-np-one-3d.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/logo-np-one-3d.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "📸 Chấm công Camera GPS",
+      "short_name": "Chấm công",
+      "description": "Mở ngay Camera trực tiếp điểm danh kèm GPS",
+      "url": "/?action=checkin",
+      "icons": [{ "src": "/assets/logo-np-one-3d.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "📈 Báo cáo Quân số 08:30",
+      "short_name": "Quân số",
+      "description": "Xem quân số có mặt & chi phí hôm nay",
+      "url": "/?tab=quan-so",
+      "icons": [{ "src": "/assets/logo-np-one-3d.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "💰 Lương & Duyệt Ứng lương",
+      "short_name": "Bảng lương",
+      "description": "Quản lý ứng lương & phiếu lương tháng",
+      "url": "/?tab=luong",
+      "icons": [{ "src": "/assets/logo-np-one-3d.png", "sizes": "192x192" }]
+    }
+  ]
+}
