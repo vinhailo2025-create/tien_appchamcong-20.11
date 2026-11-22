@@ -287,11 +287,18 @@
     return acc ? acc.pin : '0000';
   }
 
+  function formatDateRangeShortLabel() {
+    const s = String(dateRange.startDay).padStart(2, '0');
+    const e = String(dateRange.endDay).padStart(2, '0');
+    const m = String(dateRange.month).padStart(2, '0');
+    return `${s}/${m} → ${e}/${m}`;
+  }
+
   // ================= BẢNG LỊCH CHỌN KHOẢNG NGÀY (TỪ NGÀY ... ĐẾN NGÀY ... + CHỌN THÁNG / NĂM) =================
-  function renderDateRangeButtonHtml() {
+  function renderDateRangeButtonHtml(extraClass) {
     return `
-      <button type="button" class="date-range-trigger-btn" onclick="window.NPApp.openDateRangeModal()" title="Bấm để mở bảng lịch chọn Từ ngày ... đến ngày ..., chọn Tháng & Năm">
-        📅 <span>${formatDateRangeLabel()}</span> ▾
+      <button type="button" class="date-range-trigger-btn ${extraClass || ''}" onclick="window.NPApp.openDateRangeModal()" title="Bấm để mở bảng lịch chọn Từ ngày ... đến ngày ..., chọn Tháng & Năm">
+        📅 <span class="date-full-txt">${formatDateRangeLabel()}</span><span class="date-short-txt">${formatDateRangeShortLabel()}</span> ▾
       </button>
     `;
   }
@@ -788,24 +795,24 @@
       if (acc.roleId === 'BGD') {
         primaryBtnHtml = `
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('bgd-staff-check')">
-            👔 Check Công Kế toán &amp; QLCT
+            👔 <span class="hide-on-mobile">Check Công Kế toán &amp; QLCT</span><span class="show-on-mobile-inline">Check Cán bộ</span>
           </button>
         `;
       } else {
         // Mọi cấp từ Kế toán, Quản lý Công trình, Đội trưởng đến Công nhân đều có chung 1 nút Chấm công (Vào ca / Ra ca)
         primaryBtnHtml = `
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu(null)">
-            📸 Chấm công (Vào / Ra)
+            📸 <span class="hide-on-mobile">Chấm công (Vào / Ra)</span><span class="show-on-mobile-inline">Chấm công</span>
           </button>
         `;
       }
 
       headerRight.innerHTML = `
-        ${renderDateRangeButtonHtml()}
+        ${renderDateRangeButtonHtml('hide-on-mobile')}
         <button class="btn btn-outline-dark btn-sm hide-on-mobile" onclick="window.NPApp.openChangeMyPasswordModal()" title="Đổi mật khẩu tài khoản này (Tự động đồng bộ lên cấp trên)">
           🔑 Đổi MK
         </button>
-        <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.logoutAccount()" title="Đăng xuất / Đổi tài khoản">
+        <button class="btn btn-outline-dark btn-sm hide-on-mobile" onclick="window.NPApp.logoutAccount()" title="Đăng xuất / Đổi tài khoản">
           👤 ${acc.fullName}
         </button>
         ${primaryBtnHtml}
@@ -839,13 +846,14 @@
 
       container.innerHTML = `
         <div class="compact-role-strip">
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
             <span class="badge badge-navy">CẤP 1 · TỔNG GIÁM ĐỐC</span>
             <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName}</strong>
-            <span style="font-size:11px; color:var(--ds-text-muted);">· Giám đốc không chấm công · Trực tiếp thấy Kế toán (${ktRecord ? ktRecord.name : 'KTT'} vào ca <code>${ktRecord ? ktRecord.checkInTime : '07:45'}</code>), 3 Quản lý CT, 6 Đội trưởng &amp; 108 Công nhân</span>
+            <span style="font-size:10.5px; color:var(--ds-text-muted);">· Giám đốc không chấm công · Trực tiếp thấy Kế toán (${ktRecord ? ktRecord.name : 'KTT'} vào ca <code>${ktRecord ? ktRecord.checkInTime : '07:45'}</code>), 3 Quản lý CT, 6 Đội trưởng &amp; 108 Công nhân</span>
           </div>
-          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-            <span class="badge badge-success">Cán bộ &amp; Kế toán có mặt: ${staffPresent}/${(state.staffAttendance || []).length}</span>
+          <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+            ${renderDateRangeButtonHtml()}
+            <span class="badge badge-success">Cán bộ &amp; KT: ${staffPresent}/${(state.staffAttendance || []).length}</span>
             <span class="badge badge-success">Công nhân: ${present}/${total}</span>
           </div>
         </div>
@@ -858,17 +866,18 @@
 
     container.innerHTML = `
       <div class="compact-role-strip">
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
           <span class="badge badge-navy">${ROLE_CONFIG[acc.roleId]?.badge || acc.positionTitle}</span>
           <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName} (<code>${acc.username}</code>)</strong>
-          <span style="font-size:11px; color:var(--ds-text-muted);">
-            · Hôm nay: Vào <code>${myRec.checkInTime || '--:--'}</code> / Ra <code>${myRec.checkOutTime || 'Đang làm'}</code>
-            · Kỳ <strong>${formatDateRangeLabel()}</strong>: <strong>${scaledDays} công</strong>
+          <span style="font-size:10.5px; color:var(--ds-text-muted);">
+            · Vào: <code>${myRec.checkInTime || '--:--'}</code> / Ra: <code>${myRec.checkOutTime || 'Đang làm'}</code>
+            · Tổng: <strong>${scaledDays} công</strong>
           </span>
         </div>
-        <div style="display:flex; gap:5px; flex-wrap:wrap;">
+        <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+          ${renderDateRangeButtonHtml()}
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${myRec.id}')">📸 Chấm công (Vào/Ra)</button>
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 Xin Ứng lương</button>
+          <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 Ứng lương</button>
           <button class="btn btn-soft btn-sm" onclick="window.NPApp.openChangeMyPasswordModal()">🔑 Đổi MK</button>
         </div>
       </div>
@@ -2118,10 +2127,10 @@
           <div style="display:grid; gap:6px;">
             ${forgotList.map(w => `
               <div style="display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; padding:8px 10px; border-radius:var(--ds-radius-sm); border:1px solid var(--ds-line); flex-wrap:wrap; gap:6px;">
-                <div>
+                <div style="min-width:0; word-break:break-word;">
                   <strong>${w.name} (${w.code})</strong> · ${w.teamName} (Đội trưởng: ${w.leaderName}) · Vào ca: <code>${w.checkInTime}</code>
                 </div>
-                <div style="display:flex; gap:6px;">
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
                   <button class="btn btn-soft btn-sm" onclick="window.NPApp.confirmForgotCheckout('${w.id}', 0)">Chốt đủ 8h hành chính (0h OT)</button>
                   <button class="btn btn-primary btn-sm" onclick="window.NPApp.confirmForgotCheckout('${w.id}', 2)">Xác nhận có Tăng ca (+2h OT)</button>
                 </div>

@@ -1437,9 +1437,87 @@ a {
   border-color: var(--ds-accent);
 }
 
-@media (max-width: 600px) {
-  .header-right .hide-on-mobile {
+.date-short-txt {
+  display: none;
+}
+
+.show-on-mobile-inline {
+  display: none;
+}
+
+/* Đảm bảo Header trái luôn giữ không gian tối thiểu cho nút ☰ và Logo NP ONE, không bao giờ bị nút bên phải đè lên */
+.header-left {
+  flex: 1 1 auto;
+  min-width: 115px;
+  overflow: hidden;
+}
+
+.header-right {
+  flex: 0 0 auto;
+  max-width: 65%;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .header-right .hide-on-mobile,
+  .hide-on-mobile {
     display: none !important;
+  }
+  .show-on-mobile-inline {
+    display: inline !important;
+  }
+  .date-full-txt {
+    display: none !important;
+  }
+  .date-short-txt {
+    display: inline !important;
+  }
+  .top-header {
+    height: auto;
+    min-height: 42px;
+    padding: 4px 0;
+  }
+  .top-header-inner {
+    gap: 6px;
+  }
+  .brand-title {
+    font-size: 12px;
+  }
+  .brand-sub {
+    font-size: 9px;
+    max-width: 155px;
+  }
+  .compact-role-strip {
+    padding: 7px 9px;
+    gap: 6px;
+  }
+  .section-card {
+    padding: 8px 9px;
+    overflow: hidden;
+  }
+  .hierarchy-card {
+    padding: 8px 9px;
+    overflow: hidden;
+  }
+  .personal-summary-hero {
+    padding: 10px;
+  }
+  .personal-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .personal-stat-box {
+    padding: 7px 8px;
+  }
+  .personal-stat-box .ps-val {
+    font-size: 14px;
+  }
+  .kpi-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .kpi-value {
+    font-size: 15px;
   }
   .mobile-action-btns {
     display: grid;
@@ -1450,5 +1528,12 @@ a {
   .wc-gps {
     white-space: normal;
     word-break: break-word;
+  }
+  .bnav-item {
+    font-size: 8.8px;
+    padding: 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
