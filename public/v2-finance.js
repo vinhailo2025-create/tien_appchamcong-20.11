@@ -131,6 +131,37 @@
     </details>`;
   }
 
+  function openDetail(row, context, project) {
+    const dialog = document.getElementById('npFinanceDetail');
+    if (!dialog || dialog.open) return;
+    const { esc, money } = context;
+    const fields = [
+      ['Đối tác / người nhận', row.party],
+      ['Công trình', project.name],
+      ['Loại chứng từ', row.kind === 'payable' ? 'Phải trả' : 'Phải thu'],
+      ['Hồ sơ nguồn', row.source],
+      ['Nội dung', row.description],
+      ['Ngày đến hạn', dateLabel(row.due)]
+    ];
+    const actions = rowActions(row, context);
+    dialog.innerHTML = `
+      <header class="np-finance-detail-head">
+        <div><p>Chi tiết chứng từ</p><h2 id="npFinanceDetailTitle">${esc(row.id)}</h2></div>
+        <form method="dialog"><button type="submit" class="btn btn-soft" aria-label="Đóng chi tiết" autofocus>✕</button></form>
+      </header>
+      <div class="np-finance-detail-body">
+        <span class="np-finance-status" data-status="${row.status}">${STATUS[row.status]}</span>
+        <div class="np-finance-detail-totals">
+          <div><span>Số tiền</span><strong>${money(row.amount)}</strong></div>
+          <div><span>Còn lại</span><strong>${isActive(row) ? money(balance(row)) : '—'}</strong></div>
+        </div>
+        <dl class="np-finance-detail-fields">${fields.map(([label, value]) => `<div><dt>${label}</dt><dd>${esc(value || '—')}</dd></div>`).join('')}</dl>
+        <section class="np-finance-detail-history"><h3>Giao dịch và xử lý</h3>${transactionHistory(row, context, true) || '<p>Chưa có giao dịch hoặc nhật ký.</p>'}</section>
+        ${actions ? `<section class="np-finance-detail-actions"><h3>Thao tác</h3><div class="np-finance-actions">${actions}</div></section>` : ''}
+      </div>`;
+    dialog.showModal();
+  }
+
   function render(tab, context) {
     const role = roleOf(context);
     if (tab !== payTab && tab !== directorTab) return '';
@@ -142,6 +173,11 @@
     const rows = allRows.filter(row => (!filter.projectId || row.projectId === filter.projectId)
       && (!filter.kind || filter.kind === row.kind) && (!filter.status || filter.status === row.status));
     const totals = summarize(rows);
+    const pageSize = 50;
+    const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+    const page = Math.min(filter.page || 1, pageCount);
+    const offset = (page - 1) * pageSize;
+    const visibleRows = [...rows].reverse().slice(offset, offset + pageSize);
     const today = isoDay(new Date());
     const esc = context.esc;
     return `<section class="np-finance">
@@ -161,22 +197,24 @@
       <p class="np-finance-feedback" role="status" data-finance-feedback>${esc(feedback)}</p>
       <div class="np-finance-table" tabindex="0" role="region" aria-label="Thanh toán và công nợ">
         <table><thead><tr><th>Chứng từ</th><th>Đối tác / Công trình</th><th>Nội dung</th><th>Số tiền</th><th>Còn lại</th><th>Đến hạn</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-        <tbody>${rows.length ? [...rows].reverse().map(row => `<tr>
+        <tbody>${visibleRows.length ? visibleRows.map(row => `<tr>
           <td><strong>${esc(row.id)}</strong><small>${row.kind === 'payable' ? 'Phải trả' : 'Phải thu'}</small></td>
           <td>${esc(row.party)}<small>${esc(projects.find(project => project.id === row.projectId).name)}</small></td>
-          <td>${esc(row.description)}<small>Hồ sơ ${esc(row.source)}</small>${transactionHistory(row, context)}</td>
+          <td>${esc(row.description)}<small>Hồ sơ ${esc(row.source)}</small></td>
           <td>${context.money(row.amount)}</td><td>${isActive(row) ? context.money(balance(row)) : '—'}</td>
           <td>${dateLabel(row.due)}${isConfirmed(row) && row.due < today && balance(row) > 0 ? '<small class="np-finance-overdue">Quá hạn</small>' : ''}</td>
           <td><span class="np-finance-status" data-status="${row.status}">${STATUS[row.status]}</span></td>
-          <td><div class="np-finance-actions">${rowActions(row, context) || '—'}</div></td>
+          <td><div class="np-finance-actions">${button('detail', 'Chi tiết', esc(row.id))}${rowActions(row, context)}</div></td>
         </tr>`).join('') : '<tr><td colspan="8" class="np-finance-empty">Chưa có chứng từ phù hợp.</td></tr>'}</tbody></table>
       </div>
+      ${pageCount > 1 ? `<nav class="np-finance-pagination" aria-label="Phân trang chứng từ"><span>${offset + 1}–${offset + visibleRows.length} / ${rows.length}</span><button type="button" data-np-module="finance" data-np-action="page" data-np-id="${page - 1}" ${page <= 1 ? 'disabled' : ''}>Trước</button><span>Trang ${page} / ${pageCount}</span><button type="button" data-np-module="finance" data-np-action="page" data-np-id="${page + 1}" ${page >= pageCount ? 'disabled' : ''}>Sau</button></nav>` : ''}
+      <dialog class="np-finance-detail" id="npFinanceDetail" aria-labelledby="npFinanceDetailTitle"></dialog>
     </section>`;
   }
 
-  function transactionHistory(row, context) {
+  function transactionHistory(row, context, expanded = false) {
     if (!row.transactions.length && !row.events.length) return '';
-    return `<details class="np-finance-history"><summary>Lịch sử</summary>
+    return `<details class="np-finance-history"${expanded ? ' open' : ''}><summary>Lịch sử</summary>
       <ul>${row.transactions.map(item => `<li>${context.esc(item.reference)} · ${context.money(item.amount)} · ${item.reconciled ? 'Đã đối soát' : 'Chưa đối soát'}</li>`).join('')}
       ${[...row.events].reverse().map(event => `<li>${context.esc(event.label)} · ${context.esc(event.actor)} · ${dateLabel(event.date)}</li>`).join('')}</ul></details>`;
   }
@@ -211,6 +249,16 @@
       return finish(context, 'Đã cập nhật bộ lọc.');
     }
 
+    if (action === 'page') {
+      const current = filters.get(actor) || {};
+      const page = Number(value('id'));
+      if (!Number.isInteger(page) || page < 1) return;
+      filters.set(actor, { ...current, page });
+      context.refresh();
+      document.querySelector('.np-finance-table')?.scrollIntoView({ block: 'start' });
+      return;
+    }
+
     if (action === 'create' && role === ACCOUNTANT) {
       const id = value('code').toUpperCase();
       const kind = value('kind');
@@ -239,6 +287,10 @@
 
     const row = rows.find(item => item.id === value('id') && projects.some(project => project.id === item.projectId));
     if (!row) return fail('Không tìm thấy chứng từ trong phạm vi được phép.');
+    if (action === 'detail') {
+      openDetail(row, context, projects.find(project => project.id === row.projectId));
+      return;
+    }
     if (Object.hasOwn(STEP, action)) {
       const [from, to, label] = STEP[action];
       const approval = ['approve', 'reject'].includes(action);

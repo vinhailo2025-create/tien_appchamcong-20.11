@@ -179,7 +179,6 @@
         <div class="np-profile-avatar" aria-hidden="true">${esc(initialsOf(name))}</div>
         <div><h1>${esc(name)}</h1><p>${workspace.shortTitle} · ${esc(team?.name || project?.name || department[role])}</p></div>
       </section>
-      <button class="btn btn-soft np-mobile-shortcuts np-open-features" type="button" data-np-open-features aria-controls="leftSidebar" aria-expanded="false">${icon('menu')} Tất cả chức năng ${icon('arrow')}</button>
       <section class="np-work-card np-profile-card">
         <h2>Hồ sơ cá nhân</h2>
         <form class="np-profile-form" data-np-module="profile" data-np-action="update">
