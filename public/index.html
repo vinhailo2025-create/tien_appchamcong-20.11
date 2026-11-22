@@ -31,26 +31,21 @@
 
     <!-- THÔNG TIN TÀI KHOẢN & CẤP QUẢN LÝ ĐANG ĐĂNG NHẬP -->
     <div class="sidebar-role-box">
-      <label id="sidebarRoleLevelLabel">Tài khoản đang đăng nhập:</label>
-      <div id="sidebarCurrentAccountInfo" style="font-size:11px; color:#FFFFFF; font-weight:600; line-height:1.38; margin-bottom:6px;">
+      <label id="sidebarRoleLevelLabel">Tài khoản:</label>
+      <div id="sidebarCurrentAccountInfo" style="font-size:11px; color:#FFFFFF; font-weight:600; line-height:1.38;">
         Chưa đăng nhập
-      </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
-        <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.openChangeMyPasswordModal()">
-          🔑 Đổi MK / PIN
-        </button>
-        <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.logoutAccount()">
-          🚪 Đăng xuất
-        </button>
       </div>
     </div>
 
     <!-- DANH SÁCH MENU ĐỘNG THEO TỪNG VAI TRÒ (RENDER BỞI APP.JS) -->
     <div class="sidebar-menu-list" id="sidebarMenu"></div>
 
-    <div class="sidebar-footer">
-      <button class="btn btn-primary btn-sm" style="width:100%;" onclick="window.NPApp.openInstallModal()">
-        📲 Cài Phím Tắt App Ra Màn Hình
+    <div class="sidebar-footer" style="display:flex; gap:6px; align-items:center;">
+      <button class="btn btn-primary btn-sm" style="flex:1;" onclick="window.NPApp.openInstallModal()">
+        📲 Cài App
+      </button>
+      <button class="btn btn-outline-dark btn-sm" style="padding:0 10px;" onclick="window.NPApp.toggleTheme()" title="Đổi màu giao diện">
+        🎨
       </button>
     </div>
   </aside>
@@ -66,7 +61,7 @@
           <img class="brand-logo" src="assets/logo-np-one-3d.png" alt="NP ONE" />
           <div style="min-width:0;">
             <div class="brand-title">NP ONE <span class="brand-gold" id="headerRoleBadge">· Nguyên Phát</span></div>
-            <div class="brand-sub" id="currentTabSubtitle">Hệ thống Quản lý Công 5 Cấp</div>
+            <div class="brand-sub" id="currentTabSubtitle">Quản lý Nhân sự</div>
           </div>
         </div>
       </div>
@@ -75,10 +70,7 @@
     </div>
   </header>
 
-  <!-- ================= KHUNG THÔNG TIN VAI TRÒ & NHIỆM VỤ ĐẦU TRANG (ĐỘNG THEO VỊ TRÍ) ================= -->
-  <div class="main-container">
-    <div class="compact-top-panel" id="roleHeroSection"></div>
-  </div>
+  <div id="roleHeroSection" style="display:none;"></div>
 
   <!-- ================= NỘI DUNG CHÍNH THEO VAI TRÒ ================= -->
   <main class="main-container" id="appMain"></main>

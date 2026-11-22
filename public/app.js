@@ -720,23 +720,21 @@
     const cfg = ROLE_CONFIG[acc.roleId] || ROLE_CONFIG.BGD;
     const badges = getBadgeCounts();
 
-    // 1. Cập nhật thông tin tài khoản trong Sidebar
+    // 1. Cập nhật thông tin tài khoản trong Sidebar (Duy nhất 1 nơi hiển thị Họ tên + TK + PIN)
     const roleLvl = document.getElementById('sidebarRoleLevelLabel');
     if (roleLvl) roleLvl.textContent = cfg.badge;
     const sideInfo = document.getElementById('sidebarCurrentAccountInfo');
     if (sideInfo) {
       sideInfo.innerHTML = `
-        <div style="font-size:12px; font-weight:700; color:#FFFFFF;">${acc.fullName}</div>
-        <div style="font-size:10px; color:rgba(255,255,255,0.85);">${acc.positionTitle}</div>
-        <div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">TK: <code>${acc.username}</code> · PIN hiện tại: <code>${acc.pin}</code></div>
+        <div style="font-size:12.5px; font-weight:700; color:#FFFFFF;">${acc.fullName}</div>
+        <div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">TK: <code>${acc.username}</code> · PIN: <code>${acc.pin}</code></div>
       `;
     }
 
-    // 2. Cập nhật danh sách Menu bên trái
-    // Check-in / Check-out GỘP CHUNG 1 MENU duy nhất cho tất cả các cấp (trừ Tổng Giám đốc BGD)
+    // 2. Cập nhật danh sách Menu bên trái (Gọn gàng, không trùng lặp)
     const sidebarMenu = document.getElementById('sidebarMenu');
     if (sidebarMenu) {
-      let html = `<div class="sidebar-group-title">CHỨC NĂNG CỦA ${cfg.shortTitle.toUpperCase()}</div>`;
+      let html = `<div class="sidebar-group-title">CHỨC NĂNG</div>`;
       cfg.tabs.forEach(t => {
         const bVal = t.badgeKey ? badges[t.badgeKey] : 0;
         const badgeHtml = bVal > 0 ? `<span class="sidebar-badge">${bVal}</span>` : '';
@@ -748,46 +746,38 @@
         `;
       });
 
-      html += `<div class="sidebar-group-title">NGHIỆP VỤ CHUNG &amp; TÀI KHOẢN</div>`;
+      html += `<div class="sidebar-group-title">TÀI KHOẢN</div>`;
 
-      // Trừ Giám đốc (BGD), cấp nào cũng có 1 Menu Chấm công (Check-in / Check-out chung 1 menu) và Xin ứng lương!
       if (cfg.hasPersonalCheckin) {
         html += `
           <button class="sidebar-item" onclick="window.NPApp.openUnifiedCheckinMenu(null)">
-            <span><span class="s-icon">📸</span> Chấm công (Check-in / Check-out)</span>
-            <span class="sidebar-badge">GPS</span>
+            <span><span class="s-icon">📸</span> Chấm công</span>
           </button>
           <button class="sidebar-item" onclick="window.NPApp.openPersonalAdvanceModal()">
-            <span><span class="s-icon">💳</span> Gửi đơn Xin Ứng lương của tôi</span>
+            <span><span class="s-icon">💳</span> Ứng lương</span>
           </button>
         `;
       }
 
       html += `
-        <button class="sidebar-item" onclick="window.NPApp.openDateRangeModal()">
-          <span><span class="s-icon">📅</span> Chọn Ngày / Tháng / Năm</span>
-        </button>
         <button class="sidebar-item" onclick="window.NPApp.openChangeMyPasswordModal()">
-          <span><span class="s-icon">🔑</span> Đổi Mật khẩu / Mã PIN của tôi</span>
-        </button>
-        <button class="sidebar-item" onclick="window.NPApp.toggleTheme()">
-          <span><span class="s-icon">🎨</span> Đổi Bộ màu Navy · Cam (Bộ 1 ↔ Bộ 2)</span>
+          <span><span class="s-icon">🔑</span> Đổi mật khẩu</span>
         </button>
         <button class="sidebar-item" onclick="window.NPApp.logoutAccount()">
-          <span><span class="s-icon">🚪</span> Đăng xuất / Đổi Tài khoản</span>
+          <span><span class="s-icon">🚪</span> Đăng xuất</span>
         </button>
       `;
       sidebarMenu.innerHTML = html;
     }
 
-    // 3. Cập nhật Header trên cùng (Kèm nút chọn khoảng ngày, nút Đổi MK, và nút Chấm công chung 1 menu cho mọi cấp trừ Giám đốc)
+    // 3. Cập nhật Header trên cùng (Không lặp lại tên tài khoản, không lặp nút Đổi MK/Đăng xuất)
     const headerRoleBadge = document.getElementById('headerRoleBadge');
     if (headerRoleBadge) headerRoleBadge.textContent = `· ${cfg.shortTitle}`;
 
     const activeTabObj = cfg.tabs.find(t => t.id === currentTab) || cfg.tabs[0];
     const sub = document.getElementById('currentTabSubtitle');
     if (sub && activeTabObj) {
-      sub.textContent = `${acc.fullName} — ${activeTabObj.label}`;
+      sub.textContent = activeTabObj.label;
     }
 
     const headerRight = document.getElementById('headerRightActions');
@@ -796,26 +786,19 @@
       if (acc.roleId === 'BGD') {
         primaryBtnHtml = `
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('bgd-staff-check')">
-            👔 <span class="hide-on-mobile">Check Công Kế toán &amp; QLCT</span><span class="show-on-mobile-inline">Check Cán bộ</span>
+            👔 <span class="hide-on-mobile">Chấm công Cán bộ</span><span class="show-on-mobile-inline">Cán bộ</span>
           </button>
         `;
       } else {
-        // Mọi cấp từ Kế toán, Quản lý Công trình, Đội trưởng đến Công nhân đều có chung 1 nút Chấm công (Vào ca / Ra ca)
         primaryBtnHtml = `
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu(null)">
-            📸 <span class="hide-on-mobile">Chấm công (Vào / Ra)</span><span class="show-on-mobile-inline">Chấm công</span>
+            📸 Chấm công
           </button>
         `;
       }
 
       headerRight.innerHTML = `
-        ${renderDateRangeButtonHtml('hide-on-mobile')}
-        <button class="btn btn-outline-dark btn-sm hide-on-mobile" onclick="window.NPApp.openChangeMyPasswordModal()" title="Đổi mật khẩu tài khoản này (Tự động đồng bộ lên cấp trên)">
-          🔑 Đổi MK
-        </button>
-        <button class="btn btn-outline-dark btn-sm hide-on-mobile" onclick="window.NPApp.logoutAccount()" title="Đăng xuất / Đổi tài khoản">
-          👤 ${acc.fullName}
-        </button>
+        ${renderDateRangeButtonHtml()}
         ${primaryBtnHtml}
       `;
     }
@@ -832,53 +815,13 @@
     }
   }
 
-  // ================= KHUNG THÔNG TIN ĐẦU TRANG RIÊNG CHO TỪNG VỊ TRÍ =================
+  // ================= KHUNG THÔNG TIN ĐẦU TRANG (ĐÃ BỎ ĐỂ TRÁNH TRÙNG LẶP VỚI SIDEBAR & HEADER) =================
   function renderRoleHeroSection() {
-    const acc = getCurrentAccount();
     const container = document.getElementById('roleHeroSection');
-    if (!acc || !container) return;
-
-    if (acc.roleId === 'BGD') {
-      const total = state.workers.length;
-      const present = state.workers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
-      const staffPresent = (state.staffAttendance || []).filter(s => s.attendanceStatus === 'DANG_LAM' || s.attendanceStatus === 'DA_RA').length;
-
-      container.innerHTML = `
-        <div class="compact-role-strip">
-          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-            <span class="badge badge-navy">TỔNG GIÁM ĐỐC</span>
-            <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName}</strong>
-          </div>
-          <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
-            ${renderDateRangeButtonHtml()}
-            <span class="badge badge-success">Cán bộ: ${staffPresent}/${(state.staffAttendance || []).length}</span>
-            <span class="badge badge-success">Công nhân: ${present}/${total}</span>
-          </div>
-        </div>
-      `;
-      return;
+    if (container) {
+      container.innerHTML = '';
+      container.style.display = 'none';
     }
-
-    const myRec = getMyOwnAttendanceRecord();
-    const scaledDays = getScaledDaysWorked(myRec.daysMonthApproved);
-
-    container.innerHTML = `
-      <div class="compact-role-strip">
-        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-          <span class="badge badge-navy">${ROLE_CONFIG[acc.roleId]?.badge || acc.positionTitle}</span>
-          <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName}</strong>
-          <span style="font-size:10.5px; color:var(--ds-text-muted);">
-            · Vào: <code>${myRec.checkInTime || '--:--'}</code> · <strong>${scaledDays} công</strong>
-          </span>
-        </div>
-        <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
-          ${renderDateRangeButtonHtml()}
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${myRec.id}')">📸 Chấm công</button>
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 Ứng lương</button>
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.openChangeMyPasswordModal()">🔑 Đổi MK</button>
-        </div>
-      </div>
-    `;
   }
 
   function selectTab(tabName) {
@@ -1095,7 +1038,6 @@
             </div>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${renderDateRangeButtonHtml()}
             <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${person.id}')">📸 Chấm công</button>
             <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 Ứng lương</button>
           </div>
@@ -1184,7 +1126,6 @@
             <span class="kicker">CHI TIẾT NGÀY CÔNG</span>
             <h3>Bảng Kê Ngày Công (${formatDateRangeLabel()})</h3>
           </div>
-          ${renderDateRangeButtonHtml()}
         </div>
         <div class="table-scroll">
           <table class="data-table">
@@ -1428,20 +1369,6 @@
         </div>
       </div>
 
-      <!-- 3. TRUY CẬP NHANH 8 PHÂN HỆ THEO MẪU V2.0 -->
-      <div class="section-card">
-        <div style="font-size:11px; font-weight:700; color:var(--ds-primary); margin-bottom:6px;">⚡ TRUY CẬP NHANH CÁC PHÂN HỆ NGHIỆP VỤ NP ONE V2.0</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(115px, 1fr)); gap:6px;">
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-hr-pro')">👥 Quản lý Nhân sự</button>
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-excel-pro')">📊 Bảng công Excel Pro</button>
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-finance')">💼 Thanh toán &amp; Công nợ</button>
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-staff-check')">👔 Check Công Kế toán</button>
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-approvals')">✍️ Phê duyệt Ứng / Xóa</button>
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-audit')">🛡️ Nhật ký Audit Log</button>
-          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">⚙️ Hệ thống &amp; Tài khoản</button>
-        </div>
-      </div>
-
       <!-- CÂY PHÂN CẤP QUẢN LÝ: TỔNG GIÁM ĐỐC -> 3 QUẢN LÝ CÔNG TRÌNH -> 6 ĐỘI TRƯỞNG -> CLICK RA TOÀN BỘ CÔNG NHÂN DƯỚI QUYỀN -->
       <div class="section-card">
         <div class="section-header">
@@ -1452,7 +1379,6 @@
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">📂 Mở tất cả</button>
             <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(false)">📁 Thu gọn</button>
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">🔐 Tài khoản</button>
           </div>
         </div>
 
@@ -1560,57 +1486,9 @@
           }).join('')}
         </div>
       </div>
-
-      <!-- KHỐI GIÁM ĐỐC TRỰC TIẾP THẤY CHẤM CÔNG CỦA KẾ TOÁN & 3 QUẢN LÝ CÔNG TRÌNH -->
-      <div class="section-card">
-        <div class="section-header">
-          <div>
-            <span class="kicker">CHẤM CÔNG CÁN BỘ</span>
-            <h3>Kế Toán &amp; Quản Lý Công Trình</h3>
-          </div>
-          <div style="display:flex; gap:6px;">
-            ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('bgd-staff-check')">👔 Xem tất cả</button>
-          </div>
-        </div>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Ảnh GPS</th>
-                <th>Mã &amp; Họ tên Cán bộ</th>
-                <th>Chức vụ</th>
-                <th>Mật khẩu / PIN (Đồng bộ)</th>
-                <th>Giờ Vào - Ra hôm nay</th>
-                <th>Công kỳ (${formatDateRangeLabel()})</th>
-                <th>Trạng thái Giám đốc duyệt</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${staffList.slice(0, 4).map(stf => {
-                const thumb = getWorkerStampedPhoto(stf);
-                const curPin = getAccountPinByUsernameOrCode(stf.username);
-                const scaledD = getScaledDaysWorked(stf.daysMonthApproved);
-                return `
-                  <tr>
-                    <td><img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${stf.id}')" /></td>
-                    <td><strong>${stf.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">TK: <code>${stf.username}</code> · Mã: ${stf.code}</span></td>
-                    <td><span class="badge badge-navy">${stf.roleName}</span></td>
-                    <td><code>${curPin}</code></td>
-                    <td>Vào: <code>${stf.checkInTime}</code><br/>Ra: <code>${stf.checkOutTime || 'Đang làm'}</code></td>
-                    <td><strong style="color:var(--ds-primary);">${scaledD} công</strong> (+${stf.otHoursMonthApproved}h OT)</td>
-                    <td>${renderApprovalBadge(stf.approvalStatus)}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
     `;
   }
 
-  // TAB MỚI CỦA GIÁM ĐỐC: CHECK CHẤM CÔNG KẾ TOÁN, QUẢN LÝ CÔNG TRÌNH & ĐỘI TRƯỞNG
   // =================================================================================================
   // CÁC MÀN HÌNH NP ONE V2.0 (2. QUẢN LÝ NHÂN SỰ · 3. CHẤM CÔNG EXCEL PRO · 4. THANH TOÁN & CÔNG NỢ)
   // =================================================================================================
@@ -1742,7 +1620,6 @@
             <h3>Bảng Công Kỳ (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${renderDateRangeButtonHtml()}
             <button class="btn btn-soft btn-sm" onclick="alert('Sẵn sàng nhận dữ liệu bảng công Excel!')">📥 Nhập Excel</button>
             <button class="btn btn-soft btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📤 Xuất Excel</button>
             <button class="btn btn-primary btn-sm" onclick="alert('Đã Khóa kỳ công ${formatDateRangeLabel()}!')">🔒 Khóa kỳ</button>
@@ -1828,7 +1705,6 @@
             <h3>Thanh Toán &amp; Công Nợ (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${renderDateRangeButtonHtml()}
             <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">📥 Xuất Excel</button>
           </div>
         </div>
@@ -1907,9 +1783,6 @@
           <div>
             <span class="kicker">CHẤM CÔNG CÁN BỘ</span>
             <h3>Kế Toán · Quản Lý CT · Đội Trưởng (${formatDateRangeLabel()})</h3>
-          </div>
-          <div style="display:flex; gap:6px;">
-            ${renderDateRangeButtonHtml()}
           </div>
         </div>
 
@@ -2034,7 +1907,6 @@
             <h3>Duyệt Ứng Lương &amp; Bảng Lương (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
-            ${renderDateRangeButtonHtml()}
             ${state.payrollMonthStatus === 'BGD_DA_DUYET'
               ? `<span class="badge badge-success">✓ ĐÃ DUYỆT BẢNG LƯƠNG</span>`
               : `<button class="btn btn-primary btn-sm" onclick="window.NPApp.approveMonthlyPayroll()">✍️ Duyệt Bảng Lương (${formatVND(totalGross - totalAdv)})</button>`
@@ -2165,7 +2037,6 @@
             <h3>Chấm Công Theo Quản Lý &amp; Đội (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${renderDateRangeButtonHtml()}
             <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📥 Xuất Excel (.CSV)</button>
           </div>
         </div>
@@ -2304,7 +2175,6 @@
             <h3>Tổng Hợp Tính Lương</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${renderDateRangeButtonHtml()}
             <select onchange="window.NPApp.setFilterManager(this.value)" style="padding:4px 8px; border-radius:999px; border:1px solid var(--ds-line); font-size:11px;">
               <option value="ALL" ${filterManager === 'ALL' ? 'selected' : ''}>Tất cả Quản lý CT</option>
               <option value="qlct_ct1" ${filterManager === 'qlct_ct1' ? 'selected' : ''}>CT1: KS. Trần Minh Hoàng</option>
@@ -2518,7 +2388,6 @@
             <h3>Bảng Duyệt Công (${myWorkers.length} Nhân Sự)</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${renderDateRangeButtonHtml()}
             <button class="btn btn-primary btn-sm" onclick="window.NPApp.approveAllVisible()">✅ Duyệt tất cả</button>
           </div>
         </div>
@@ -2710,7 +2579,6 @@
             <span class="kicker">TỔNG KẾT CÔNG · ${prj.id}</span>
             <h3>Tổng Kết Ngày Công (${formatDateRangeLabel()})</h3>
           </div>
-          ${renderDateRangeButtonHtml()}
         </div>
         <div class="table-scroll">
           <table class="data-table">
@@ -2764,9 +2632,8 @@
         <div class="section-header">
           <div>
             <span class="kicker">ĐỘI TRƯỞNG · ${tm.projectId}</span>
-            <h3>${acc.fullName} — ${tm.name}</h3>
+            <h3>${tm.name} (${teamWorkers.length} công nhân)</h3>
           </div>
-          ${renderDateRangeButtonHtml()}
         </div>
 
         <div class="dt-quick-grid-6">
@@ -2817,9 +2684,6 @@
           <div>
             <span class="kicker">CHẤM CÔNG ĐỘI</span>
             <h3>Danh Sách ${teamWorkers.length} Công Nhân</h3>
-          </div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu(null)">📸 Chấm công GPS</button>
           </div>
         </div>
 
@@ -3024,10 +2888,6 @@
             <span class="kicker">NHẬT KÝ CHẤM CÔNG · ${w.code}</span>
             <h3>Chi Tiết Ngày Công (${formatDateRangeLabel()})</h3>
           </div>
-          <div style="display:flex; gap:6px;">
-            ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${w.id}')">📸 Chấm công</button>
-          </div>
         </div>
         <div class="table-scroll">
           <table class="data-table">
@@ -3137,7 +2997,6 @@
             <h3>${w.name} (${w.code})</h3>
           </div>
           <div style="display:flex; gap:6px;">
-            ${renderDateRangeButtonHtml()}
             <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ In / PDF</button>
           </div>
         </div>
@@ -3236,45 +3095,6 @@
                   </tr>
                 `;
               }).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <div class="section-header">
-          <div>
-            <span class="kicker">HỒ SƠ NHÂN SỰ (${state.workers.length})</span>
-            <h3>Danh Sách Nhân Sự Toàn Công Ty</h3>
-          </div>
-        </div>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Mã NV</th>
-                <th>PIN</th>
-                <th>Họ và Tên</th>
-                <th>Đội</th>
-                <th>Đội trưởng</th>
-                <th>Quản lý CT</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${state.workers.slice(0, 35).map(w => `
-                <tr>
-                  <td><strong><code>${w.code}</code></strong></td>
-                  <td><code>${getAccountPinByUsernameOrCode(w.code)}</code></td>
-                  <td><strong>${w.name}</strong></td>
-                  <td>${w.teamName}</td>
-                  <td>${w.leaderName}</td>
-                  <td><span class="badge badge-navy">${w.managerName}</span></td>
-                  <td>
-                    <button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa</button>
-                  </td>
-                </tr>
-              `).join('')}
             </tbody>
           </table>
         </div>
