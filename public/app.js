@@ -10,6 +10,7 @@
   let currentAccountId = null;
   let currentRoleId = 'BGD';
   let currentTab = 'bgd-overview';
+  let projectNav = '';
   let teamAttendanceMode = 'today';
   let payrollPage = 0;
 
@@ -686,6 +687,7 @@
     isAuthenticated = true;
     currentAccountId = acc.id;
     currentRoleId = acc.roleId;
+    projectNav = '';
     payrollPage = 0;
 
     if (acc.roleId === 'QLCT' && acc.projectId !== 'ALL') {
@@ -931,7 +933,7 @@
     `;
   }
 
-  function selectTab(tabName) {
+  function selectTab(tabName, project = '') {
     const acc = getCurrentAccount();
     if (!acc) return;
     if (isPreview && !window.NPWorkspace.roles[acc.roleId].tabs.some(tab => tab.id === tabName)) return;
@@ -939,6 +941,7 @@
       alert('Chỉ Tổng Giám Đốc / Admin mới có quyền truy cập trang Quản trị Tài khoản!');
       return;
     }
+    projectNav = isPreview && ['v2-projects', 'v2-director-payments'].includes(tabName) ? project : '';
     currentTab = tabName;
     renderRoleNavigationAndHeader();
     toggleSidebar(false);
@@ -5206,6 +5209,8 @@
       rangeControl: renderDateRangeButtonHtml(),
       scaledDays: getScaledDaysWorked,
       refresh: renderMain,
+      projectNav,
+      setProjectNav: id => { projectNav = id; },
       attendanceMode: teamAttendanceMode,
       setAttendanceMode: mode => { teamAttendanceMode = mode; },
       period: { ...dateRange },
@@ -5279,7 +5284,7 @@
         if (link) {
           event.preventDefault();
           if (link.dataset.npTarget === 'v2-team-attendance') teamAttendanceMode = link.hasAttribute('data-np-period') ? 'period' : 'today';
-          selectTab(link.dataset.npTarget);
+          selectTab(link.dataset.npTarget, link.dataset.npProject);
           return;
         }
         const button = event.target.closest('button[data-np-module][data-np-action]');

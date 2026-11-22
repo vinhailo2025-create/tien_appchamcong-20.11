@@ -83,16 +83,12 @@
     }
     if (context.role !== 'BGD') return '';
     const access = adminStore(context);
-    if (tabId === 'v2-projects') {
-      return `<section class="np-work-card"><h2>Công trình</h2><div class="np-project-cards">${state.projects.map(project => {
-        const teams = state.teams.filter(team => team.projectId === project.id);
-        const workers = state.workers.filter(worker => worker.projectId === project.id);
-        return `<article><div class="np-project-icon">${icon('building')}</div><h3>${esc(project.name)}</h3><p>${esc(project.address)}</p><dl><dt>Đội thi công</dt><dd>${teams.length}</dd><dt>Nhân sự</dt><dd>${workers.length}</dd></dl></article>`;
-      }).join('')}</div></section>`;
-    }
-
     if (tabId === 'v2-director-people') {
-      const rows = state.teams.map(team => `<tr><td>${esc(team.name)}</td><td>${esc(team.leader)}</td><td>${esc(state.projects.find(project => project.id === team.projectId)?.name)}</td><td>${state.workers.filter(worker => worker.teamId === team.id).length}</td></tr>`).join('');
+      const projects = new Map(state.projects.map(project => [project.id, project]));
+      const rows = state.teams.map(team => {
+        const project = projects.get(team.projectId);
+        return `<tr><td>${esc(team.name)}</td><td>${esc(team.leader)}</td><td>${project ? `<button type="button" class="btn btn-soft btn-sm" data-np-target="v2-projects" data-np-project="${esc(project.id)}">${esc(project.name)}</button>` : '—'}</td><td>${state.workers.filter(worker => worker.teamId === team.id).length}</td></tr>`;
+      }).join('');
       return `<section class="np-work-card"><h2>Nhân sự theo đội</h2><div class="table-scroll"><table class="data-table"><thead><tr><th>Đội</th><th>Quản lý đội</th><th>Công trình</th><th>Quân số</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
     }
 
@@ -296,6 +292,7 @@
   const registry = {
     admin: () => adminModule,
     approvals: () => window.NPApprovals,
+    projects: () => window.NPProjects,
     profile: () => profileModule,
     team: () => teamModule,
     business: () => window.NPBusiness,
@@ -351,8 +348,9 @@
     if (tabId === 'dt-checkin') return 'team';
     if (tabId === 'v2-profile') return 'profile';
     if (tabId === 'bgd-approvals') return 'approvals';
+    if (tabId === 'v2-projects') return 'projects';
     if (tabId === 'bgd-overview') return 'director';
-    if (['v2-admin-roles', 'v2-projects', 'v2-director-people', 'v2-director-assignments', 'v2-director-acceptance', 'bgd-audit', 'dt-members'].includes(tabId)) return 'admin';
+    if (['v2-admin-roles', 'v2-director-people', 'v2-director-assignments', 'v2-director-acceptance', 'bgd-audit', 'dt-members'].includes(tabId)) return 'admin';
     if (tabId.startsWith('kd-') || tabId === 'v2-director-quotes') return 'business';
     if (tabId.startsWith('ns-') || tabId.endsWith('-leave')) return 'people';
     if (tabId.endsWith('-payments')) return 'finance';

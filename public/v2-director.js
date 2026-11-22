@@ -90,13 +90,16 @@
   function projectRanking(projects, workers, esc) {
     if (!projects.length) return '<p class="np-dir-note">Chưa có công trình trong danh mục.</p>';
     const ranked = projects.map(project => ({
+      id: project.id,
       name: project.name,
       total: workers.filter(worker => worker.projectId === project.id).length
     })).sort((a, b) => b.total - a.total || String(a.name).localeCompare(String(b.name), 'vi'));
     const maximum = ranked[0].total || 1;
     return `<ol class="np-dir-ranking">${ranked.slice(0, 5).map(item => `<li>
-      <div><strong>${esc(item.name)}</strong><span>${item.total} công nhân</span></div>
-      <div class="np-dir-meter" aria-hidden="true"><i style="--fill:${item.total / maximum * 100}%"></i></div>
+      <button type="button" class="np-dir-project" data-np-target="v2-projects" data-np-project="${esc(item.id)}">
+        <span><strong>${esc(item.name)}</strong><small>${item.total} công nhân</small></span>
+        <span class="np-dir-meter" aria-hidden="true"><i style="--fill:${item.total / maximum * 100}%"></i></span>
+      </button>
     </li>`).join('')}</ol>`;
   }
 

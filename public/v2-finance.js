@@ -169,7 +169,12 @@
 
     const projects = accessibleProjects(context);
     const allRows = ledger(context).rows.filter(row => projects.some(project => project.id === row.projectId));
-    const filter = filters.get(actorOf(context)) || {};
+    const actor = actorOf(context);
+    if (context.projectNav && projects.some(project => project.id === context.projectNav)) {
+      filters.set(actor, { projectId: context.projectNav });
+      context.setProjectNav('');
+    }
+    const filter = filters.get(actor) || {};
     const rows = allRows.filter(row => (!filter.projectId || row.projectId === filter.projectId)
       && (!filter.kind || filter.kind === row.kind) && (!filter.status || filter.status === row.status));
     const totals = summarize(rows);

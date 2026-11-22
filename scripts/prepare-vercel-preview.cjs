@@ -15,6 +15,8 @@ const previewAssets = [
   'v2-people.css',
   'v2-finance.js',
   'v2-finance.css',
+  'v2-projects.js',
+  'v2-projects.css',
   'v2-approvals.js',
   'v2-approvals.css',
   'v2-attendance.js',

@@ -454,14 +454,31 @@
   color: var(--np-dir-muted);
 }
 
-.np-dir-ranking li > div:first-child {
+.np-dir-project {
+  display: grid;
+  width: 100%;
+  padding: 3px;
+  gap: 2px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.np-dir-project:hover { background: #eef5fd; }
+.np-dir-project:focus-visible { outline: 2px solid #186cb4; }
+
+.np-dir-project > span:first-child {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 2px 8px;
 }
 
-.np-dir-ranking li span {
+.np-dir-project small {
   color: var(--np-dir-muted);
 }
 

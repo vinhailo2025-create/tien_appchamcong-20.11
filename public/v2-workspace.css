@@ -459,12 +459,6 @@ body[data-np-preview] #appMain { margin-top: 16px; margin-bottom: 14px; }
 .np-admin-form :is(input, select) { width: 100%; min-height: 34px; padding: 5px 8px; border: 1px solid var(--np-border); border-radius: 6px; background: white; color: var(--np-ink); }
 .np-admin-log li { padding-block: 5px; }
 .np-admin-log small { margin-left: 5px; color: #647e96; }
-.np-project-cards { display: grid; gap: 13px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 222px), 1fr)); }
-.np-project-cards article { padding: 13px; border: 1px solid var(--np-border); border-radius: 8px; background: #f8fbff; }
-.np-project-cards p { color: #547085; }
-.np-project-cards dl { display: grid; grid-template-columns: 1fr auto; row-gap: 6px; margin: 0; }
-.np-project-cards dd { margin: 0; font-weight: 750; color: #194c7b; }
-.np-project-icon { display: inline-grid; place-items: center; width: 32px; height: 32px; background: #e2effe; color: #1669b3; border-radius: 7px; }
 .np-workspace-error { padding: 7px; border: 1px solid #f6cdc6; border-radius: 6px; color: #8d251e; background: #fff2ee; }
 .np-module-loading { min-height: 140px; color: #496984; }
 
