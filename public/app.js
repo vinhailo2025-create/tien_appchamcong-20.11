@@ -2038,32 +2038,87 @@
     renderMain();
   }
 
-  function openLoginModal() {
+  function openFullLoginScreen() {
     toggleSidebar(false);
     const accounts = state.accounts || [];
-    document.getElementById('adjustModalTitle').textContent = 'Đăng nhập Tài khoản Vị trí';
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="form-group">
-        <label for="loginQuickSel">Chọn nhanh tài khoản mẫu để điền tự động:</label>
-        <select id="loginQuickSel" onchange="window.NPApp.fillQuickLogin(this.value)">
-          ${accounts.map(a => `<option value="${a.id}" ${a.id === currentAccountId ? 'selected' : ''}>[${a.username}] ${a.positionTitle} — ${a.fullName} (PIN: ${a.pin})</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="loginUser">Tên đăng nhập (Username / Mã NV) <span class="req">*</span></label>
-        <input type="text" id="loginUser" value="${accounts[0] ? accounts[0].username : 'admin'}" />
-      </div>
-      <div class="form-group">
-        <label for="loginPin">Mật khẩu / Mã PIN <span class="req">*</span></label>
-        <input type="password" id="loginPin" value="${accounts[0] ? accounts[0].pin : '9999'}" />
-        <div id="loginErrMsg" class="field-error-msg" style="display:none;">Tên đăng nhập hoặc Mã PIN không chính xác, hoặc tài khoản đã bị khóa!</div>
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:8px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Đóng</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitLogin()">🔐 Đăng nhập</button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
+    const curAcc = getCurrentAccount();
+    if (curAcc) {
+      const uEl = document.getElementById('fullLoginUser');
+      const pEl = document.getElementById('fullLoginPin');
+      if (uEl) uEl.value = curAcc.username;
+      if (pEl) pEl.value = curAcc.pin;
+    }
+    const errEl = document.getElementById('fullLoginErr');
+    if (errEl) errEl.style.display = 'none';
+
+    const grid = document.getElementById('fullLoginQuickGrid');
+    if (grid) {
+      grid.innerHTML = accounts.slice(0, 8).map(a => `
+        <button type="button" class="quick-acc-chip" onclick="window.NPApp.quickSelectLoginAccount('${a.id}')">
+          <div><strong>${a.username}</strong> (PIN: <code>${a.pin}</code>)</div>
+          <div style="opacity:0.85;">${a.positionTitle}</div>
+        </button>
+      `).join('');
+    }
+    const overlay = document.getElementById('fullLoginOverlay');
+    if (overlay) overlay.classList.add('open');
+  }
+
+  function closeFullLoginScreen() {
+    const overlay = document.getElementById('fullLoginOverlay');
+    if (overlay) overlay.classList.remove('open');
+  }
+
+  function quickSelectLoginAccount(accId) {
+    const acc = (state.accounts || []).find(a => a.id === accId);
+    if (!acc) return;
+    document.getElementById('fullLoginUser').value = acc.username;
+    document.getElementById('fullLoginPin').value = acc.pin;
+    submitFullLogin();
+  }
+
+  function submitFullLogin() {
+    const u = (document.getElementById('fullLoginUser').value || '').trim().toLowerCase();
+    const p = (document.getElementById('fullLoginPin').value || '').trim();
+    const errEl = document.getElementById('fullLoginErr');
+
+    // 1. Kiểm tra trong danh sách Tài khoản Admin đã tạo
+    let acc = (state.accounts || []).find(a => a.username.toLowerCase() === u && a.pin === p && a.status === 'ACTIVE');
+
+    // 2. Nếu nhân sự nhập Mã Công nhân (trong 108 công nhân) + PIN (mặc định 0000 hoặc 1234) thì tự động đăng nhập đúng công nhân đó
+    if (!acc) {
+      const worker = state.workers.find(w => w.code.toLowerCase() === u);
+      if (worker && (p === '0000' || p === '1234')) {
+        acc = {
+          id: 'ACC-W-' + worker.id,
+          username: worker.code,
+          pin: p,
+          fullName: worker.name,
+          positionTitle: `Công nhân ${worker.teamId} (${worker.skill})`,
+          roleId: 'CN',
+          level: 5,
+          projectId: worker.projectId,
+          teamId: worker.teamId,
+          workerCode: worker.code,
+          status: 'ACTIVE',
+          perms: { checkin: true, inputTeam: false, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+        };
+        state.accounts.push(acc);
+        saveState();
+      }
+    }
+
+    if (!acc) {
+      if (errEl) errEl.style.display = 'block';
+      return;
+    }
+
+    closeFullLoginScreen();
+    loginAsAccount(acc.id);
+  }
+
+  function openLoginModal() {
+    openFullLoginScreen();
   }
 
   function fillQuickLogin(accId) {
@@ -2384,6 +2439,9 @@
     if (params.get('tab') && TAB_TITLES[params.get('tab')]) {
       selectTab(params.get('tab'));
     }
+    if (params.get('login') === '1') {
+      openFullLoginScreen();
+    }
     if (params.get('action') === 'checkin') {
       setTimeout(() => openCameraQuick('VAO', null), 300);
     }
@@ -2425,6 +2483,10 @@
     deleteAccount,
     loginAsAccount,
     openLoginModal,
+    openFullLoginScreen,
+    closeFullLoginScreen,
+    quickSelectLoginAccount,
+    submitFullLogin,
     fillQuickLogin,
     submitLogin,
     togglePinLockMode,

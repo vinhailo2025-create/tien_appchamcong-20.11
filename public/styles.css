@@ -970,6 +970,79 @@ a {
   background: var(--ds-primary);
 }
 
+/* ================= MÀN HÌNH ĐĂNG NHẬP CHÍNH THỨC (FULL-SCREEN LOGIN) ================= */
+.login-screen-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--ds-primary-deep);
+  z-index: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.login-screen-overlay.open {
+  display: flex;
+}
+
+.login-box {
+  background: #FFFFFF;
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-lg);
+  width: 100%;
+  max-width: 390px;
+  overflow: hidden;
+  box-shadow: var(--ds-shadow-modal);
+}
+
+.login-box-header {
+  background: var(--ds-primary);
+  color: #FFFFFF;
+  padding: 16px;
+  text-align: center;
+  border-bottom: 2.5px solid var(--ds-accent);
+}
+
+.login-box-header img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
+}
+
+.login-box-body {
+  padding: 14px 16px;
+}
+
+.quick-acc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.quick-acc-chip {
+  background: var(--ds-bg-soft);
+  border: 1px solid var(--ds-line);
+  color: var(--ds-primary);
+  padding: 5px 7px;
+  border-radius: var(--ds-radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.quick-acc-chip:hover {
+  background: var(--ds-primary);
+  color: #FFFFFF;
+  border-color: var(--ds-primary);
+}
+
 @media (max-width: 600px) {
   .header-right .hide-on-mobile {
     display: none !important;
