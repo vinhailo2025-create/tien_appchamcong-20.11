@@ -145,7 +145,7 @@
     const today = isoDay(new Date());
     const esc = context.esc;
     return `<section class="np-finance">
-      <header class="np-finance-head"><div><h1>${role === DIRECTOR ? 'Duyệt chi & Công nợ' : 'Thanh toán & Công nợ'}</h1><p>Dữ liệu minh họa. Ghi nhận giao dịch trong bản demo.</p></div>${role === ACCOUNTANT && projects.length ? createForm(context, projects) : ''}</header>
+      <header class="np-finance-head"><div><h1>${role === DIRECTOR ? 'Duyệt chi & Công nợ' : 'Thanh toán & Công nợ'}</h1><p>Giao dịch mẫu.</p></div>${role === ACCOUNTANT && projects.length ? createForm(context, projects) : ''}</header>
       <div class="np-finance-filters"><form data-np-module="finance" data-np-action="filter">
         <label>Công trình<select name="projectId"><option value="">Tất cả</option>${projects.map(project => `<option value="${esc(project.id)}" ${filter.projectId === project.id ? 'selected' : ''}>${esc(project.name)}</option>`).join('')}</select></label>
         <label>Loại<select name="kind"><option value="">Tất cả</option><option value="payable" ${filter.kind === 'payable' ? 'selected' : ''}>Phải trả</option><option value="receivable" ${filter.kind === 'receivable' ? 'selected' : ''}>Phải thu</option></select></label>

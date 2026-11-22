@@ -83,7 +83,7 @@
           ${points.map(point => `<b class="np-dir-profit-dot" style="left:${point.x}%;top:${point.y}%"></b>`).join('')}
         </div>
       </div>
-      <figcaption class="np-dir-note">Chuỗi minh họa bố cục báo cáo theo kỳ.</figcaption>
+      <figcaption class="np-dir-note">Số liệu minh họa.</figcaption>
     </figure>`;
   }
 
@@ -143,7 +143,7 @@
       { label: 'Chi phí đã duyệt', total: costTotal, detail: 'Theo sổ chi', color: 'red' },
       { label: 'Phải thu còn lại', total: finance?.receivable ?? null, detail: 'Theo sổ thu', color: 'blue' }
     ];
-    const summaryHTML = `<dl class="np-dir-figures">${summary.map(item => `<div class="is-${item.color}"><dt>${item.label}</dt><dd>${currency(item.total)}</dd><small>${item.detail}</small></div>`).join('')}</dl><p class="np-dir-note">Tổng hợp toàn bộ hồ sơ trong bản demo.</p>`;
+    const summaryHTML = `<dl class="np-dir-figures">${summary.map(item => `<div class="is-${item.color}"><dt>${item.label}</dt><dd>${currency(item.total)}</dd><small>${item.detail}</small></div>`).join('')}</dl><p class="np-dir-note">Toàn bộ hồ sơ demo.</p>`;
     const queueHTML = queueItems.length ? `<ul class="np-dir-queue">${queueItems.map(item => `<li>${nav(item.target, `
       <span class="np-dir-queue-icon is-${item.color}">${icon(item.icon)}</span><strong>${item.count} ${item.label}</strong>
       <span class="np-dir-pending">Chờ duyệt</span>${icon('arrow')}`, 'np-dir-queue-button')}</li>`).join('')}</ul>`
@@ -155,7 +155,7 @@
 
     return `<div class="np-dir">
       <header class="np-dir-heading">
-        <div><h2>Xin chào, ${esc(account?.fullName || 'Giám đốc')}</h2><p>Tổng quan hoạt động toàn công ty</p></div>
+        <div><h2>Xin chào, ${esc(account?.fullName || 'Giám đốc')}</h2><p>Tổng quan công ty</p></div>
         ${dateDisplay}
       </header>
       <div class="np-dir-kpis">${kpis.map(item => `<article class="np-dir-kpi">

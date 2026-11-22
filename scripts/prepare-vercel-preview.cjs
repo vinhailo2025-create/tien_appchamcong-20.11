@@ -4,12 +4,9 @@ const path = require('node:path');
 
 const publicDirectory = path.resolve(__dirname, '../public');
 const previewAssets = [
-  'index.html',
   'styles.css',
   'v2-shell.css',
-  'v2-dashboard.css',
   'v2-tables.css',
-  'v2-mobile.css',
   'v2-workspace.css',
   'v2-workspace.js',
   'v2-business.js',
@@ -25,7 +22,8 @@ const previewAssets = [
   'manifest.json',
   'assets/np-mark.png',
   'assets/np-app-icon.png',
-  'assets/np-construction.webp'
+  'assets/np-construction.webp',
+  'assets/np-demo-crew.webp'
 ];
 const projectNames = ['Khu mẫu Bờ Đông', 'Nhà mẫu Ánh Dương', 'Khu mẫu Vườn Mây'];
 const managerNames = ['Lâm Quốc Huy', 'Bùi Mỹ Hạnh', 'Vũ Thanh Nam'];
@@ -331,6 +329,9 @@ try {
     fs.mkdirSync(path.dirname(destination), { recursive: true });
     fs.copyFileSync(path.join(publicDirectory, relativePath), destination);
   }
+  const html = fs.readFileSync(path.join(publicDirectory, 'index.html'), 'utf8')
+    .replace(/^.*href="v2-(dashboard|mobile)\.css".*\r?\n/gm, '');
+  fs.writeFileSync(path.join(outputDirectory, 'index.html'), html);
   fs.writeFileSync(path.join(outputDirectory, 'app.js'), packageApp(seed));
   fs.writeFileSync(path.join(outputDirectory, 'seed.js'), 'window.NP_PREVIEW = true;\nwindow.NP_SEED = ' + JSON.stringify(seed) + ';\n');
   fs.writeFileSync(path.join(outputDirectory, 'assets/demo-attendance.svg'), demoAttendanceImage);

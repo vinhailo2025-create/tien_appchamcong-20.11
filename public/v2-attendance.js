@@ -29,18 +29,21 @@
     const teams = scopedTeams(ctx);
     const saved = filters.get(actorOf(ctx)) || {};
     const team = teams.find(item => item.id === saved.teamId) || teams.find(item => !saved.projectId || item.projectId === saved.projectId) || teams[0];
-    const month = saved.month || teamMonth;
+    const role = roleOf(ctx);
+    const mode = role === 'DT1' ? (ctx.attendanceMode || 'today') : null;
+    const current = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+    const today = Number(current.slice(-2));
+    const month = mode === 'today' ? current.slice(0, 7) : (saved.month || (mode === 'period' ? current.slice(0, 7) : teamMonth));
     const lastDay = monthLength(month);
     const half = saved.half || 'first';
-    const role = roleOf(ctx);
-    const day = Math.min(saved.day || 1, lastDay);
+    const day = Math.min(mode === 'today' ? today : (saved.day || Math.min(today, lastDay)), lastDay);
     const days = role === 'DT1' ? [day] : rangeDays(half === 'second' ? 16 : 1, half === 'first' ? 15 : lastDay);
     const projectId = team?.projectId || '';
     const projects = (ctx.state.projects || []).filter(project => teams.some(item => item.projectId === project.id));
     const workers = team ? (ctx.state.workers || []).filter(worker => worker.teamId === team.id && worker.projectId === team.projectId) : [];
-    const query = (saved.query || '').toLocaleLowerCase('vi');
+    const query = role === 'DT1' ? '' : (saved.query || '').toLocaleLowerCase('vi');
     const visible = workers.filter(worker => `${worker.code} ${worker.name}`.toLocaleLowerCase('vi').includes(query));
-    return { month, lastDay, half, day, days, projectId, team, teams, projects, workers, visible, role, query: saved.query || '' };
+    return { month, lastDay, half, day, today, days, projectId, team, teams, projects, workers, visible, role, mode, query: saved.query || '' };
   }
 
   function storedPeriod(ctx, selected, half, create = false) {
@@ -115,7 +118,7 @@
       <label>Công trình<select name="projectId">${fieldOptions(projects, projectId, esc)}</select></label>
       <label>Đội<select name="teamId">${fieldOptions(teams, team.id, esc)}</select></label>
       ${role === 'DT1' ? `<label>Ngày<input type="number" min="1" max="31" value="${day}" name="day" required /></label>` : `<label>Kỳ<select name="half"><option value="first" ${half === 'first' ? 'selected' : ''}>01–15</option><option value="second" ${half === 'second' ? 'selected' : ''}>16–${lastDay}</option><option value="full" ${half === 'full' ? 'selected' : ''}>Cả tháng</option></select></label>`}
-      <label>Tìm công nhân<input name="query" type="search" value="${esc(query)}" maxlength="80" placeholder="Mã hoặc họ tên" /></label>
+      ${role === 'KT' ? `<label>Tìm công nhân<input name="query" type="search" value="${esc(query)}" maxlength="80" placeholder="Mã hoặc họ tên" /></label>` : ''}
       <button type="submit">Áp dụng</button>
     </form>`;
   }
@@ -155,13 +158,44 @@
   }
 
   function dailyGrid(selected, periods, esc) {
-    const period = periods[halfFor(selected.day)];
-    const missing = selected.visible.filter(worker => !period.cells[cellName(worker.id, selected.day)]).length;
-    return `<div class="np-attendance-daily-summary"><span><strong>${selected.visible.length}</strong> Công nhân</span><span><strong>${missing}</strong> Chưa ghi công</span></div>
-      <div class="np-attendance-mobile-list">${selected.visible.map((worker, row) => {
-        const item = cell(worker, selected.day, periods, selected, esc, row, 0);
-        return `<div data-tone="${item.tone}"><span><strong>${esc(worker.name)}</strong><small>${esc(worker.code)}</small></span>${item.input}</div>`;
-      }).join('') || '<p>Không tìm thấy công nhân.</p>'}</div>`;
+    const icon = window.NPWorkspace.icon;
+    const rows = selected.workers.map((worker, row) => {
+      const item = cell(worker, selected.day, periods, selected, esc, row, 0);
+      const code = parseCode(item.value);
+      const state = code?.ot ? 'overtime' : code?.regular ? 'present' : item.value ? 'absent' : 'pending';
+      return { worker, item, state };
+    });
+    const counts = rows.reduce((sum, row) => ({ ...sum, [row.state]: (sum[row.state] || 0) + 1 }), {});
+    const states = {
+      present: ['people','Có mặt'], absent: ['user','Nghỉ'], overtime: ['clock','Tăng ca'], pending: ['clock','Chưa ghi']
+    };
+    return `<div class="np-team-day-metrics">
+      ${['present','absent','overtime'].map(state => `<div data-tone="${state}">${icon(states[state][0])}<strong>${counts[state] || 0}</strong><span>${states[state][1]}</span></div>`).join('')}
+      </div>
+      <label class="np-team-day-search">${icon('search')}<input type="search" data-team-search placeholder="Tìm công nhân…" aria-label="Tìm công nhân" /></label>
+      <div class="np-team-day-list">${rows.map(({worker,item,state})=>`<details data-team-worker="${esc(worker.name + ' ' + worker.code)}">
+        <summary><img class="np-crew-avatar" src="assets/np-demo-crew.webp" width="33" height="33" alt="" loading="lazy" decoding="async" />
+        <span><strong>${esc(worker.name)}</strong><small>${esc(worker.code)}</small></span><b data-tone="${state}">${states[state][1]}</b>${icon('arrow')}</summary>
+        <div class="np-team-day-edit"><span>Giờ công / mã nghỉ</span>${item.input}</div></details>`).join('')}<p data-team-no-results ${rows.length ? 'hidden' : ''}>Không tìm thấy công nhân.</p></div>`;
+  }
+
+  function renderTeam(selected, periods, halves, hasEdits, esc) {
+    const icon = window.NPWorkspace.icon;
+    const range = selected.day <= 15 ? '01–15' : '16–' + selected.lastDay;
+    const month = selected.month.slice(5);
+    return `<section class="np-attendance np-team-day" data-attendance-mobile>
+      <div class="np-team-day-tabs" aria-label="Kỳ chấm công">
+        <button type="button" data-np-module="attendance" data-np-action="team-mode" data-np-id="today" aria-pressed="${selected.mode==='today'}">Hôm nay (${dayLabel(selected.today)}/${month})</button>
+        <button type="button" data-np-module="attendance" data-np-action="team-mode" data-np-id="period" aria-pressed="${selected.mode==='period'}">Kỳ (${range}/${month})</button>
+      </div>
+      ${selected.mode === 'period' ? filtersForm(selected,esc) : ''}
+      <p data-attendance-feedback class="np-attendance-feedback" role="status">${esc(feedback)}</p>
+      <form data-np-module="attendance" data-np-action="save" data-attendance-grid>
+        ${dailyGrid(selected,periods,esc)}
+        ${hasEdits ? `<button type="submit" class="np-attendance-save np-team-primary">${icon('clipboard')} Cập nhật chấm công</button>` : ''}
+      </form>
+      ${selected.mode === 'period' ? `<div class="np-attendance-periods">${halves.map(half=>periodStatus(selected,half,periods[half],esc)).join('')}</div>` : ''}
+    </section>`;
   }
 
   function render(tab, ctx) {
@@ -174,6 +208,7 @@
     const periods = { first: storedPeriod(ctx, selected, 'first'), second: storedPeriod(ctx, selected, 'second') };
     const halves = [...new Set(selected.days.map(halfFor))];
     const hasEdits = halves.some(half => canEdit(periods[half], role));
+    if (role === 'DT1') return renderTeam(selected, periods, halves, hasEdits, esc);
     return `<section class="np-attendance" ${role === 'DT1' ? 'data-attendance-mobile' : ''}>
       <header class="np-attendance-heading"><div><h1>${role === 'KT' ? 'Bảng công Excel Pro' : 'Chấm công đội'}</h1><p>${esc(selected.team.name)} · ${selected.month.slice(5)}/${selected.month.slice(0, 4)}</p></div>${role === 'KT' ? workflowButton('export', 'Xuất Excel (.CSV)', '') : ''}</header>
       ${filtersForm(selected, esc)}
@@ -255,6 +290,12 @@
     if (action !== 'save' && document.querySelector('[data-attendance-grid] input[data-grid-row]') && [...document.querySelectorAll('[data-attendance-grid] input[data-grid-row]')].some(input => input.value !== input.defaultValue)) {
       return say('Vui lòng lưu bảng công trước khi chuyển kỳ hoặc thực hiện thao tác khác.');
     }
+    if (action === 'team-mode' && selected.role === 'DT1') {
+      const mode = get(form, 'id');
+      if (!['today', 'period'].includes(mode)) return;
+      ctx.setAttendanceMode(mode);
+      return save(ctx, '');
+    }
     if (action === 'filter') {
       const month = get(form, 'month');
       const projectId = get(form, 'projectId');
@@ -282,6 +323,19 @@
     record(period, ctx, periodLabels[to]);
     return save(ctx, `${periodLabels[to]}.`);
   }
+
+  document.addEventListener('input', event => {
+    if (!event.target.matches?.('[data-team-search]')) return;
+    const section = event.target.closest('.np-team-day');
+    const plain = value => value.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll('đ', 'd');
+    const query = plain(event.target.value.trim());
+    let matches = 0;
+    for (const row of section.querySelectorAll('[data-team-worker]')) {
+      row.hidden = !plain(row.dataset.teamWorker).includes(query);
+      if (!row.hidden) matches++;
+    }
+    section.querySelector('[data-team-no-results]').hidden = matches > 0;
+  });
 
   document.addEventListener('paste', event => {
     const target = event.target;

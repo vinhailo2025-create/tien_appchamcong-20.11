@@ -8,8 +8,10 @@
     shield: '<path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="m9 12 2 2 4-4"/>',
     chart: '<path d="M4 3v17h17M8 16v-4m5 4V7m5 9v-6"/>',
     folder: '<path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    back: '<path d="m14 6-6 6 6 6M8 12h13"/>',
     arrow: '<path d="m9 18 6-6-6-6"/>',
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>',
+    clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2m-6 9 2 2 4-4"/>',
     bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4m8-4v4M8 15h2m4 0h2"/>',
     building: '<path d="M4 21V6h7V3h9v18M2 21h20M7 10h1m-1 4h1m6-7h3m-3 4h3m-3 4h3"/>',
@@ -49,8 +51,8 @@
     DT1: {
       shortTitle: 'Quản lý đội',
       defaultTab: 'dt-checkin',
-      tabs: [tab('dt-checkin', 'Tổng quan đội', 'home', 'Trang chủ'), tab('v2-team-attendance', 'Chấm công đội', 'clock', 'Chấm công'), tab('dt-members', 'Nhân sự đội', 'people'), tab('dt-tasks', 'Công việc & hiện trường', 'folder', 'Công việc'), tab('v2-team-leave', 'Nghỉ phép', 'calendar'), tab('dt-my-statement', 'Công và tạm ứng cá nhân', 'money')],
-      mobileTabs: ['dt-checkin', 'v2-team-attendance', 'dt-tasks', 'v2-team-leave']
+      tabs: [tab('dt-checkin', 'Tổng quan đội', 'home', 'Trang chủ'), tab('v2-team-attendance', 'Chấm công đội', 'clock', 'Chấm công'), tab('dt-members', 'Nhân sự đội', 'people'), tab('dt-tasks', 'Công việc & hiện trường', 'folder', 'Công việc'), tab('v2-team-leave', 'Nghỉ phép', 'calendar'), tab('dt-my-statement', 'Công cá nhân', 'money')],
+      mobileTabs: ['dt-checkin', 'dt-tasks', 'v2-notifications']
     },
     CN: {
       shortTitle: 'Công nhân',
@@ -64,6 +66,9 @@
   const date = value => value ? new Date(value).toLocaleDateString('vi-VN') : '—';
   const department = { BGD: 'Ban giám đốc', KD: 'Kinh doanh', NS: 'Nhân sự', KT: 'Kế toán', DT1: 'Vận hành', CN: 'Thi công' };
   const delegable = ['KD', 'NS', 'KT', 'DT1'];
+  const profileTab = tab('v2-profile', 'Tài khoản', 'user');
+  const notificationsTab = tab('v2-notifications', 'Thông báo', 'bell');
+  for (const role of Object.values(roles)) role.tabs.push(profileTab, notificationsTab);
   roles.BGD.tabs.push(tab('bgd-approvals', 'Phê duyệt nội bộ', 'shield', 'Phê duyệt'));
 
   function adminStore(context) {
@@ -162,9 +167,98 @@
     context.save();
   }
 
+  function profileView(activeTab, context) {
+    const { account, data, state, role } = context;
+    const workspace = roles[role];
+    if (activeTab === 'v2-notifications') {
+      const items = context.notifications.map(item => `<li><button data-np-target="${item.target}">${icon(item.iconName)}<span>${esc(item.label)}</span>${icon('arrow')}</button></li>`).join('');
+      return `<section class="np-work-card np-profile-card"><h2>Thông báo</h2>${items ? `<ul class="np-profile-links">${items}</ul>` : '<p>Chưa có thông báo mới.</p>'}</section>`;
+    }
+
+    const profile = data.profiles?.[account.id] || {};
+    const name = profile.displayName || account.fullName;
+    const project = state.projects.find(item => item.id === account.projectId);
+    const team = state.teams.find(item => item.id === account.teamId);
+    const shortcuts = workspace.tabs.filter(item => !workspace.mobileTabs.includes(item.id) && item.id !== 'v2-profile').map(item => `<li><button data-np-target="${item.id}">${icon(item.iconName)}<span>${item.shortLabel}</span>${icon('arrow')}</button></li>`).join('');
+    return `<div class="np-profile">
+      <section class="np-work-card np-profile-intro">
+        <div class="np-profile-avatar" aria-hidden="true">${esc(initialsOf(name))}</div>
+        <div><h1>${esc(name)}</h1><p>${workspace.shortTitle} · ${esc(team?.name || project?.name || department[role])}</p></div>
+      </section>
+      <section class="np-work-card np-profile-card">
+        <h2>Hồ sơ cá nhân</h2>
+        <form class="np-profile-form" data-np-module="profile" data-np-action="update">
+          <label>Tên hiển thị<input name="displayName" value="${esc(name)}" autocomplete="name" maxlength="80" required /></label>
+          <label>Số điện thoại<input type="tel" name="phone" value="${esc(profile.phone)}" autocomplete="tel" maxlength="24" /></label>
+          <label>Email<input type="email" name="email" value="${esc(profile.email)}" autocomplete="email" maxlength="120" /></label>
+          <dl class="np-profile-account"><dt>Tên đăng nhập</dt><dd>${esc(account.demoLogin || account.username)}</dd><dt>Vai trò</dt><dd>${workspace.shortTitle}</dd></dl>
+          ${profile.updated ? '<p class="np-profile-success" role="status">Đã lưu hồ sơ trên thiết bị này.</p>' : ''}
+          <button class="btn btn-primary" type="submit">Lưu thay đổi</button>
+        </form>
+      </section>
+      <section class="np-work-card np-profile-card np-mobile-shortcuts"><h2>Chức năng khác</h2><ul class="np-profile-links">${shortcuts}</ul></section>
+      <button class="btn btn-soft np-profile-logout" onclick="window.NPApp.logoutAccount()">${icon('logout')} Đăng xuất</button>
+    </div>`;
+  }
+
+  const initialsOf = name => name.trim().split(/ +/).slice(-2).map(part => part[0]).join('').toUpperCase();
+
+  function handleProfile(action, values, context) {
+    if (action !== 'update' || !context.account) return;
+    const displayName = String(values.get('displayName') || '').trim();
+    const phone = String(values.get('phone') || '').trim();
+    const email = String(values.get('email') || '').trim();
+    if (!displayName || displayName.length > 80) throw new Error('Nhập tên hiển thị từ 1 đến 80 ký tự.');
+    if (phone && (phone.length > 24 || !/^\+?[0-9() .-]+$/.test(phone) || phone.replace(/\D/g, '').length < 7)) throw new Error('Số điện thoại chưa hợp lệ.');
+    if (email && (email.length > 120 || !/^[^@\s]+@[^@\s]+$/.test(email))) throw new Error('Email chưa hợp lệ.');
+    const profiles = context.data.profiles ||= {};
+    profiles[context.account.id] = { displayName, phone, email, updated: true };
+    context.save();
+  }
+
+  function notifications(roleId, badges) {
+    if (roleId === 'BGD' && badges.bgdPending) return [{ target: 'bgd-approvals', label: badges.bgdPending + ' công việc cần xử lý', iconName: 'list' }];
+    if (roleId === 'KT' && badges.ktPending) return [{ target: 'kt-advances', label: badges.ktPending + ' đề nghị tạm ứng cần đối chiếu', iconName: 'money' }];
+    return [];
+  }
+
+  const profileModule = { render: profileView, handle: handleProfile };
+  function teamView(_activeTab, context) {
+    if (context.role !== 'DT1') return '';
+    const { account, data, state } = context;
+    const team = state.teams.find(item => item.id === account.teamId);
+    if (!team) return '<section class="np-work-card"><h2>Chưa được phân đội</h2></section>';
+    const project = state.projects.find(item => item.id === team.projectId);
+    const picture = '<img class="np-crew-avatar" src="assets/np-demo-crew.webp" width="52" height="52" alt="" decoding="async">';
+    const now = new Date();
+    const day = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).format(now);
+    const workers = state.workers.filter(worker => worker.teamId === team.id);
+    const absent = workers.filter(worker => !['DANG_LAM', 'DA_RA'].includes(worker.attendanceStatus)).length;
+    const overtime = workers.filter(worker => Number(worker.hoursOtRegistered) > 0).length;
+    const shortcuts = [
+      ['calendar', 'Chấm công', 'v2-team-attendance'],
+      ['people', 'Nhân sự đội', 'dt-members'],
+      ['folder', 'Công việc', 'dt-tasks'],
+      ['money', 'Đề nghị tạm ứng', 'advance'],
+      ['list', 'Nghỉ phép', 'v2-team-leave'],
+      ['clipboard', 'Đối chiếu kỳ', 'v2-team-attendance']
+    ];
+    return `<section class="np-team-home np-work-card">
+      <div class="np-team-greeting">${picture}<div><h1>Xin chào, ${esc(data.profiles?.[account.id]?.displayName || account.fullName)}!</h1><p>${esc(team.name)} · ${esc(project?.name)}</p><time datetime="${day}">${icon('calendar')}${esc(new Intl.DateTimeFormat('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'}).format(now))}</time></div></div>
+      <div class="np-team-shortcuts">${shortcuts.map(([symbol,label,target],index) => `<button type="button" ${target === 'advance' ? 'onclick="window.NPApp.openPersonalAdvanceModal()"' : `data-np-target="${target}"${index === 5 ? ' data-np-period="true"' : ''}`}>${icon(symbol)}<span>${label}</span></button>`).join('')}</div>
+      <div class="np-team-summary"><h2>Tình hình hôm nay</h2><div>
+        ${[['people',workers.length,'Công nhân'],['user',absent,'Nghỉ'],['clock',overtime,'Tăng ca']].map(([symbol,count,label])=>`<section>${icon(symbol)} <strong>${count}</strong><span>${label}</span></section>`).join('')}
+      </div></div>
+      <button class="btn btn-primary np-team-primary" type="button" data-np-target="v2-team-attendance">Cập nhật chấm công</button>
+    </section>`;
+  }
+
+  const teamModule = { render: teamView };
   const adminModule = { render: admin, handle: handleAdmin };
   const registry = {
     admin: () => adminModule,
+    profile: () => profileModule,
+    team: () => teamModule,
     business: () => window.NPBusiness,
     people: () => window.NPPeople,
     finance: () => window.NPFinance,
@@ -215,6 +309,8 @@
   }
 
   function moduleForTab(tabId) {
+    if (tabId === 'dt-checkin') return 'team';
+    if (tabId === 'v2-profile' || tabId === 'v2-notifications') return 'profile';
     if (tabId === 'bgd-overview') return 'director';
     if (['v2-admin-roles', 'v2-projects', 'v2-director-people', 'v2-director-assignments', 'v2-director-acceptance', 'bgd-audit', 'dt-members'].includes(tabId)) return 'admin';
     if (tabId.startsWith('kd-') || tabId === 'v2-director-quotes') return 'business';
@@ -225,10 +321,10 @@
   }
 
   function isReady(key) {
-    return key === 'admin' || document.querySelector('link[data-np-module-style="' + key + '"]')?.sheet;
+    return key === 'admin' || key === 'profile' || key === 'team' || document.querySelector('link[data-np-module-style="' + key + '"]')?.sheet;
   }
 
-  function navigation(account, activeTab, range, badges) {
+  function navigation(account, activeTab, range, badges, profile) {
     const role = roles[account.roleId];
     const tabItem = role.tabs.find(item => item.id === activeTab);
     const menu = document.getElementById('sidebarMenu');
@@ -236,35 +332,41 @@
     const roleBadge = document.getElementById('headerRoleBadge');
     const subtitle = document.getElementById('currentTabSubtitle');
     const header = document.getElementById('headerRightActions');
-    const initials = account.fullName.trim().split(/ +/).slice(-2).map(part => part[0]).join('').toUpperCase();
+    const displayName = profile?.displayName || account.fullName;
+    const initials = initialsOf(displayName);
+    const back = document.getElementById('npMobileBack');
+    const title = document.getElementById('npMobileTitle');
+    const home = activeTab === role.defaultTab;
+    back.hidden = home;
+    back.innerHTML = icon('back');
+    back.dataset.npTarget = role.defaultTab;
+    title.hidden = home;
+    title.textContent = tabItem?.shortLabel || '';
+    document.body.toggleAttribute('data-np-mobile-home', home);
+    document.body.classList.toggle('np-mobile-attendance', activeTab === 'v2-team-attendance');
     const current = item => item.id === activeTab ? ' active' : '';
     const aria = item => item.id === activeTab ? ' aria-current="page"' : '';
 
-    const sidebarTabs = account.roleId === 'BGD' ? role.tabs.filter(item => item.id !== 'bgd-approvals') : role.tabs;
+    const sidebarTabs = role.tabs.filter(item => !['bgd-approvals', 'v2-profile', 'v2-notifications'].includes(item.id));
     menu.innerHTML = `<div class="np-sidebar-navigation">${sidebarTabs.map(item => `
       <button class="sidebar-item np-sidebar-item${current(item)}" data-np-target="${item.id}"${aria(item)}>${icon(item.iconName)}<span>${item.shortLabel}</span></button>
     `).join('')}</div><button class="np-sidebar-logout sidebar-item" onclick="window.NPApp.logoutAccount()">${icon('logout')}<span>Đăng xuất</span></button>`;
 
-    mobile.innerHTML = role.mobileTabs.map(id => {
+    mobile.innerHTML = [...role.mobileTabs, 'v2-profile'].map(id => {
       const item = role.tabs.find(entry => entry.id === id);
       return `<button class="bnav-item${current(item)}" data-np-target="${id}"${aria(item)}>${icon(item.iconName)}<span>${item.mobileLabel}</span></button>`;
-    }).join('') + `<button class="bnav-item" onclick="window.NPApp.toggleSidebar(true)">${icon('menu')}<span>Menu</span></button>`;
+    }).join('');
 
     roleBadge.textContent = role.shortTitle;
     subtitle.textContent = tabItem ? ' · ' + tabItem.shortLabel : '';
     const count = account.roleId === 'BGD' ? badges.bgdPending : account.roleId === 'KT' ? badges.ktPending : 0;
-    const pendingTarget = account.roleId === 'BGD' ? 'bgd-approvals' : 'kt-advances';
     header.innerHTML = `<div class="np-header-search" role="search">
       <div class="np-search-box">${icon('search')}<input id="npMenuSearch" type="search" placeholder="Tìm chức năng..." aria-label="Tìm chức năng" autocomplete="off" /></div>
       <div id="npMenuMatches" class="np-header-popover np-search-results" hidden></div>
     </div>
     <button class="np-header-period" type="button" onclick="window.NPApp.openDateRangeModal()">${icon('calendar')}<span>Kỳ: ${esc(range)}</span></button>
-    <details class="np-header-details"><summary class="np-header-icon" aria-label="Thông báo">${icon('bell')}${count ? `<span class="np-alert-count">${count}</span>` : ''}</summary>
-      <div class="np-header-popover"><strong>Thông báo</strong>${count ? `<button data-np-target="${pendingTarget}">${count} công việc cần xử lý ${icon('arrow')}</button>` : '<p>Chưa có thông báo mới.</p>'}</div>
-    </details>
-    <details class="np-header-details np-account-menu"><summary class="np-account-summary" aria-label="Tài khoản"><span class="np-account-avatar">${esc(initials)}</span><span class="np-account-title"><strong>${esc(account.fullName)}</strong><small>${role.shortTitle}</small></span></summary>
-      <div class="np-header-popover"><strong>${esc(account.fullName)}</strong><p>${role.shortTitle}</p><button onclick="window.NPApp.logoutAccount()">${icon('logout')} Đăng xuất</button></div>
-    </details>`;
+    <button type="button" class="np-header-icon" data-np-target="v2-notifications" aria-label="${count ? 'Thông báo, ' + count + ' công việc cần xử lý' : 'Thông báo'}">${icon('bell')}${count ? `<span class="np-alert-count" aria-hidden="true">${count}</span>` : ''}</button>
+    <button type="button" class="np-account-summary np-account-desktop" data-np-target="v2-profile" aria-label="Tài khoản"><span class="np-account-avatar">${esc(initials)}</span><span class="np-account-title"><strong>${esc(displayName)}</strong><small>${role.shortTitle}</small></span></button>`;
     const search = header.querySelector('#npMenuSearch');
     const matches = header.querySelector('#npMenuMatches');
     const compare = text => text.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll('đ', 'd');
@@ -285,5 +387,5 @@
     });
   }
 
-  window.NPWorkspace = { roles, icon, esc, navigation, moduleForTab, moduleNamed, loadModule, isReady };
+  window.NPWorkspace = { roles, icon, esc, navigation, notifications, moduleForTab, moduleNamed, loadModule, isReady };
 })();

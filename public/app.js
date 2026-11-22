@@ -10,6 +10,7 @@
   let currentAccountId = null;
   let currentRoleId = 'BGD';
   let currentTab = 'bgd-overview';
+  let teamAttendanceMode = 'today';
 
   // Bộ lọc khoảng thời gian (Từ ngày ... đến ngày ..., chọn Tháng, chọn Năm)
   let dateRange = {
@@ -300,7 +301,7 @@
   function renderDateRangeButtonHtml(extraClass) {
     return `
       <button type="button" class="date-range-trigger-btn ${extraClass || ''}" onclick="window.NPApp.openDateRangeModal()" title="Bấm để mở bảng lịch chọn Từ ngày ... đến ngày ..., chọn Tháng & Năm">
-        📅 <span class="date-full-txt">${formatDateRangeLabel()}</span><span class="date-short-txt">${formatDateRangeShortLabel()}</span> ▾
+        ${isPreview ? window.NPWorkspace.icon('calendar') : '📅'} <span class="date-full-txt">${formatDateRangeLabel()}</span><span class="date-short-txt">${formatDateRangeShortLabel()}</span> ▾
       </button>
     `;
   }
@@ -605,13 +606,13 @@
   function closeFullLoginScreen() {
     const overlay = document.getElementById('fullLoginOverlay');
     if (overlay) overlay.classList.remove('open');
-    if (isPreview) {
-      const toggle = document.getElementById('npPasswordToggle');
-      document.getElementById('fullLoginPin').type = 'password';
-      toggle.setAttribute('aria-pressed', 'false');
-      toggle.textContent = 'Hiện';
-      window.scrollTo(0, 0);
-    }
+    setLoginPasswordVisibility(false);
+    if (isPreview) window.scrollTo(0, 0);
+  }
+
+  function setLoginPasswordVisibility(visible) {
+    document.getElementById('fullLoginPin').type = visible ? 'text' : 'password';
+    document.getElementById('npPasswordToggle').setAttribute('aria-pressed', String(visible));
   }
 
   function submitFullLogin() {
@@ -751,7 +752,7 @@
     document.body.dataset.npRole = acc.roleId;
     document.body.dataset.npTab = currentTab;
     if (isPreview) {
-      window.NPWorkspace.navigation(acc, currentTab, formatDateRangeShortLabel(), getBadgeCounts());
+      window.NPWorkspace.navigation(acc, currentTab, formatDateRangeShortLabel(), getBadgeCounts(), state.workspace?.profiles?.[acc.id]);
       return;
     }
     const cfg = ROLE_CONFIG[acc.roleId] || ROLE_CONFIG.BGD;
@@ -2530,6 +2531,7 @@
       ['▦', 'Bảng kê của tôi', `window.NPApp.selectTab('dt-my-statement')`],
       ['▣', 'Chọn kỳ', 'window.NPApp.openDateRangeModal()']
     ];
+    const shortcutIcons = ['calendar', 'people', 'folder', 'money', 'list', 'clock'];
 
     return `
       <div class="v2-team">
@@ -2544,9 +2546,9 @@
             </div>
           </div>
           <div class="v2-team-shortcuts" aria-label="Lối tắt công việc">
-            ${shortcuts.map(([icon, label, action]) => `
+            ${shortcuts.map(([icon, label, action], index) => `
               <button type="button" onclick="${action}">
-                <span class="v2-team-shortcut-icon" aria-hidden="true">${icon}</span>
+                <span class="v2-team-shortcut-icon" aria-hidden="true">${isPreview ? window.NPWorkspace.icon(shortcutIcons[index]) : icon}</span>
                 <span>${label}</span>
               </button>
             `).join('')}
@@ -5187,10 +5189,13 @@
       data: state.workspace ||= {},
       rangeLabel: formatDateRangeLabel(),
       rangeControl: renderDateRangeButtonHtml(),
+      notifications: window.NPWorkspace.notifications(account.roleId, getBadgeCounts()),
+      attendanceMode: teamAttendanceMode,
+      setAttendanceMode: mode => { teamAttendanceMode = mode; },
       period: { ...dateRange },
       esc: window.NPWorkspace.esc,
       money: formatVND,
-      save: () => { saveState(); renderMain(); }
+      save: () => { saveState(); renderRoleNavigationAndHeader(); renderMain(); }
     };
   }
 
@@ -5219,10 +5224,7 @@
     const password = document.getElementById('fullLoginPin');
     const passwordToggle = document.getElementById('npPasswordToggle');
     passwordToggle.addEventListener('click', () => {
-      const show = password.type === 'password';
-      password.type = show ? 'text' : 'password';
-      passwordToggle.setAttribute('aria-pressed', String(show));
-      passwordToggle.textContent = show ? 'Ẩn' : 'Hiện';
+      setLoginPasswordVisibility(password.type === 'password');
     });
     document.querySelector('.np-login-form').addEventListener('input', () => {
       document.getElementById('fullLoginErr').style.display = 'none';
@@ -5239,6 +5241,7 @@
         const link = event.target.closest('[data-np-target]');
         if (link) {
           event.preventDefault();
+          if (link.dataset.npTarget === 'v2-team-attendance') teamAttendanceMode = link.hasAttribute('data-np-period') ? 'period' : 'today';
           selectTab(link.dataset.npTarget);
           return;
         }

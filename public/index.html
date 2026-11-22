@@ -76,6 +76,12 @@
         </div>
       </div>
 
+      <button class="np-mobile-back" id="npMobileBack" type="button" aria-label="Về trang chủ" hidden></button>
+      <div class="np-mobile-brand">
+        <img src="assets/np-mark.png" width="38" height="19" alt="" />
+        <span><strong>NP ONE</strong><small>NGUYÊN PHÁT</small></span>
+      </div>
+      <div class="np-mobile-title" id="npMobileTitle" hidden></div>
       <div class="header-right" id="headerRightActions"></div>
     </div>
   </header>
@@ -107,27 +113,33 @@
       </aside>
       <section class="np-login-content" aria-labelledby="npLoginHeading">
         <header class="np-login-heading">
-          <img src="assets/np-app-icon.png" width="54" height="54" alt="NP ONE" />
+          <img src="assets/np-app-icon.png" width="48" height="48" alt="" />
           <span id="npLoginDemo" hidden>Bản demo · Dữ liệu mẫu</span>
           <h1 id="npLoginHeading">Đăng nhập</h1>
-          <p>Nhập tài khoản được cấp để vào khu vực làm việc.</p>
+          <p>Sử dụng tài khoản do Nguyên Phát cấp.</p>
         </header>
         <form class="np-login-form" onsubmit="event.preventDefault(); window.NPApp.submitFullLogin();">
           <div class="form-group">
             <label for="fullLoginUser">Tên tài khoản</label>
-            <input type="text" id="fullLoginUser" placeholder="Nhập tên tài khoản" autocapitalize="none" spellcheck="false" autocomplete="username" required />
+            <div class="np-login-user-field">
+              <svg class="np-login-user-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M5 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>
+              <input type="text" id="fullLoginUser" placeholder="Nhập tên tài khoản" autocapitalize="none" spellcheck="false" autocomplete="username" required />
+            </div>
           </div>
           <div class="form-group">
             <label for="fullLoginPin">Mật khẩu</label>
             <div class="np-password-field">
               <input type="password" id="fullLoginPin" placeholder="Nhập mật khẩu" autocomplete="current-password" aria-describedby="fullLoginErr" required />
-              <button type="button" id="npPasswordToggle" class="np-password-toggle" aria-controls="fullLoginPin" aria-pressed="false">Hiện</button>
+              <button type="button" id="npPasswordToggle" class="np-password-toggle" aria-label="Hiện mật khẩu" aria-controls="fullLoginPin" aria-pressed="false">
+                <svg class="np-eye-open" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+                <svg class="np-eye-closed" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10 6.2a11 11 0 0 1 2-.2c6.4 0 10 6 10 6a15 15 0 0 1-2.7 3.1M6.3 7.8A15 15 0 0 0 2 12s3.6 6 10 6a11 11 0 0 0 4.1-.8M9.9 10a3 3 0 0 0 4.1 4.1"/></svg>
+              </button>
             </div>
           </div>
           <p id="fullLoginErr" role="alert" class="field-error-msg" style="display:none;">Tên tài khoản hoặc mật khẩu chưa đúng. Anh/chị thử lại nhé.</p>
           <button class="btn btn-primary np-login-submit" type="submit">Đăng nhập <span aria-hidden="true">→</span></button>
         </form>
-        <div class="np-login-footer">NP ONE <span>·</span> Nguyên Phát</div>
+        <div class="np-login-footer"><span aria-hidden="true"></span>Công ty TNHH Nhân Lực Nguyên Phát</div>
       </section>
     </div>
   </div>
