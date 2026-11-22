@@ -1043,6 +1043,285 @@ a {
   border-color: var(--ds-primary);
 }
 
+/* ================= BỐ CỤC CHUYÊN BIỆT CHO 5 GIAO DIỆN VỊ TRÍ (BGD / KT / QLCT / ĐT / CN) ================= */
+.compact-role-strip {
+  background: #FFFFFF;
+  border: 1px solid var(--ds-line);
+  border-left: 3px solid var(--ds-primary);
+  border-radius: var(--ds-radius-md);
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.morning-report-compact {
+  background: var(--ds-primary);
+  color: #FFFFFF;
+  border: 1px solid var(--ds-primary-2);
+  border-radius: var(--ds-radius-md);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.morning-mini-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.morning-mini-pill {
+  background: var(--ds-primary-2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  padding: 4px 9px;
+  border-radius: var(--ds-radius-pill);
+  font-size: 10.5px;
+}
+
+.kpi-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+@media (min-width: 760px) {
+  .kpi-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.kpi-card {
+  background: #FFFFFF;
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-md);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-value {
+  font-family: var(--ds-font-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ds-heading);
+  line-height: 1.15;
+  margin-top: 2px;
+}
+
+.kpi-value .unit {
+  font-family: var(--ds-font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ds-text-muted);
+  margin-left: 3px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 820px) {
+  .grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 760px) {
+  .grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.hierarchy-card {
+  background: var(--ds-bg-soft);
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-md);
+  padding: 10px 12px;
+}
+
+.hierarchy-card h4 {
+  font-family: var(--ds-font-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ds-primary);
+  margin-top: 2px;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--ds-line);
+}
+
+.section-desc {
+  font-size: 10.5px;
+  color: var(--ds-text-muted);
+  margin-top: 2px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.photo-thumb {
+  width: 58px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: var(--ds-radius-sm);
+  border: 1px solid var(--ds-line);
+  cursor: pointer;
+  display: block;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: var(--ds-radius-pill);
+  font-size: 9.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-navy {
+  background: var(--ds-primary);
+  color: #FFFFFF;
+}
+
+.badge-orange {
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+
+.badge-success {
+  background: #E7F5EC;
+  color: #166534;
+  border: 1px solid #BBF7D0;
+}
+
+.badge-warning {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.badge-danger {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+}
+
+.badge-neutral {
+  background: var(--ds-bg-soft);
+  color: var(--ds-text-muted);
+  border: 1px solid var(--ds-line);
+}
+
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-bar input,
+.filter-bar select {
+  min-height: 27px;
+  padding: 3px 9px;
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-pill);
+  font-family: var(--ds-font-sans);
+  font-size: 11px;
+  background: #FFFFFF;
+  color: var(--ds-text);
+}
+
+.filter-bar input {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* KHỐI TỔNG KẾT CÔNG & LƯƠNG CÁ NHÂN CỦA CÔNG NHÂN */
+.personal-summary-hero {
+  background: var(--ds-primary);
+  color: #FFFFFF;
+  border: 1px solid var(--ds-primary-2);
+  border-radius: var(--ds-radius-md);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.personal-summary-hero h3 {
+  font-family: var(--ds-font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.personal-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+@media (min-width: 760px) {
+  .personal-stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.personal-stat-box {
+  background: var(--ds-primary-2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--ds-radius-sm);
+  padding: 8px 10px;
+}
+
+.personal-stat-box .ps-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ds-accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.personal-stat-box .ps-val {
+  font-family: var(--ds-font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-top: 2px;
+}
+
+.mobile-bottom-nav {
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+}
+
 @media (max-width: 600px) {
   .header-right .hide-on-mobile {
     display: none !important;

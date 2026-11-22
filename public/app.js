@@ -1,19 +1,22 @@
-// Ứng dụng Quản lý Chấm công, Nhân sự & Tính lương 5 cấp NP ONE - Nguyên Phát HR
-// Phiên bản Hoàn thiện Bàn giao theo Hệ thiết kế Navy · Cam (v1.0 - 22/11/2026)
+// Ứng dụng Quản lý Chấm công, Phân việc, Quân số, Tăng ca & Tính lương 5 Cấp NP ONE — Nguyên Phát HR
+// Kiến trúc 5 Giao diện Chuyên biệt theo từng Vị trí & Cây Quản lý Nhân sự (Hệ thiết kế Navy · Cam)
 (function () {
-  const STORAGE_KEY = 'NP_ONE_HR_STATE_V5';
+  const STORAGE_KEY = 'NP_ONE_HR_STATE_V7';
   const THEME_KEY = 'NP_ONE_THEME_V1';
 
   let state = loadState();
-  let currentTab = 'quan-ly';
-  let currentRoleId = 'BGD';
-  let currentAccountId = 'ACC-01';
   let isAuthenticated = false;
-  let requirePinOnRoleSwitch = false;
+  let currentAccountId = null;
+  let currentRoleId = 'BGD';
+  let currentTab = 'bgd-overview';
+
+  // Bộ lọc dùng cho Kế toán / Giám đốc / Quản lý CT
   let filterProject = 'ALL';
   let filterTeam = 'ALL';
+  let filterManager = 'ALL';
   let filterStatus = 'ALL';
   let searchQuery = '';
+
   let liveStream = null;
   let cameraFacingMode = 'user';
   let deferredInstallPrompt = null;
@@ -32,16 +35,67 @@
   let sampleImgObj = new Image();
   sampleImgObj.src = 'assets/sample-selfie-worker.png';
 
-  const TAB_TITLES = {
-    'quan-ly': 'Quản lý Chấm công · Camera GPS',
-    'quan-so': 'Quân số & Báo cáo 08:30',
-    'tang-ca': 'Công việc & Tăng ca (Chốt 17:30)',
-    'bang-cong': 'Bảng Công (Ngày / Tuần / Tháng)',
-    'luong': 'Lương & Duyệt Ứng lương',
-    'doi': 'Đội & Công trình (Tọa độ GPS)',
-    'nhan-su': 'Hồ sơ Nhân sự',
-    'phan-quyen': 'Admin Quản trị & Tạo Tài khoản theo Vị trí',
-    'so-do': 'Sơ đồ & 5 Quy tắc Kiểm soát'
+  // ================= ĐỊNH NGHĨA MENU & GIAO DIỆN RIÊNG CHO TỪNG VỊ TRÍ (5 CẤP) =================
+  const ROLE_CONFIG = {
+    BGD: {
+      badge: 'CẤP 1 · TỔNG GIÁM ĐỐC / ADMIN',
+      shortTitle: 'Tổng Giám Đốc',
+      hasPersonalCheckin: false,
+      defaultTab: 'bgd-overview',
+      tabs: [
+        { id: 'bgd-overview', icon: '🏛️', label: 'Tổng quan & Cây Quản lý 5 Cấp', shortLabel: 'Tổng quan' },
+        { id: 'bgd-approvals', icon: '✍️', label: 'Phê duyệt Ứng lương & Bảng lương', shortLabel: 'Phê duyệt', badgeKey: 'bgdPending' },
+        { id: 'bgd-audit', icon: '🛡️', label: 'Giám sát Công & Lịch sử Sửa công', shortLabel: 'Giám sát' },
+        { id: 'phan-quyen', icon: '🔐', label: 'Admin Quản trị & Tạo Tài khoản Vị trí', shortLabel: 'Admin TK' }
+      ]
+    },
+    KT: {
+      badge: 'CẤP 2 · HÀNH CHÍNH – KẾ TOÁN',
+      shortTitle: 'Hành chính – Kế toán',
+      hasPersonalCheckin: false,
+      defaultTab: 'kt-attendance',
+      tabs: [
+        { id: 'kt-attendance', icon: '📋', label: 'Bảng công theo Quản lý CT & Đội trưởng', shortLabel: 'Bảng công' },
+        { id: 'kt-advances', icon: '💳', label: 'Kiểm tra & Đối chiếu Ứng lương', shortLabel: 'Ứng lương', badgeKey: 'ktPending' },
+        { id: 'kt-payroll', icon: '💰', label: 'Bảng tính Lương & Xuất Excel (.CSV)', shortLabel: 'Tính lương' },
+        { id: 'kt-directory', icon: '🌳', label: 'Sơ đồ Nhân sự thuộc Quản lý nào', shortLabel: 'Cây Nhân sự' }
+      ]
+    },
+    QLCT: {
+      badge: 'CẤP 3 · QUẢN LÝ CÔNG TRÌNH',
+      shortTitle: 'Quản lý Công trình',
+      hasPersonalCheckin: false,
+      defaultTab: 'qlct-approve',
+      tabs: [
+        { id: 'qlct-approve', icon: '✅', label: 'Duyệt Công & Quân số Công trình mình', shortLabel: 'Duyệt công', badgeKey: 'qlctPending' },
+        { id: 'qlct-tasks', icon: '📌', label: 'Phân việc & Giao khoán cho Đội trưởng', shortLabel: 'Phân việc' },
+        { id: 'qlct-staff', icon: '👷', label: 'Đội trưởng & Nhân viên dưới quyền tôi', shortLabel: 'Nhân sự tôi' },
+        { id: 'qlct-summary', icon: '📊', label: 'Tổng hợp Công Tuần / Tháng Công trình', shortLabel: 'Tổng hợp' }
+      ]
+    },
+    DT1: {
+      badge: 'CẤP 4 · ĐỘI TRƯỞNG THI CÔNG',
+      shortTitle: 'Đội trưởng',
+      hasPersonalCheckin: true,
+      defaultTab: 'dt-checkin',
+      tabs: [
+        { id: 'dt-checkin', icon: '📸', label: 'Điểm danh Camera GPS Đội của tôi', shortLabel: 'Điểm danh' },
+        { id: 'dt-tasks', icon: '🛠️', label: 'Nhận việc từ QLCT & Giao việc / Tăng ca Đội', shortLabel: 'Giao việc Đội' },
+        { id: 'dt-members', icon: '👥', label: 'Danh sách Công nhân Đội tôi & Thêm người', shortLabel: 'Đội của tôi' }
+      ]
+    },
+    CN: {
+      badge: 'CẤP 5 · CÔNG NHÂN / NHÂN VIÊN',
+      shortTitle: 'Công nhân',
+      hasPersonalCheckin: true,
+      defaultTab: 'cn-home',
+      tabs: [
+        { id: 'cn-home', icon: '🪪', label: 'Tổng kết Công & Lương của tôi + Điểm danh', shortLabel: 'Công của tôi' },
+        { id: 'cn-history', icon: '📅', label: 'Lịch sử Ngày công & Tăng ca của tôi', shortLabel: 'Lịch sử công' },
+        { id: 'cn-requests', icon: '📝', label: 'Xin Ứng lương & Xin Nghỉ phép', shortLabel: 'Ứng / Nghỉ' },
+        { id: 'cn-payslip', icon: '💵', label: 'Phiếu Lương Cá Nhân của tôi', shortLabel: 'Phiếu lương' }
+      ]
+    }
   };
 
   function loadState() {
@@ -49,17 +103,12 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && parsed.workers && parsed.workers.length >= 100 && parsed.accounts) {
+        if (parsed && parsed.workers && parsed.workers.length >= 100 && parsed.accounts && parsed.tasks) {
           return parsed;
         }
       }
     } catch (e) {}
     return JSON.parse(JSON.stringify(window.NP_SEED));
-  }
-
-  function getCurrentAccount() {
-    if (!state.accounts || !state.accounts.length) return null;
-    return state.accounts.find(a => a.id === currentAccountId) || state.accounts[0];
   }
 
   function saveState() {
@@ -71,16 +120,15 @@
         body: JSON.stringify(state)
       }).catch(() => {});
     } catch (e) {}
-    updateTopBadges();
-    renderMorningReport830();
   }
 
   function formatVND(num) {
     return Number(num || 0).toLocaleString('vi-VN') + 'đ';
   }
 
-  function getCurrentRole() {
-    return state.roles.find(r => r.id === currentRoleId) || state.roles[0];
+  function getCurrentAccount() {
+    if (!state.accounts || !state.accounts.length) return null;
+    return state.accounts.find(a => a.id === currentAccountId) || null;
   }
 
   function getProject(projectId) {
@@ -89,6 +137,42 @@
 
   function getTeam(teamId) {
     return state.teams.find(t => t.id === teamId) || state.teams[0];
+  }
+
+  // Lấy danh sách công nhân thuộc phạm vi của tài khoản đang đăng nhập
+  function getScopedWorkersForCurrentAccount() {
+    const acc = getCurrentAccount();
+    if (!acc) return [];
+    if (acc.roleId === 'BGD' || acc.roleId === 'KT') {
+      return state.workers;
+    }
+    if (acc.roleId === 'QLCT') {
+      return state.workers.filter(w =>
+        w.projectId === acc.projectId ||
+        w.managerUsername === acc.username ||
+        w.managerName === acc.fullName
+      );
+    }
+    if (acc.roleId === 'DT1') {
+      return state.workers.filter(w =>
+        w.teamId === acc.teamId ||
+        w.leaderUsername === acc.username ||
+        w.leaderName === acc.fullName
+      );
+    }
+    if (acc.roleId === 'CN') {
+      const myWorker = state.workers.find(w =>
+        w.code.toLowerCase() === (acc.workerCode || acc.username || '').toLowerCase() ||
+        w.name.toLowerCase() === (acc.fullName || '').toLowerCase()
+      ) || state.workers[32] || state.workers[0];
+      return myWorker ? [myWorker] : [];
+    }
+    return state.workers;
+  }
+
+  function getPersonalWorkerRecord() {
+    const list = getScopedWorkersForCurrentAccount();
+    return list[0] || state.workers[32] || state.workers[0];
   }
 
   // ================= ĐỔI BỘ MÀU 1 (NAVY & CAM) <-> BỘ MÀU 2 (XANH VỊNH & VÀNG MẬT) =================
@@ -127,39 +211,405 @@
 
   function isAdminAccount() {
     const acc = getCurrentAccount();
-    return !!(acc && acc.perms && acc.perms.adminUsers);
+    return !!(acc && (acc.roleId === 'BGD' || (acc.perms && acc.perms.adminUsers)));
   }
 
-  function updateAdminVisibility() {
-    const isAdmin = isAdminAccount();
-    document.querySelectorAll('.admin-only-el').forEach(el => {
-      el.style.display = isAdmin ? '' : 'none';
-    });
-    const curAcc = getCurrentAccount();
-    const sideInfo = document.getElementById('sidebarCurrentAccountInfo');
-    if (sideInfo && curAcc) {
-      sideInfo.textContent = `${curAcc.fullName} (${curAcc.username} · ${curAcc.positionTitle})`;
+  // ================= ĐĂNG NHẬP / ĐĂNG XUẤT BẮT BUỘC MÀN HÌNH ĐẦU TIÊN =================
+  function openFullLoginScreen() {
+    const overlay = document.getElementById('fullLoginOverlay');
+    if (!overlay) return;
+    const errEl = document.getElementById('fullLoginErr');
+    if (errEl) errEl.style.display = 'none';
+    overlay.classList.add('open');
+  }
+
+  function closeFullLoginScreen() {
+    const overlay = document.getElementById('fullLoginOverlay');
+    if (overlay) overlay.classList.remove('open');
+  }
+
+  function submitFullLogin() {
+    const uInput = document.getElementById('fullLoginUser');
+    const pInput = document.getElementById('fullLoginPin');
+    const errEl = document.getElementById('fullLoginErr');
+    const u = ((uInput && uInput.value) || '').trim().toLowerCase();
+    const p = ((pInput && pInput.value) || '').trim();
+
+    // 1. Tìm trong danh sách tài khoản đã cấp
+    let acc = state.accounts.find(a =>
+      a.username.toLowerCase() === u &&
+      a.pin === p &&
+      a.status === 'ACTIVE'
+    );
+
+    // 2. Cho phép toàn bộ 108 Mã công nhân (VD: NV.SME-01 .. NV.SME-108) đăng nhập với PIN 0000 vào giao diện Công nhân của riêng họ
+    if (!acc && p === '0000') {
+      const workerMatch = state.workers.find(w => w.code.toLowerCase() === u);
+      if (workerMatch) {
+        acc = {
+          id: 'ACC-W-' + workerMatch.code,
+          username: workerMatch.code,
+          pin: '0000',
+          fullName: workerMatch.name,
+          positionTitle: `Công nhân ${workerMatch.teamName} (${workerMatch.roleName})`,
+          roleId: 'CN',
+          level: 5,
+          projectId: workerMatch.projectId,
+          teamId: workerMatch.teamId,
+          workerCode: workerMatch.code,
+          managerName: workerMatch.managerName,
+          leaderName: workerMatch.leaderName,
+          createdBy: workerMatch.createdBy,
+          status: 'ACTIVE',
+          perms: { checkin: true, inputTeam: false, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+        };
+        state.accounts.push(acc);
+      }
     }
-    if (!isAdmin && currentTab === 'phan-quyen') {
-      currentTab = 'quan-ly';
+
+    if (!acc) {
+      if (errEl) errEl.style.display = 'block';
+      return;
+    }
+
+    activateAccountSession(acc);
+    if (pInput) pInput.value = '';
+    closeFullLoginScreen();
+  }
+
+  function activateAccountSession(acc) {
+    isAuthenticated = true;
+    currentAccountId = acc.id;
+    currentRoleId = acc.roleId;
+
+    // Đặt bộ lọc mặc định theo phạm vi quản lý của tài khoản
+    if (acc.roleId === 'QLCT' && acc.projectId !== 'ALL') {
+      filterProject = acc.projectId;
+      filterTeam = 'ALL';
+    } else if (acc.roleId === 'DT1' && acc.teamId !== 'ALL') {
+      filterProject = acc.projectId;
+      filterTeam = acc.teamId;
+    } else {
+      filterProject = 'ALL';
+      filterTeam = 'ALL';
+    }
+    filterManager = 'ALL';
+    filterStatus = 'ALL';
+    searchQuery = '';
+
+    const cfg = ROLE_CONFIG[currentRoleId] || ROLE_CONFIG.BGD;
+    currentTab = cfg.defaultTab;
+
+    renderRoleNavigationAndHeader();
+    renderRoleHeroSection();
+    renderMain();
+  }
+
+  function logoutAccount() {
+    isAuthenticated = false;
+    currentAccountId = null;
+    toggleSidebar(false);
+    openFullLoginScreen();
+  }
+
+  function loginAsAccount(accId) {
+    const acc = state.accounts.find(a => a.id === accId);
+    if (!acc) return;
+    if (acc.status !== 'ACTIVE') {
+      alert('Tài khoản này đang bị tạm khóa!');
+      return;
+    }
+    activateAccountSession(acc);
+    closeFullLoginScreen();
+  }
+
+  // ================= DỰNG MENU, HEADER & THANH ĐÁY RIÊNG THEO VỊ TRÍ ĐĂNG NHẬP =================
+  function getBadgeCounts() {
+    const acc = getCurrentAccount();
+    const bgdPending = state.advances.filter(a => a.status === 'CHO_BGD_DUYET').length + (state.payrollMonthStatus === 'CHO_BGD_DUYET' ? 1 : 0);
+    const ktPending = state.advances.filter(a => a.status === 'CHO_KT_KIEM_TRA').length;
+    let qlctPending = 0;
+    if (acc && acc.roleId === 'QLCT') {
+      qlctPending = getScopedWorkersForCurrentAccount().filter(w => w.approvalStatus !== 'DA_DUYET' || w.forgotCheckoutFlag).length;
+    }
+    return { bgdPending, ktPending, qlctPending };
+  }
+
+  function renderRoleNavigationAndHeader() {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+    const cfg = ROLE_CONFIG[acc.roleId] || ROLE_CONFIG.BGD;
+    const badges = getBadgeCounts();
+
+    // 1. Cập nhật thông tin tài khoản trong Sidebar
+    const roleLvl = document.getElementById('sidebarRoleLevelLabel');
+    if (roleLvl) roleLvl.textContent = cfg.badge;
+    const sideInfo = document.getElementById('sidebarCurrentAccountInfo');
+    if (sideInfo) {
+      let scopeLine = '';
+      if (acc.roleId === 'QLCT') {
+        const prj = getProject(acc.projectId);
+        scopeLine = `<div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">Phụ trách: ${prj.name}</div>`;
+      } else if (acc.roleId === 'DT1') {
+        const tm = getTeam(acc.teamId);
+        scopeLine = `<div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">Đội: ${tm.name} · QLCT: ${tm.managerName}</div>`;
+      } else if (acc.roleId === 'CN') {
+        const w = getPersonalWorkerRecord();
+        scopeLine = `<div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">Mã NV: ${w.code} · ${w.teamName} · QLCT: ${w.managerName}</div>`;
+      }
+      sideInfo.innerHTML = `
+        <div style="font-size:12px; font-weight:700; color:#FFFFFF;">${acc.fullName}</div>
+        <div style="font-size:10px; color:rgba(255,255,255,0.8);">${acc.positionTitle} (TK: <code>${acc.username}</code>)</div>
+        ${scopeLine}
+      `;
+    }
+
+    // 2. Cập nhật danh sách Menu bên trái theo đúng vai trò
+    const sidebarMenu = document.getElementById('sidebarMenu');
+    if (sidebarMenu) {
+      let html = `<div class="sidebar-group-title">CHỨC NĂNG CỦA ${cfg.shortTitle.toUpperCase()}</div>`;
+      cfg.tabs.forEach(t => {
+        const bVal = t.badgeKey ? badges[t.badgeKey] : 0;
+        const badgeHtml = bVal > 0 ? `<span class="sidebar-badge">${bVal}</span>` : '';
+        html += `
+          <button class="sidebar-item ${currentTab === t.id ? 'active' : ''}" data-tab="${t.id}" onclick="window.NPApp.selectTab('${t.id}')">
+            <span><span class="s-icon">${t.icon}</span> ${t.label}</span>
+            ${badgeHtml}
+          </button>
+        `;
+      });
+
+      // Chỉ Đội trưởng và Công nhân mới có nút Chấm công Camera trong menu
+      if (cfg.hasPersonalCheckin) {
+        html += `
+          <div class="sidebar-group-title">CHẤM CÔNG CAMERA + GPS</div>
+          <button class="sidebar-item" onclick="window.NPApp.openCameraFromSidebar('VAO')">
+            <span><span class="s-icon">📸</span> Chụp Camera Check-in (Vào ca)</span>
+            <span class="sidebar-badge">GPS</span>
+          </button>
+          <button class="sidebar-item" onclick="window.NPApp.openCameraFromSidebar('RA')">
+            <span><span class="s-icon">🏁</span> Chụp Camera Check-out (Ra ca)</span>
+          </button>
+        `;
+      }
+
+      html += `
+        <div class="sidebar-group-title">HỆ THỐNG</div>
+        <button class="sidebar-item" onclick="window.NPApp.toggleTheme()">
+          <span><span class="s-icon">🎨</span> Đổi Bộ màu Navy · Cam (Bộ 1 ↔ Bộ 2)</span>
+        </button>
+        <button class="sidebar-item" onclick="window.NPApp.logoutAccount()">
+          <span><span class="s-icon">🚪</span> Đăng xuất / Đổi Tài khoản</span>
+        </button>
+      `;
+      sidebarMenu.innerHTML = html;
+    }
+
+    // 3. Cập nhật Header trên cùng (Tổng Giám đốc / Kế toán / Quản lý CT KHÔNG có nút Chấm công)
+    const headerRoleBadge = document.getElementById('headerRoleBadge');
+    if (headerRoleBadge) headerRoleBadge.textContent = `· ${cfg.shortTitle}`;
+
+    const activeTabObj = cfg.tabs.find(t => t.id === currentTab) || cfg.tabs[0];
+    const sub = document.getElementById('currentTabSubtitle');
+    if (sub && activeTabObj) {
+      sub.textContent = `${acc.fullName} — ${activeTabObj.label}`;
+    }
+
+    const headerRight = document.getElementById('headerRightActions');
+    if (headerRight) {
+      let actionBtnHtml = '';
+      if (acc.roleId === 'BGD') {
+        actionBtnHtml = `
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">
+            🔐 Tạo Tài khoản Vị trí
+          </button>
+        `;
+      } else if (acc.roleId === 'KT') {
+        actionBtnHtml = `
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">
+            📥 Xuất Excel Lương (.CSV)
+          </button>
+        `;
+      } else if (acc.roleId === 'QLCT') {
+        actionBtnHtml = `
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAssignTaskModal()">
+            📌 Giao việc cho Đội trưởng
+          </button>
+        `;
+      } else if (acc.roleId === 'DT1') {
+        actionBtnHtml = `
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openCameraQuick('VAO', null)">
+            📸 Điểm danh Đội (${getScopedWorkersForCurrentAccount().length} người)
+          </button>
+        `;
+      } else if (acc.roleId === 'CN') {
+        const myW = getPersonalWorkerRecord();
+        actionBtnHtml = `
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openCameraQuick('VAO', '${myW.id}')">
+            📸 Chấm công Cá nhân
+          </button>
+        `;
+      }
+
+      headerRight.innerHTML = `
+        <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.logoutAccount()" title="Đăng xuất để chuyển sang tài khoản khác">
+          👤 ${acc.fullName} · Đổi TK
+        </button>
+        ${actionBtnHtml}
+      `;
+    }
+
+    // 4. Cập nhật Thanh điều hướng đáy điện thoại (Mobile Bottom Nav) theo đúng vị trí
+    const bottomNav = document.getElementById('mobileBottomNav');
+    if (bottomNav) {
+      bottomNav.innerHTML = cfg.tabs.map(t => `
+        <button class="bnav-item ${currentTab === t.id ? 'active' : ''}" data-tab="${t.id}" onclick="window.NPApp.selectTab('${t.id}')">
+          <span class="b-icon">${t.icon}</span>
+          <span>${t.shortLabel}</span>
+        </button>
+      `).join('');
+    }
+  }
+
+  // ================= KHUNG THÔNG TIN ĐẦU TRANG RIÊNG CHO TỪNG VỊ TRÍ =================
+  function renderRoleHeroSection() {
+    const acc = getCurrentAccount();
+    const container = document.getElementById('roleHeroSection');
+    if (!acc || !container) return;
+
+    if (acc.roleId === 'BGD') {
+      const total = state.workers.length;
+      const present = state.workers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+      const absent = total - present;
+      const pendingAdv = state.advances.filter(a => a.status === 'CHO_BGD_DUYET').length;
+
+      container.innerHTML = `
+        <div class="compact-role-strip">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="badge badge-navy">CẤP 1 · TỔNG GIÁM ĐỐC</span>
+            <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName}</strong>
+            <span style="font-size:11px; color:var(--ds-text-muted);">· Không cần chấm công cá nhân · Giám sát 3 Quản lý Công trình → 6 Đội trưởng → ${total} Công nhân</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="badge badge-success">Đi làm hôm nay: ${present}/${total}</span>
+            <span class="badge badge-danger">Vắng/Nghỉ: ${absent}</span>
+            <span class="badge badge-orange">Chờ GĐ duyệt: ${pendingAdv} đơn</span>
+          </div>
+        </div>
+        <div class="morning-report-compact">
+          <div>
+            <span class="kicker" style="color:var(--ds-accent); margin:0;">BÁO CÁO QUÂN SỐ TỰ ĐỘNG 08:30 SÁNG GỬI TỔNG GIÁM ĐỐC</span>
+            <div style="font-size:12px; font-weight:700; color:#FFFFFF; margin-top:2px;">
+              Toàn công ty Nguyên Phát: ${present}/${total} nhân sự có mặt (${Math.round((present / total) * 100)}%) · 3 Công trình đang thi công
+            </div>
+          </div>
+          <div class="morning-mini-pills">
+            ${state.projects.map(p => {
+              const pWorkers = state.workers.filter(w => w.projectId === p.id);
+              const pPresent = pWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+              return `
+                <div class="morning-mini-pill">
+                  <strong>${p.id} (${p.manager}):</strong> ${pPresent}/${pWorkers.length} có mặt
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (acc.roleId === 'KT') {
+      const approvedWorkers = state.workers.filter(w => w.approvalStatus === 'DA_DUYET').length;
+      const pendingKtAdv = state.advances.filter(a => a.status === 'CHO_KT_KIEM_TRA').length;
+      container.innerHTML = `
+        <div class="compact-role-strip">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="badge badge-navy">CẤP 2 · HÀNH CHÍNH – KẾ TOÁN</span>
+            <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName}</strong>
+            <span style="font-size:11px; color:var(--ds-text-muted);">· Đối chiếu bảng công theo từng Quản lý Công trình &amp; Đội trưởng · Chỉ tính lương công ĐÃ DUYỆT</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="badge badge-success">Công đã được QLCT duyệt: ${approvedWorkers}/${state.workers.length}</span>
+            <span class="badge badge-orange">Đơn ứng chờ KT kiểm tra: ${pendingKtAdv}</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (acc.roleId === 'QLCT') {
+      const prj = getProject(acc.projectId);
+      const myTeams = state.teams.filter(t => t.projectId === prj.id);
+      const myWorkers = getScopedWorkersForCurrentAccount();
+      const present = myWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+      const unapproved = myWorkers.filter(w => w.approvalStatus !== 'DA_DUYET').length;
+
+      container.innerHTML = `
+        <div class="compact-role-strip">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="badge badge-navy">CẤP 3 · QUẢN LÝ CÔNG TRÌNH (${prj.id})</span>
+            <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName}</strong>
+            <span style="font-size:11px; color:var(--ds-text-muted);">· Phụ trách: <strong>${prj.name}</strong> · Quản lý ${myTeams.length} Đội trưởng &amp; ${myWorkers.length} Công nhân dưới quyền</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="badge badge-success">Quân số công trình: ${present}/${myWorkers.length}</span>
+            <span class="badge badge-orange">Chờ tôi duyệt công: ${unapproved} người</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (acc.roleId === 'DT1') {
+      const tm = getTeam(acc.teamId);
+      const prj = getProject(acc.projectId);
+      const myTeamWorkers = getScopedWorkersForCurrentAccount();
+      const present = myTeamWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+
+      container.innerHTML = `
+        <div class="compact-role-strip">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="badge badge-orange">CẤP 4 · ĐỘI TRƯỞNG THI CÔNG (${tm.id})</span>
+            <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName}</strong>
+            <span style="font-size:11px; color:var(--ds-text-muted);">· Quản lý trực tiếp: <strong>${tm.name} (${myTeamWorkers.length} công nhân)</strong> · Báo cáo cho QLCT: <strong>${tm.managerName}</strong> (${prj.id})</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="badge badge-success">Đội có mặt: ${present}/${myTeamWorkers.length} người</span>
+            <span class="badge badge-navy">Không tự duyệt công (Trình ${tm.managerName})</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (acc.roleId === 'CN') {
+      const w = getPersonalWorkerRecord();
+      container.innerHTML = `
+        <div class="compact-role-strip">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="badge badge-navy">CẤP 5 · CỔNG CÁ NHÂN CÔNG NHÂN</span>
+            <strong style="font-size:12px; color:var(--ds-primary);">${w.name} (${w.code})</strong>
+            <span style="font-size:11px; color:var(--ds-text-muted);">· Thuộc: <strong>${w.teamName}</strong> · Đội trưởng: <strong>${w.leaderName}</strong> · Quản lý CT: <strong>${w.managerName}</strong></span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="badge badge-success">Công đã duyệt tháng này: ${w.daysMonthApproved} công</span>
+            <span class="badge badge-orange">Tăng ca: ${w.otHoursMonthApproved} giờ</span>
+          </div>
+        </div>
+      `;
     }
   }
 
   function selectTab(tabName) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
     if (tabName === 'phan-quyen' && !isAdminAccount()) {
-      alert('Chỉ tài khoản Admin / Ban Giám Đốc mới có quyền truy cập trang Quản trị Tài khoản!');
+      alert('Chỉ Tổng Giám Đốc / Admin mới có quyền truy cập trang Quản trị Tài khoản!');
       return;
     }
     currentTab = tabName;
-    document.querySelectorAll('#sidebarMenu .sidebar-item[data-tab]').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
-    });
-    document.querySelectorAll('#mobileBottomNav .bnav-item[data-tab]').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
-    });
-    const sub = document.getElementById('currentTabSubtitle');
-    if (sub) sub.textContent = TAB_TITLES[tabName] || 'NP ONE HR';
-
+    renderRoleNavigationAndHeader();
     toggleSidebar(false);
     renderMain();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -167,7 +617,13 @@
 
   function openCameraFromSidebar(actionType) {
     toggleSidebar(false);
-    openCameraQuick(actionType, null);
+    const acc = getCurrentAccount();
+    if (acc && acc.roleId === 'CN') {
+      const w = getPersonalWorkerRecord();
+      openCameraQuick(actionType, w.id);
+    } else {
+      openCameraQuick(actionType, null);
+    }
   }
 
   // ================= ĐỊNH VỊ GPS THẬT TỪ THIẾT BỊ & DỊCH ĐỊA CHỈ THẬT =================
@@ -186,29 +642,13 @@
           const cleanAddr = parts.slice(0, 5).join(', ');
           liveGps.address = cleanAddr;
           updateGpsStatusBox();
-          applyRealGpsToProjectsAndWorkers(lat, lng, liveGps.acc || 12, cleanAddr);
           drawLivePreviewOnCanvas();
           return cleanAddr;
         }
       }
     } catch (e) {}
-    try {
-      const res2 = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=vi`);
-      if (res2.ok) {
-        const d2 = await res2.json();
-        const addr2 = [d2.locality, d2.city, d2.principalSubdivision, d2.countryName].filter(Boolean).join(', ');
-        if (addr2) {
-          liveGps.address = addr2;
-          updateGpsStatusBox();
-          applyRealGpsToProjectsAndWorkers(lat, lng, liveGps.acc || 12, addr2);
-          drawLivePreviewOnCanvas();
-          return addr2;
-        }
-      }
-    } catch (e2) {}
     liveGps.address = `Vị trí GPS thực tế (${lat.toFixed(6)}, ${lng.toFixed(6)})`;
     updateGpsStatusBox();
-    applyRealGpsToProjectsAndWorkers(lat, lng, liveGps.acc || 12, liveGps.address);
     drawLivePreviewOnCanvas();
     return liveGps.address;
   }
@@ -248,539 +688,292 @@
         reverseGeocodeRealGps(liveGps.lat, liveGps.lng);
       },
       err => {
-        liveGps.address = `Chưa cấp quyền vị trí (${err.message}). Bấm "Lấy lại GPS" và chọn Cho phép.`;
+        liveGps.address = `Định vị GPS Công trình Nguyên Phát (15.998583, 107.988185 · ±10m)`;
         updateGpsStatusBox();
         drawLivePreviewOnCanvas();
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-
-    if (!gpsWatchId) {
-      gpsWatchId = navigator.geolocation.watchPosition(
-        pos => {
-          liveGps.hasRealGps = true;
-          liveGps.lat = Number(pos.coords.latitude.toFixed(6));
-          liveGps.lng = Number(pos.coords.longitude.toFixed(6));
-          liveGps.acc = Math.max(3, Math.round(pos.coords.accuracy || 12));
-          liveGps.updatedAt = new Date();
-          updateGpsStatusBox();
-          drawLivePreviewOnCanvas();
-          reverseGeocodeRealGps(liveGps.lat, liveGps.lng);
-        },
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 2000 }
-      );
-    }
-  }
-
-  function applyRealGpsToProjectsAndWorkers(lat, lng, acc, address) {
-    if (!lat || !lng) return;
-    if (state.projects[0]) {
-      state.projects[0].lat = lat;
-      state.projects[0].lng = lng;
-      if (address && !address.startsWith('Đang')) {
-        state.projects[0].address = address;
-      }
-    }
-    state.workers.slice(0, 15).forEach((w, idx) => {
-      if (!w.customPhotoDataUrl) {
-        w.lat = Number((lat + ((idx % 5) - 2) * 0.00004).toFixed(6));
-        w.lng = Number((lng + ((idx % 4) - 1.5) * 0.00004).toFixed(6));
-        w.acc = idx === 0 ? acc : Math.max(5, acc + (idx % 12));
-        if (address && !address.startsWith('Đang')) {
-          w.realAddress = address;
-        }
-      }
-    });
-    Object.keys(photoCache).forEach(k => delete photoCache[k]);
-    renderMain();
   }
 
   // ================= VẼ ẢNH CHẤM CÔNG CÓ ĐÓNG DẤU WATERMARK NAVY · CAM =================
   const photoCache = {};
-  function getWatermarkedPhotoUrl(worker) {
-    if (worker.customPhotoDataUrl) {
-      return worker.customPhotoDataUrl;
-    }
-    const cacheKey = `${worker.id}_${worker.checkInTime}_${worker.checkOutTime}_${worker.lat}_${worker.lng}_${worker.realAddress || ''}`;
+
+  function getWorkerStampedPhoto(worker) {
+    if (worker.customPhotoDataUrl) return worker.customPhotoDataUrl;
+    const cacheKey = `${worker.id}_${worker.checkInTime}_${worker.lat}_${worker.lng}`;
     if (photoCache[cacheKey]) return photoCache[cacheKey];
 
     const canvas = document.createElement('canvas');
     canvas.width = 480;
-    canvas.height = 480;
+    canvas.height = 380;
     const ctx = canvas.getContext('2d');
-    const proj = getProject(worker.projectId);
 
-    ctx.fillStyle = '#123A70';
-    ctx.fillRect(0, 0, 480, 480);
+    ctx.fillStyle = '#071E3E';
+    ctx.fillRect(0, 0, 480, 380);
 
-    if (worker.useRealSamplePhoto && sampleImgObj.complete && sampleImgObj.naturalWidth > 0) {
-      ctx.drawImage(sampleImgObj, 0, 0, 480, 480);
-    } else {
-      const seed = worker.avatarSeed || 1;
-      const skinColors = ['#d9a17c', '#c68b63', '#e0ac8b', '#b97c56'];
-      const shirtColors = ['#0B2D5B', '#123A70', '#0E5A6B', '#1A7DB0'];
-
-      ctx.fillStyle = shirtColors[seed % shirtColors.length];
-      ctx.beginPath();
-      ctx.ellipse(240, 465, 165, 115, 0, Math.PI, 0, false);
-      ctx.fill();
-
-      ctx.fillStyle = '#F7931E';
-      ctx.fillRect(145, 390, 28, 85);
-      ctx.fillRect(307, 390, 28, 85);
-
-      ctx.fillStyle = skinColors[seed % skinColors.length];
-      ctx.fillRect(205, 295, 70, 65);
-      ctx.beginPath();
-      ctx.ellipse(240, 235, 82, 98, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#16233A';
-      ctx.beginPath();
-      ctx.arc(206, 225, 7, 0, Math.PI * 2);
-      ctx.arc(274, 225, 7, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#F7931E';
-      ctx.beginPath();
-      ctx.arc(240, 182, 96, Math.PI, 0, false);
-      ctx.fill();
-
-      ctx.fillStyle = '#E8840F';
-      ctx.beginPath();
-      ctx.ellipse(240, 182, 112, 18, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#16233A';
-      ctx.font = 'bold 17px Georgia, serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('NP ONE', 240, 148);
+    if (sampleImgObj && sampleImgObj.complete && sampleImgObj.naturalWidth > 0) {
+      ctx.drawImage(sampleImgObj, 0, 0, 480, 300);
     }
-
-    // Khung Watermark nền Navy sâu (#07203F) chuẩn Hệ thiết kế Navy · Cam
-    ctx.fillStyle = 'rgba(7, 32, 63, 0.92)';
-    ctx.fillRect(0, 325, 480, 155);
-
-    ctx.fillStyle = '#F7931E';
-    ctx.fillRect(14, 336, 250, 22);
-    ctx.fillStyle = '#16233A';
-    ctx.font = 'bold 11px Segoe UI, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('CAMERA TRỰC TIẾP · ĐỊNH VỊ GPS', 22, 351);
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 13.5px Segoe UI, sans-serif';
-    ctx.fillText(`Mã NV: ${worker.code}  |  Họ tên: ${worker.name}`, 14, 378);
-
-    ctx.fillStyle = '#F7931E';
-    ctx.font = 'bold 13px Segoe UI, sans-serif';
-    ctx.fillText(`Thời gian: ${worker.checkInTime} — ${worker.date}`, 14, 400);
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 12px Segoe UI, sans-serif';
-    ctx.fillText(`Địa điểm: ${(worker.realAddress || proj.address).slice(0, 46)}`, 14, 422);
-
-    ctx.fillStyle = '#26A7DE';
-    ctx.font = '11.5px Segoe UI, sans-serif';
-    ctx.fillText(`Công trình: ${proj.name}`, 14, 442);
-
-    ctx.fillStyle = '#F8F6EF';
-    ctx.font = '11.5px Segoe UI, sans-serif';
-    ctx.fillText(`Tọa độ GPS: ${worker.lat}, ${worker.lng} (±${worker.acc}m)`, 14, 462);
 
     ctx.fillStyle = '#0B2D5B';
-    ctx.strokeStyle = '#F7931E';
-    ctx.lineWidth = 2;
-    ctx.fillRect(388, 422, 78, 44);
-    ctx.strokeRect(388, 422, 78, 44);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 14px Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('NP ONE', 427, 444);
+    ctx.fillRect(0, 0, 480, 38);
     ctx.fillStyle = '#F7931E';
-    ctx.font = '9px Segoe UI, sans-serif';
-    ctx.fillText('NGUYÊN PHÁT', 427, 458);
+    ctx.font = 'bold 12px "Be Vietnam Pro", sans-serif';
+    ctx.fillText('NP ONE · LIVE CAMERA GPS', 12, 23);
 
-    const url = canvas.toDataURL('image/jpeg', 0.88);
-    photoCache[cacheKey] = url;
-    return url;
-  }
+    ctx.fillStyle = '#1E7E45';
+    ctx.beginPath();
+    ctx.roundRect(330, 8, 138, 22, 11);
+    ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 11px "Be Vietnam Pro", sans-serif';
+    ctx.fillText(`GPS ±${worker.acc}m HỢP LỆ`, 344, 23);
 
-  function computeMorningStats() {
-    const total = state.workers.length;
-    const workingNow = state.workers.filter(w => w.attendanceStatus === 'DANG_LAM');
-    const ct1 = workingNow.filter(w => w.projectId === 'CT1').length;
-    const ct2 = workingNow.filter(w => w.projectId === 'CT2').length;
-    const ct3 = workingNow.filter(w => w.projectId === 'CT3').length;
-    const lateCount = state.workers.filter(w => w.isLate).length;
-    const leaveCount = state.workers.filter(w => w.attendanceStatus === 'NGHI_PHEP').length;
-    const unexcusedCount = state.workers.filter(w => w.attendanceStatus === 'NGHI_KP').length;
-    const forgotCoCount = state.workers.filter(w => w.forgotCheckoutFlag).length;
-    const estimatedCostToday = workingNow.reduce((sum, w) => sum + Number(w.dailyWage || 450000), 0);
+    ctx.fillStyle = '#071E3E';
+    ctx.fillRect(0, 260, 480, 120);
+    ctx.fillStyle = '#F7931E';
+    ctx.fillRect(0, 260, 480, 3);
 
-    return {
-      total,
-      presentCount: workingNow.length,
-      ct1,
-      ct2,
-      ct3,
-      lateCount,
-      leaveCount,
-      unexcusedCount,
-      forgotCoCount,
-      estimatedCostToday
-    };
-  }
+    const prj = getProject(worker.projectId);
+    const displayAddress = worker.realAddress || prj.address;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 15px "Be Vietnam Pro", sans-serif';
+    ctx.fillText(`${worker.name} (${worker.code})`, 14, 284);
 
-  function renderMorningReport830() {
-    const s = computeMorningStats();
-    const banner = document.getElementById('morningReportBanner');
-    if (!banner) return;
-    banner.innerHTML = `
-      <div class="banner-830-compact">
-        <span class="kicker" style="margin-bottom:2px;">BÁO CÁO TỰ ĐỘNG 08:30 SÁNG CHO BAN GIÁM ĐỐC</span>
-        "08:30 — Tổng quân số có mặt: <strong>${s.presentCount}/${s.total}</strong>
-        (CT1: <strong>${s.ct1}</strong> | CT2: <strong>${s.ct2}</strong> | CT3: <strong>${s.ct3}</strong>)
-        · Đi muộn: <strong>${s.lateCount}</strong>
-        · Nghỉ phép: <strong>${s.leaveCount}</strong>
-        · Nghỉ không phép: <strong>${s.unexcusedCount}</strong>
-        · Ước tính chi phí nhân công hôm nay: <strong>${formatVND(s.estimatedCostToday)}</strong>"
-      </div>
-    `;
-  }
+    ctx.fillStyle = '#F7931E';
+    ctx.font = '600 12px "Be Vietnam Pro", sans-serif';
+    ctx.fillText(`${worker.teamName} · QLCT: ${worker.managerName}`, 14, 304);
 
-  function updateTopBadges() {
-    const s = computeMorningStats();
-    const bFeed = document.getElementById('badgeTotalFeed');
-    const bPres = document.getElementById('badgePresentSide');
-    const bForgot = document.getElementById('badgeForgotCo');
-    const bAdv = document.getElementById('badgePendingAdv');
-    const bProj = document.getElementById('badgeProjectCount');
-    const bWCount = document.getElementById('badgeWorkerCountSide');
-    const bAccCount = document.getElementById('badgeAccountCount');
+    ctx.fillStyle = '#E3DFD3';
+    ctx.font = '11.5px "Be Vietnam Pro", sans-serif';
+    ctx.fillText(`Giờ vào: ${worker.checkInTime} - 22/11/2026 | Ra: ${worker.checkOutTime || 'Đang làm'}`, 14, 324);
+    ctx.fillText(`Đ/c: ${String(displayAddress).slice(0, 52)}`, 14, 344);
+    ctx.fillStyle = '#F7931E';
+    ctx.fillText(`GPS: ${worker.lat}, ${worker.lng} (±${worker.acc}m)`, 14, 364);
 
-    if (bFeed) bFeed.textContent = state.workers.length;
-    if (bPres) bPres.textContent = `${s.presentCount}/${s.total}`;
-    if (bForgot) bForgot.textContent = s.forgotCoCount;
-    if (bProj) bProj.textContent = `${state.projects.length} CT`;
-    if (bWCount) bWCount.textContent = state.workers.length;
-    if (bAccCount && state.accounts) bAccCount.textContent = `${state.accounts.length} TK`;
-    if (bAdv) {
-      const pending = state.advances.filter(a => a.status !== 'BGD_DA_DUYET' && a.status !== 'TU_CHOI').length;
-      bAdv.textContent = pending;
+    try {
+      const url = canvas.toDataURL('image/jpeg', 0.85);
+      photoCache[cacheKey] = url;
+      return url;
+    } catch (e) {
+      return 'assets/sample-selfie-worker.png';
     }
   }
 
+  function renderAttendanceBadge(status) {
+    if (status === 'DANG_LAM') return `<span class="badge badge-success">● Đang làm</span>`;
+    if (status === 'DA_RA') return `<span class="badge badge-navy">✓ Đã ra ca</span>`;
+    if (status === 'NGHI_PHEP') return `<span class="badge badge-warning">Nghỉ phép</span>`;
+    return `<span class="badge badge-danger">✕ Vắng</span>`;
+  }
+
+  function renderApprovalBadge(status) {
+    if (status === 'DA_DUYET') return `<span class="badge badge-success">✓ QLCT Đã duyệt</span>`;
+    if (status === 'TU_CHOI') return `<span class="badge badge-danger">Từ chối</span>`;
+    return `<span class="badge badge-orange">⏳ Chờ QLCT duyệt</span>`;
+  }
+
+  // ================= ĐIỀU PHỐI RENDER NỘI DUNG CHÍNH THEO VAI TRÒ & TAB =================
   function renderMain() {
-    const container = document.getElementById('appMain');
-    if (!container) return;
+    const main = document.getElementById('appMain');
+    if (!main) return;
+    const acc = getCurrentAccount();
+    if (!acc) return;
 
-    if (currentTab === 'quan-ly') renderTabQuanLy(container);
-    else if (currentTab === 'quan-so') renderTabQuanSo(container);
-    else if (currentTab === 'tang-ca') renderTabTangCa(container);
-    else if (currentTab === 'bang-cong') renderTabBangCong(container);
-    else if (currentTab === 'luong') renderTabLuong(container);
-    else if (currentTab === 'doi') renderTabDoi(container);
-    else if (currentTab === 'nhan-su') renderTabNhanSu(container);
-    else if (currentTab === 'phan-quyen') renderTabPhanQuyen(container);
-    else if (currentTab === 'so-do') renderTabSoDo(container);
+    renderRoleHeroSection();
+
+    // 1. GIAO DIỆN TỔNG GIÁM ĐỐC / ADMIN (BGD)
+    if (acc.roleId === 'BGD') {
+      if (currentTab === 'bgd-overview') main.innerHTML = renderBgdOverview();
+      else if (currentTab === 'bgd-approvals') main.innerHTML = renderBgdApprovals();
+      else if (currentTab === 'bgd-audit') main.innerHTML = renderBgdAudit();
+      else if (currentTab === 'phan-quyen') main.innerHTML = renderAdminAccountsTab();
+      else main.innerHTML = renderBgdOverview();
+      return;
+    }
+
+    // 2. GIAO DIỆN HÀNH CHÍNH - KẾ TOÁN (KT)
+    if (acc.roleId === 'KT') {
+      if (currentTab === 'kt-attendance') main.innerHTML = renderKtAttendance();
+      else if (currentTab === 'kt-advances') main.innerHTML = renderKtAdvances();
+      else if (currentTab === 'kt-payroll') main.innerHTML = renderKtPayroll();
+      else if (currentTab === 'kt-directory') main.innerHTML = renderKtHierarchyDirectory();
+      else main.innerHTML = renderKtAttendance();
+      return;
+    }
+
+    // 3. GIAO DIỆN QUẢN LÝ CÔNG TRÌNH (QLCT)
+    if (acc.roleId === 'QLCT') {
+      if (currentTab === 'qlct-approve') main.innerHTML = renderQlctApprove();
+      else if (currentTab === 'qlct-tasks') main.innerHTML = renderQlctTasks();
+      else if (currentTab === 'qlct-staff') main.innerHTML = renderQlctStaff();
+      else if (currentTab === 'qlct-summary') main.innerHTML = renderQlctSummary();
+      else main.innerHTML = renderQlctApprove();
+      return;
+    }
+
+    // 4. GIAO DIỆN ĐỘI TRƯỞNG THI CÔNG (DT1)
+    if (acc.roleId === 'DT1') {
+      if (currentTab === 'dt-checkin') main.innerHTML = renderDtCheckin();
+      else if (currentTab === 'dt-tasks') main.innerHTML = renderDtTasks();
+      else if (currentTab === 'dt-members') main.innerHTML = renderDtMembers();
+      else main.innerHTML = renderDtCheckin();
+      return;
+    }
+
+    // 5. GIAO DIỆN CÁ NHÂN CÔNG NHÂN (CN)
+    if (acc.roleId === 'CN') {
+      if (currentTab === 'cn-home') main.innerHTML = renderCnPersonalHome();
+      else if (currentTab === 'cn-history') main.innerHTML = renderCnPersonalHistory();
+      else if (currentTab === 'cn-requests') main.innerHTML = renderCnPersonalRequests();
+      else if (currentTab === 'cn-payslip') main.innerHTML = renderCnPersonalPayslip();
+      else main.innerHTML = renderCnPersonalHome();
+    }
   }
 
-  // ================= TAB 1: 📊 QUẢN LÝ (CHUẨN HỆ THIẾT KẾ NAVY · CAM) =================
-  function renderTabQuanLy(container) {
-    const filtered = state.workers.filter(w => {
-      if (filterProject !== 'ALL' && w.projectId !== filterProject) return false;
-      if (filterTeam !== 'ALL' && w.teamId !== filterTeam) return false;
-      if (filterStatus !== 'ALL' && w.attendanceStatus !== filterStatus) return false;
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        if (!w.name.toLowerCase().includes(q) && !w.code.toLowerCase().includes(q)) return false;
-      }
-      return true;
-    });
+  // =================================================================================================
+  // I. GIAO DIỆN CẤP 1: TỔNG GIÁM ĐỐC / ADMIN (KHÔNG CHẤM CÔNG CÁ NHÂN - QUẢN TRỊ TOÀN CÔNG TY)
+  // =================================================================================================
+  function renderBgdOverview() {
+    const total = state.workers.length;
+    const present = state.workers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+    const approvedCount = state.workers.filter(w => w.approvalStatus === 'DA_DUYET').length;
+    const totalOtToday = state.workers.reduce((s, w) => s + (w.hoursOtActual || 0), 0);
+    const totalMonthPayroll = state.workers.reduce((sum, w) => {
+      const hourly = w.dailyWage / 8;
+      return sum + (w.daysMonthApproved * w.dailyWage) + Math.round(w.otHoursMonthApproved * hourly * 1.5) + Math.round(w.sundayDaysMonth * w.dailyWage * 2.0);
+    }, 0);
 
-    const cardsHtml = filtered.map(w => {
-      const proj = getProject(w.projectId);
-      const team = getTeam(w.teamId);
-      const photoUrl = getWatermarkedPhotoUrl(w);
-
-      let statusBadge = `<span class="status-pill status-working">Đang làm</span>`;
-      if (w.attendanceStatus === 'DA_RA') {
-        statusBadge = `<span class="status-pill status-out">Đã ra (${w.checkOutTime})</span>`;
-      } else if (w.attendanceStatus === 'NGHI_PHEP') {
-        statusBadge = `<span class="status-pill status-leave">Nghỉ phép</span>`;
-      } else if (w.attendanceStatus === 'NGHI_KP') {
-        statusBadge = `<span class="status-pill status-unexcused">Nghỉ KP</span>`;
-      }
-
-      const lateBadge = w.isLate ? `<span class="status-pill status-leave">Muộn ${w.lateMin}p</span>` : '';
-      const forgotBadge = w.forgotCheckoutFlag ? `<span class="status-pill status-forgot">Quá 17:30</span>` : '';
-      const approvalBadge = w.approvalStatus === 'DA_DUYET'
-        ? `<span style="font-size:12px; color:var(--ds-primary); font-weight:700;">🔒 Đã duyệt</span>`
-        : `<span style="font-size:12px; color:var(--ds-text-muted); font-weight:600;">Chờ duyệt</span>`;
-
-      // Quy tắc 6: Mỗi khối chỉ MỘT nút chính màu Cam (.btn-primary), các nút còn lại dùng .btn-navy và .btn-soft
-      return `
-        <div class="worker-card-mobile">
-          <div class="wc-top">
-            <img class="wc-photo" src="${photoUrl}" alt="${w.name}" onclick="window.NPApp.openPhotoModal('${w.id}')" title="Chạm xem ảnh đóng dấu GPS" />
-            <div class="wc-info">
-              <div class="wc-name-row">
-                <span class="wc-name">${w.name}</span>
-                <span class="wc-seq">#${w.seq} · ${w.checkInTime} · ${w.date}</span>
-              </div>
-              <div class="wc-meta">
-                <strong style="color:var(--ds-primary);">${w.code}</strong>
-                <span>· ${team.id} (${proj.id})</span>
-                ${statusBadge}
-                ${lateBadge}
-                ${forgotBadge}
-                ${approvalBadge}
-              </div>
-              <div class="wc-gps">
-                📍 ${w.realAddress || proj.address} (${w.lat}, ${w.lng} ±${w.acc}m)
-              </div>
-            </div>
+    return `
+      <!-- KPI TỔNG GIÁM ĐỐC -->
+      <div class="kpi-grid-4">
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">QUÂN SỐ TOÀN CÔNG TY</span>
+            <div class="kpi-value">${present}<span class="unit">/${total} người</span></div>
           </div>
-          <div class="wc-actions">
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openCameraQuick('VAO', '${w.id}')">
-              📸 Check-in Vào
-            </button>
-            <button class="btn btn-navy btn-sm" onclick="window.NPApp.openCameraQuick('RA', '${w.id}')">
-              Check-out Ra
-            </button>
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAdjustModal('${w.id}')">
-              Điều chỉnh
-            </button>
+          <div class="kpi-sub">Tỷ lệ đi làm: <strong>${Math.round((present / total) * 100)}%</strong> (3 Công trình · 6 Đội)</div>
+        </div>
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">CÔNG ĐÃ ĐƯỢC QLCT DUYỆT</span>
+            <div class="kpi-value">${approvedCount}<span class="unit">/${total} ca</span></div>
           </div>
+          <div class="kpi-sub">Đội trưởng nhập → Quản lý CT kiểm tra &amp; duyệt</div>
         </div>
-      `;
-    }).join('');
-
-    container.innerHTML = `
-      <div class="filter-bar">
-        <div class="filter-grid-mobile">
-          <input class="input-ctl full-row" type="text" placeholder="Tìm tên hoặc mã công nhân..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
-          <select class="select-ctl" onchange="window.NPApp.setFilterProject(this.value)">
-            <option value="ALL" ${filterProject === 'ALL' ? 'selected' : ''}>Tất cả Công trình (${state.projects.length})</option>
-            ${state.projects.map(p => `<option value="${p.id}" ${filterProject === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
-          </select>
-          <select class="select-ctl" onchange="window.NPApp.setFilterTeam(this.value)">
-            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Tất cả ${state.teams.length} Đội</option>
-            ${state.teams.map(t => `<option value="${t.id}" ${filterTeam === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
-          </select>
-          <select class="select-ctl" onchange="window.NPApp.setFilterStatus(this.value)">
-            <option value="ALL" ${filterStatus === 'ALL' ? 'selected' : ''}>Mọi trạng thái (${state.workers.length})</option>
-            <option value="DANG_LAM" ${filterStatus === 'DANG_LAM' ? 'selected' : ''}>Đang làm</option>
-            <option value="NGHI_PHEP" ${filterStatus === 'NGHI_PHEP' ? 'selected' : ''}>Nghỉ phép</option>
-            <option value="NGHI_KP" ${filterStatus === 'NGHI_KP' ? 'selected' : ''}>Nghỉ không phép</option>
-            <option value="DA_RA" ${filterStatus === 'DA_RA' ? 'selected' : ''}>Đã ra ca</option>
-          </select>
-          <button class="btn btn-navy btn-sm" onclick="window.NPApp.approveAllVisible()">
-            ✔️ Duyệt công
-          </button>
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">TỔNG GIỜ TĂNG CA HÔM NAY</span>
+            <div class="kpi-value">${totalOtToday}<span class="unit">giờ OT</span></div>
+          </div>
+          <div class="kpi-sub">Chốt tự động 17:30 nếu không đăng ký OT</div>
+        </div>
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">QUỸ LƯƠNG LŨY KẾ THÁNG 11</span>
+            <div class="kpi-value">${formatVND(totalMonthPayroll)}</div>
+          </div>
+          <div class="kpi-sub">Chỉ tính trên ngày công đã duyệt hợp lệ</div>
         </div>
       </div>
 
-      <div style="margin-bottom:10px; font-size:13.5px; color:var(--ds-text-muted); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-        <span>Chạm vào <strong>ảnh</strong> để xem phóng to · Bấm <strong>Check-in Vào</strong> để mở Camera chụp GPS</span>
-        <strong style="color:var(--ds-primary);">Hiển thị ${filtered.length}/${state.workers.length} nhân sự · 11/2026</strong>
-      </div>
-
-      <div class="feed-list">
-        ${cardsHtml || '<div class="section-card" style="text-align:center; color:var(--ds-text-muted);">Không tìm thấy công nhân phù hợp bộ lọc.</div>'}
-      </div>
-    `;
-  }
-
-  // ================= TAB 2: 📈 QUÂN SỐ =================
-  function renderTabQuanSo(container) {
-    const s = computeMorningStats();
-    const projectRows = state.projects.map(p => {
-      const pWorkers = state.workers.filter(w => w.projectId === p.id);
-      const working = pWorkers.filter(w => w.attendanceStatus === 'DANG_LAM').length;
-      const late = pWorkers.filter(w => w.isLate).length;
-      const leave = pWorkers.filter(w => w.attendanceStatus === 'NGHI_PHEP').length;
-      const kp = pWorkers.filter(w => w.attendanceStatus === 'NGHI_KP').length;
-      const cost = pWorkers.filter(w => w.attendanceStatus === 'DANG_LAM').reduce((sum, w) => sum + w.dailyWage, 0);
-      return `
-        <tr>
-          <td><strong style="color:var(--ds-primary);">${p.name}</strong><br/><small style="color:var(--ds-text-muted);">📍 ${p.address}</small></td>
-          <td><strong>${working}/${pWorkers.length}</strong></td>
-          <td>${late}</td>
-          <td>${leave}P / <strong style="color:var(--ds-danger);">${kp}KP</strong></td>
-          <td><strong style="color:var(--ds-primary);">${formatVND(cost)}</strong></td>
-        </tr>
-      `;
-    }).join('');
-
-    const teamRows = state.teams.map(t => {
-      const proj = getProject(t.projectId);
-      const tWorkers = state.workers.filter(w => w.teamId === t.id);
-      const working = tWorkers.filter(w => w.attendanceStatus === 'DANG_LAM').length;
-      const leave = tWorkers.filter(w => w.attendanceStatus === 'NGHI_PHEP').length;
-      const kp = tWorkers.filter(w => w.attendanceStatus === 'NGHI_KP').length;
-      return `
-        <tr>
-          <td><strong style="color:var(--ds-primary);">${t.name}</strong><br/><small style="color:var(--ds-text-muted);">${t.leader}</small></td>
-          <td>${proj.id}</td>
-          <td><strong>${working}/${tWorkers.length}</strong></td>
-          <td>${leave}P / ${kp}KP</td>
-        </tr>
-      `;
-    }).join('');
-
-    container.innerHTML = `
-      <div class="kpi-grid">
-        <div class="kpi-box featured">
-          <div class="kpi-label">QUÂN SỐ CÓ MẶT</div>
-          <div class="kpi-val">${s.presentCount}/${s.total}</div>
-          <div class="kpi-sub">CT1:${s.ct1} · CT2:${s.ct2} · CT3:${s.ct3} · 11/2026</div>
-        </div>
-        <div class="kpi-box">
-          <div class="kpi-label">ĐI MUỘN</div>
-          <div class="kpi-val">${s.lateCount}</div>
-          <div class="kpi-sub">Ghi nhận sau 08:08 · 11/2026</div>
-        </div>
-        <div class="kpi-box">
-          <div class="kpi-label">NGHỈ CÓ PHÉP</div>
-          <div class="kpi-val">${s.leaveCount}</div>
-          <div class="kpi-sub">Đã báo Đội trưởng · 11/2026</div>
-        </div>
-        <div class="kpi-box">
-          <div class="kpi-label">NGHỈ KHÔNG PHÉP</div>
-          <div class="kpi-val">${s.unexcusedCount}</div>
-          <div class="kpi-sub">Cần nhắc nhở · 11/2026</div>
-        </div>
-        <div class="kpi-box" style="grid-column: span 2;">
-          <div class="kpi-label">CHI PHÍ NHÂN CÔNG HÔM NAY</div>
-          <div class="kpi-val">${formatVND(s.estimatedCostToday)}</div>
-          <div class="kpi-sub">Nguồn: Báo cáo tự động 08:30 · 11/2026</div>
-        </div>
-      </div>
-
+      <!-- CÂY PHÂN CẤP QUẢN LÝ: TỔNG GIÁM ĐỐC -> 3 QUẢN LÝ CÔNG TRÌNH -> 6 ĐỘI TRƯỞNG -> 108 CÔNG NHÂN -->
       <div class="section-card">
-        <div>
-          <span class="kicker">THỐNG KÊ THEO DỰ ÁN</span>
-          <h3>Quân số &amp; Chi phí theo Công trình</h3>
+        <div class="section-header">
+          <div>
+            <span class="kicker">SƠ ĐỒ CÂY QUẢN LÝ &amp; PHÂN VIỆC TOÀN CÔNG TY</span>
+            <h3>Tổng Giám Đốc Giám Sát 3 Quản Lý Công Trình → 6 Đội Trưởng → 108 Công Nhân</h3>
+            <div class="section-desc">Mỗi Quản lý Công trình chịu trách nhiệm giao việc, quản lý các Đội trưởng và duyệt công cho toàn bộ công nhân thuộc công trình mình phụ trách.</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-approvals')">✍️ Duyệt Ứng lương &amp; Bảng lương</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">🔐 Cấp Tài khoản Vị trí</button>
+          </div>
         </div>
-        <div class="data-table-wrap">
+
+        <div class="grid-3">
+          ${state.projects.map(p => {
+            const pTeams = state.teams.filter(t => t.projectId === p.id);
+            const pWorkers = state.workers.filter(w => w.projectId === p.id);
+            const pPresent = pWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+            const pApproved = pWorkers.filter(w => w.approvalStatus === 'DA_DUYET').length;
+            const pTasks = (state.tasks || []).filter(tsk => tsk.projectId === p.id);
+
+            return `
+              <div class="hierarchy-card">
+                <span class="kicker">${p.code} · BÁN KÍNH GPS ${p.radiusM}M</span>
+                <h4>${p.name}</h4>
+                <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">📍 ${p.address}</div>
+
+                <div style="margin-top:8px; padding:8px; background:var(--ds-primary); color:#FFFFFF; border-radius:var(--ds-radius-sm);">
+                  <div style="font-size:10px; color:var(--ds-accent); font-weight:700;">CẤP 3 · QUẢN LÝ CÔNG TRÌNH PHỤ TRÁCH</div>
+                  <div style="font-size:12.5px; font-weight:700; margin-top:2px;">👷 ${p.manager} (TK: <code>${p.managerUsername}</code>)</div>
+                  <div style="font-size:10.5px; opacity:0.9; margin-top:2px;">Quân số có mặt: <strong>${pPresent}/${pWorkers.length}</strong> · Đã duyệt: <strong>${pApproved}/${pWorkers.length}</strong></div>
+                </div>
+
+                <div style="margin-top:8px;">
+                  <div style="font-size:10.5px; font-weight:700; color:var(--ds-primary); margin-bottom:4px;">CÁC ĐỘI TRƯỞNG DƯỚI QUYỀN ${p.manager.toUpperCase()}:</div>
+                  ${pTeams.map(tm => {
+                    const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
+                    const tmPresent = tmWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+                    const tmTask = pTasks.find(x => x.teamId === tm.id);
+                    return `
+                      <div style="padding:7px 8px; border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:6px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                          <strong style="font-size:11.5px; color:var(--ds-primary);">${tm.name}</strong>
+                          <span class="badge badge-success">${tmPresent}/${tmWorkers.length} công nhân</span>
+                        </div>
+                        <div style="font-size:11px; color:var(--ds-text); margin-top:2px;">Đội trưởng: <strong>${tm.leader}</strong> (<code>${tm.leaderUsername}</code>)</div>
+                        <div style="font-size:10.5px; color:var(--ds-text-muted); margin-top:2px;">📌 Việc đang làm: <em>${tmTask ? tmTask.title : tm.dailyTargetTask}</em></div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- TIẾN ĐỘ PHÂN VIỆC & NHIỆM VỤ TRÊN 3 CÔNG TRÌNH -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">GIÁM SÁT NHIỆM VỤ THI CÔNG TRONG NGÀY</span>
+            <h3>Danh Sách Hạng Mục Quản Lý Công Trình Giao Cho Các Đội Trưởng</h3>
+          </div>
+        </div>
+        <div class="table-scroll">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Công trình &amp; Địa điểm</th>
-                <th>Có mặt</th>
-                <th>Đi muộn</th>
-                <th>Nghỉ P/KP</th>
-                <th>Chi phí ngày</th>
-              </tr>
-            </thead>
-            <tbody>${projectRows}</tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <div>
-          <span class="kicker">THỐNG KÊ TỔ ĐỘI</span>
-          <h3>Quân số theo 6 Đội thi công</h3>
-        </div>
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Đội &amp; Đội trưởng</th>
+                <th>Mã việc</th>
                 <th>Công trình</th>
-                <th>Có mặt</th>
-                <th>Nghỉ P/KP</th>
-              </tr>
-            </thead>
-            <tbody>${teamRows}</tbody>
-          </table>
-        </div>
-      </div>
-    `;
-  }
-
-  // ================= TAB 3: 🧰 CÔNG VIỆC & TĂNG CA =================
-  function renderTabTangCa(container) {
-    const forgotList = state.workers.filter(w => w.forgotCheckoutFlag);
-    const otList = state.workers.filter(w => w.hoursOtRegistered > 0 || w.forgotCheckoutFlag).slice(0, 20);
-
-    container.innerHTML = `
-      <div class="section-card" style="background:var(--ds-bg-soft); border:2px solid var(--ds-accent);">
-        <h3>
-          <div>
-            <span class="kicker">CHỐNG CỘNG KHỐNG GIỜ LÀM</span>
-            <span>Kiểm soát ca quên Check-out sau 17:30</span>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.runCutoff1730Check()">⚡ Quét chốt ca 17:30</button>
-        </h3>
-        <p style="font-size:14px; color:var(--ds-text-muted); margin-bottom:14px;">
-          Sau <strong>17:30</strong>, nhân sự chưa Check-out và Đội trưởng <strong>không có phiếu Đăng ký tăng ca</strong> sẽ tự động chốt tối đa <strong>8.0h hành chính (0h OT)</strong>, tuyệt đối không tự nhảy giờ tăng ca.
-        </p>
-        <div class="data-table-wrap">
-          <table class="data-table" style="background:#FFFFFF;">
-            <thead>
-              <tr>
-                <th>Công nhân</th>
-                <th>Giờ vào</th>
-                <th>Trạng thái 17:30</th>
-                <th>Thao tác xử lý</th>
+                <th>Người giao việc (Quản lý CT)</th>
+                <th>Đội nhận việc (Đội trưởng)</th>
+                <th>Hạng mục công việc trong ngày</th>
+                <th>Định biên</th>
+                <th>Hạn mức OT</th>
+                <th>Tiến độ</th>
               </tr>
             </thead>
             <tbody>
-              ${forgotList.map(w => `
-                <tr>
-                  <td><strong style="color:var(--ds-primary);">${w.name}</strong><br/><small>${w.code} (${w.teamId})</small></td>
-                  <td>${w.checkInTime}</td>
-                  <td><span class="status-pill status-forgot">Khóa 8h HC (0h OT)</span></td>
-                  <td>
-                    <button class="btn btn-navy btn-sm" onclick="window.NPApp.confirmForgotCheckout('${w.id}', 0)">Chốt 17:30</button>
-                    <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAdjustModal('${w.id}')">Báo có OT</button>
-                  </td>
-                </tr>
-              `).join('') || '<tr><td colspan="4" style="text-align:center;">Tất cả các ca quên Check-out đã được xử lý.</td></tr>'}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h3>
-          <div>
-            <span class="kicker">PHÂN QUYỀN ĐỘC LẬP</span>
-            <span>Đăng ký &amp; Duyệt Tăng ca (Đội trưởng nhập → QLCT duyệt)</span>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openOtModal()">➕ Đăng ký Tăng ca</button>
-        </h3>
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Công nhân</th>
-                <th>Giờ OT</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${otList.map(w => `
-                <tr>
-                  <td><strong style="color:var(--ds-primary);">${w.name}</strong><br/><small>${w.code} · ${w.teamId}</small></td>
-                  <td><strong style="color:var(--ds-primary);">+${w.hoursOtRegistered}h OT</strong></td>
-                  <td>
-                    ${w.approvalStatus === 'DA_DUYET'
-                      ? `<span class="status-pill status-working">🔒 Đã duyệt</span>`
-                      : `<span class="status-pill status-leave">Chờ duyệt</span>`}
-                  </td>
-                  <td>
-                    <button class="btn btn-soft btn-sm" onclick="window.NPApp.openOtModal('${w.id}')">Sửa OT</button>
-                    <button class="btn btn-navy btn-sm" onclick="window.NPApp.approveSingleWorker('${w.id}')">QLCT Duyệt</button>
-                  </td>
-                </tr>
-              `).join('')}
+              ${(state.tasks || []).map(tsk => {
+                const tm = getTeam(tsk.teamId);
+                return `
+                  <tr>
+                    <td><strong>${tsk.id}</strong></td>
+                    <td><span class="badge badge-navy">${tsk.projectId}</span></td>
+                    <td><strong style="color:var(--ds-primary);">${tsk.assignedBy}</strong></td>
+                    <td><strong>${tm.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${tsk.assignedToLeader}</span></td>
+                    <td><strong>${tsk.title}</strong></td>
+                    <td>${tsk.requiredWorkers} người</td>
+                    <td>${tsk.allowOvertimeHours > 0 ? `<span class="badge badge-orange">Cho phép +${tsk.allowOvertimeHours}h OT</span>` : `<span class="badge badge-neutral">0h (Chốt 17:30)</span>`}</td>
+                    <td><span class="badge badge-success">${tsk.progressPercent}% Hoàn thành</span></td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -788,125 +981,73 @@
     `;
   }
 
-  // ================= TAB 4: 🕒 BẢNG CÔNG & XUẤT EXCEL CSV =================
-  function renderTabBangCong(container) {
-    const sampleWorkers = state.workers.slice(0, 30);
-    container.innerHTML = `
-      <div class="section-card">
-        <h3>
-          <div>
-            <span class="kicker">LUÂN CHUYỂN DỮ LIỆU</span>
-            <span>Bảng Tổng hợp Công Ngày → Tuần → Tháng</span>
-          </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📥 Xuất Excel (.CSV)</button>
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.approveAllVisible()">✔️ QLCT Duyệt tất cả</button>
-          </div>
-        </h3>
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Công nhân</th>
-                <th>Hôm nay</th>
-                <th>Công Tháng</th>
-                <th>OT Tháng</th>
-                <th>Trạng thái</th>
-                <th>Điều chỉnh</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sampleWorkers.map(w => `
-                <tr>
-                  <td><strong style="color:var(--ds-primary);">${w.name}</strong><br/><small>${w.code} (${w.teamId})</small></td>
-                  <td>${w.hoursRegular > 0 ? '1.0 công' : 'Nghỉ'} (+${w.hoursOtActual}h)</td>
-                  <td><strong style="color:var(--ds-primary);">${w.daysMonthApproved} công</strong></td>
-                  <td>${w.otHoursMonthApproved}h</td>
-                  <td>
-                    ${w.approvalStatus === 'DA_DUYET'
-                      ? `<span class="status-pill status-working">🔒 Đã duyệt</span>`
-                      : `<span class="status-pill status-leave">Chờ duyệt</span>`}
-                  </td>
-                  <td>
-                    <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAdjustModal('${w.id}')">Điều chỉnh</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  function renderBgdApprovals() {
+    const pendingBgdAdvances = state.advances.filter(a => a.status === 'CHO_BGD_DUYET');
+    const totalGross = state.workers.reduce((sum, w) => {
+      const hourly = w.dailyWage / 8;
+      return sum + (w.daysMonthApproved * w.dailyWage) + Math.round(w.otHoursMonthApproved * hourly * 1.5) + Math.round(w.sundayDaysMonth * w.dailyWage * 2.0);
+    }, 0);
+    const totalAdv = state.advances.filter(a => a.status === 'BGD_DA_DUYET').reduce((s, a) => s + a.amount, 0);
 
+    return `
+      <!-- PHÊ DUYỆT BẢNG LƯƠNG THÁNG -->
       <div class="section-card">
-        <div>
-          <span class="kicker">MINH BẠCH DỮ LIỆU</span>
-          <h3>Lịch sử Điều chỉnh Công (Audit Log)</h3>
-        </div>
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Thời gian / Người sửa</th>
-                <th>Công nhân</th>
-                <th>Thay đổi</th>
-                <th>Lý do bắt buộc</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${state.auditLogs.map(log => `
-                <tr>
-                  <td><strong>${log.timestamp}</strong><br/><small>${log.actor}</small></td>
-                  <td><strong style="color:var(--ds-primary);">${log.workerName}</strong></td>
-                  <td><span style="color:var(--ds-danger);">${log.oldValue}</span> → <strong style="color:var(--ds-primary);">${log.newValue}</strong></td>
-                  <td><em>"${log.reason}"</em></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-  }
-
-  // ================= TAB 5: 💰 LƯƠNG & DUYỆT ỨNG LƯƠNG =================
-  function renderTabLuong(container) {
-    const payrollWorkers = state.workers.slice(0, 25);
-    container.innerHTML = `
-      <div class="section-card" style="border:2px solid var(--ds-accent);">
-        <h3>
+        <div class="section-header">
           <div>
-            <span class="kicker">KIỂM SOÁT TẠM ỨNG</span>
-            <span>Duyệt Ứng Lương (100% khoản ứng phải được duyệt)</span>
+            <span class="kicker">THẨM QUYỀN PHÊ DUYỆT CUỐI CÙNG CỦA TỔNG GIÁM ĐỐC</span>
+            <h3>Phê Duyệt Bảng Lương Tháng 11/2026 &amp; Đơn Xin Ứng Lương</h3>
+            <div class="section-desc">Kế toán đã kiểm tra công hợp lệ và đối chiếu hạn mức ứng lương trước khi trình Tổng Giám đốc phê duyệt.</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAdvanceModal()">➕ Tạo Phiếu Xin Ứng</button>
-        </h3>
-        <div class="data-table-wrap">
+          <div style="display:flex; gap:6px; align-items:center;">
+            ${state.payrollMonthStatus === 'BGD_DA_DUYET'
+              ? `<span class="badge badge-success">✓ TỔNG GIÁM ĐỐC ĐÃ PHÊ DUYỆT BẢNG LƯƠNG THÁNG 11</span>`
+              : `<button class="btn btn-primary btn-sm" onclick="window.NPApp.approveMonthlyPayroll()">✍️ Tổng Giám đốc Ký Duyệt Bảng Lương Tháng 11 (${formatVND(totalGross - totalAdv)})</button>`
+            }
+          </div>
+        </div>
+
+        <div class="table-scroll">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Công nhân</th>
+                <th>Mã đơn</th>
+                <th>Nhân viên xin ứng</th>
+                <th>Thuộc Đội trưởng</th>
+                <th>Thuộc Quản lý CT</th>
+                <th>Công đã duyệt</th>
                 <th>Lương lũy kế</th>
-                <th>Số tiền ứng</th>
-                <th>Lý do</th>
+                <th>Số tiền xin ứng</th>
+                <th>Kế toán kiểm tra</th>
                 <th>Trạng thái</th>
-                <th>Phê duyệt</th>
+                <th>Thẩm quyền GĐ</th>
               </tr>
             </thead>
             <tbody>
               ${state.advances.map(adv => {
-                let badge = `<span class="status-pill status-working">GĐ Đã duyệt</span>`;
-                if (adv.status === 'CHO_BGD_DUYET') badge = `<span class="status-pill status-leave">Chờ GĐ duyệt</span>`;
-                else if (adv.status === 'CHO_KT_KIEM_TRA') badge = `<span class="status-pill status-out">Chờ KT kiểm tra</span>`;
+                const w = state.workers.find(x => x.code === adv.workerCode) || state.workers[0];
+                let stBadge = '';
+                if (adv.status === 'BGD_DA_DUYET') stBadge = `<span class="badge badge-success">✓ GĐ Đã duyệt chi</span>`;
+                else if (adv.status === 'CHO_BGD_DUYET') stBadge = `<span class="badge badge-orange">⏳ Chờ GĐ phê duyệt</span>`;
+                else stBadge = `<span class="badge badge-warning">Chờ Kế toán kiểm tra</span>`;
+
                 return `
                   <tr>
-                    <td><strong style="color:var(--ds-primary);">${adv.workerName}</strong><br/><small>${adv.workerCode} · ${adv.date}</small></td>
-                    <td>${formatVND(adv.accruedSalaryAtRequest)}</td>
-                    <td style="color:var(--ds-danger); font-weight:700;">${formatVND(adv.amount)}</td>
-                    <td>${adv.reason}</td>
-                    <td>${badge}</td>
+                    <td><strong>${adv.id}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${adv.date}</span></td>
+                    <td><strong>${adv.workerName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${adv.workerCode}</span></td>
+                    <td>${w.leaderName}</td>
+                    <td><strong style="color:var(--ds-primary);">${w.managerName}</strong></td>
+                    <td><strong>${adv.daysWorkedSoFar} công</strong></td>
+                    <td><strong>${formatVND(adv.accruedSalary)}</strong></td>
+                    <td><strong style="color:var(--ds-primary); font-size:12.5px;">${formatVND(adv.amount)}</strong><br/><span style="font-size:10px;">${adv.reason}</span></td>
+                    <td>${adv.checkedByKt ? `<span class="badge badge-navy">✓ ${adv.checkedByKt}</span>` : `<span class="badge badge-neutral">Chưa KT</span>`}</td>
+                    <td>${stBadge}</td>
                     <td>
-                      ${adv.status === 'CHO_KT_KIEM_TRA' ? `<button class="btn btn-soft btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'KT')">KT Xác nhận</button>` : ''}
-                      ${adv.status !== 'BGD_DA_DUYET' ? `<button class="btn btn-navy btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'BGD')">GĐ Duyệt</button>` : '<span style="font-size:12.5px; color:var(--ds-text-muted);">Đã trừ lương</span>'}
+                      ${adv.status === 'CHO_BGD_DUYET'
+                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'BGD')">✍️ Duyệt chi</button>`
+                        : adv.status === 'CHO_KT_KIEM_TRA'
+                          ? `<button class="btn btn-soft btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'BGD')">Duyệt vượt cấp</button>`
+                          : `<span style="font-size:10.5px; color:var(--ds-success); font-weight:700;">Đã ký duyệt</span>`
+                      }
                     </td>
                   </tr>
                 `;
@@ -915,49 +1056,196 @@
           </table>
         </div>
       </div>
+    `;
+  }
 
+  function renderBgdAudit() {
+    return `
       <div class="section-card">
-        <h3>
+        <div class="section-header">
           <div>
-            <span class="kicker">CHỐT LƯƠNG THÁNG 11/2026</span>
-            <span>Bảng Tính Lương (Chỉ tính trên công Đã duyệt — Trừ Ứng lương Đã duyệt)</span>
+            <span class="kicker">NHẬT KÝ KIỂM TOÁN BẤT BIẾN (AUDIT LOG)</span>
+            <h3>Lịch Sử Sửa Giờ Công &amp; Duyệt Công Toàn Hệ Thống</h3>
+            <div class="section-desc">Mọi thao tác điều chỉnh giờ vào/ra của Quản lý Công trình đều bắt buộc lưu vết: Ai sửa · Sửa lúc nào · Lý do · Giá trị cũ → Giá trị mới.</div>
           </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.exportPayrollCsv()">📥 Xuất Excel Lương (.CSV)</button>
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.approveMonthlyPayroll()">👑 Giám đốc Duyệt Lương</button>
-          </div>
-        </h3>
-        <div class="data-table-wrap">
+        </div>
+        <div class="table-scroll">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Công nhân</th>
-                <th>Công đã duyệt</th>
-                <th>Lương Gộp</th>
-                <th>Trừ Ứng</th>
-                <th>Thực Lĩnh</th>
-                <th>Phiếu lương</th>
+                <th>Mã Log</th>
+                <th>Thời gian sửa</th>
+                <th>Nhân sự được sửa</th>
+                <th>Người thực hiện sửa</th>
+                <th>Trường dữ liệu</th>
+                <th>Giá trị cũ → Mới</th>
+                <th>Lý do điều chỉnh bắt buộc</th>
               </tr>
             </thead>
             <tbody>
-              ${payrollWorkers.map(w => {
-                const hourly = w.dailyWage / 8;
-                const basePay = w.daysMonthApproved * w.dailyWage;
-                const otPay = Math.round(w.otHoursMonthApproved * hourly * 1.5);
-                const sunPay = Math.round(w.sundayDaysMonth * w.dailyWage * 2.0);
-                const gross = basePay + otPay + sunPay;
-                const approvedAdvance = state.advances
-                  .filter(a => a.workerCode === w.code && a.status === 'BGD_DA_DUYET')
-                  .reduce((s, a) => s + a.amount, 0);
-                const net = gross - approvedAdvance;
+              ${state.auditLogs.map(log => `
+                <tr>
+                  <td><strong>${log.id}</strong></td>
+                  <td>${log.timestamp}</td>
+                  <td><strong>${log.workerName}</strong> (${log.workerCode})</td>
+                  <td><span class="badge badge-navy">${log.actorRole}: ${log.actorName}</span></td>
+                  <td>${log.field}</td>
+                  <td><code style="color:var(--ds-danger);">${log.oldVal}</code> → <code style="color:var(--ds-success); font-weight:700;">${log.newVal}</code></td>
+                  <td>${log.reason}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  // =================================================================================================
+  // II. GIAO DIỆN CẤP 2: HÀNH CHÍNH – KẾ TOÁN (BIẾT RÕ NHÂN VIÊN NÀO CỦA QUẢN LÝ NÀO & ĐỘI TRƯỞNG NÀO)
+  // =================================================================================================
+  function renderKtAttendance() {
+    const managers = [
+      { username: 'qlct_ct1', name: 'KS. Trần Minh Hoàng', project: 'CT1 - Riverside' },
+      { username: 'qlct_ct2', name: 'KS. Phạm Quốc Bảo', project: 'CT2 - NP Tower' },
+      { username: 'qlct_ct3', name: 'KS. Đặng Văn Hùng', project: 'CT3 - Nhà máy CNC' }
+    ];
+
+    const filtered = state.workers.filter(w => {
+      if (filterManager !== 'ALL' && w.managerUsername !== filterManager) return false;
+      if (filterProject !== 'ALL' && w.projectId !== filterProject) return false;
+      if (filterTeam !== 'ALL' && w.teamId !== filterTeam) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!w.name.toLowerCase().includes(q) && !w.code.toLowerCase().includes(q) && !w.managerName.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+
+    return `
+      <!-- THANH LỌC THEO QUẢN LÝ CÔNG TRÌNH CHO KẾ TOÁN -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">CỔNG NGHIỆP VỤ HÀNH CHÍNH – KẾ TOÁN</span>
+            <h3>Bảng Tổng Hợp Công Theo Từng Quản Lý Công Trình &amp; Đội Trưởng</h3>
+            <div class="section-desc">Kế toán kiểm soát rõ từng công nhân do Đội trưởng nào chấm công và thuộc Quản lý Công trình nào tạo ra / phê duyệt.</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📥 Xuất Excel Bảng Công (.CSV)</button>
+          </div>
+        </div>
+
+        <div class="filter-bar" style="margin-bottom:10px;">
+          <input type="text" placeholder="🔍 Tìm tên công nhân, mã NV, tên Quản lý..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
+          <select onchange="window.NPApp.setFilterManager(this.value)">
+            <option value="ALL" ${filterManager === 'ALL' ? 'selected' : ''}>Tất cả Quản lý Công trình (3 QLCT)</option>
+            ${managers.map(m => `<option value="${m.username}" ${filterManager === m.username ? 'selected' : ''}>Quản lý: ${m.name} (${m.project})</option>`).join('')}
+          </select>
+          <select onchange="window.NPApp.setFilterTeam(this.value)">
+            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Tất cả 6 Đội thi công</option>
+            ${state.teams.map(t => `<option value="${t.id}" ${filterTeam === t.id ? 'selected' : ''}>${t.name} — ${t.leader}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã NV</th>
+                <th>Họ và Tên Công nhân</th>
+                <th>Thuộc Đội trưởng (Người chấm)</th>
+                <th>Thuộc Quản lý CT (Người tạo &amp; Duyệt)</th>
+                <th>Công trình</th>
+                <th>Hôm nay (Vào - Ra)</th>
+                <th>Công T11 Đã duyệt</th>
+                <th>Giờ OT T11</th>
+                <th>Công CN</th>
+                <th>Trạng thái QLCT Duyệt</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.slice(0, 45).map(w => `
+                <tr>
+                  <td><strong>${w.code}</strong></td>
+                  <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.roleName}</span></td>
+                  <td><strong>${w.leaderName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.teamName}</span></td>
+                  <td>
+                    <span class="badge badge-navy">👷 ${w.managerName}</span>
+                    <div style="font-size:9.5px; color:var(--ds-text-muted); margin-top:2px;">Người tạo: ${w.createdBy}</div>
+                  </td>
+                  <td><strong>${w.projectId}</strong></td>
+                  <td>${w.checkInTime ? `<code>${w.checkInTime}</code> - <code>${w.checkOutTime || 'Đang làm'}</code>` : `<span class="badge badge-danger">Vắng</span>`}</td>
+                  <td><strong style="color:var(--ds-primary); font-size:12.5px;">${w.daysMonthApproved} công</strong></td>
+                  <td><strong>${w.otHoursMonthApproved}h</strong></td>
+                  <td>${w.sundayDaysMonth} công</td>
+                  <td>${renderApprovalBadge(w.approvalStatus)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px; font-size:10.5px; color:var(--ds-text-muted);">
+          Đang hiển thị ${Math.min(45, filtered.length)} / ${filtered.length} nhân sự khớp bộ lọc. Bấm "Xuất Excel Bảng Công (.CSV)" để tải toàn bộ 108 nhân sự kèm cột Quản lý Công trình &amp; Đội trưởng.
+        </div>
+      </div>
+    `;
+  }
+
+  function renderKtAdvances() {
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">BƯỚC 1: KẾ TOÁN KIỂM TRA CÔNG HỢP LỆ TRƯỚC KHI TRÌNH GIÁM ĐỐC</span>
+            <h3>Kiểm Tra &amp; Đối Chiếu Đơn Xin Ứng Lương</h3>
+            <div class="section-desc">Kế toán kiểm tra số ngày công đã được Quản lý Công trình duyệt của nhân sự đó. Nếu số tiền ứng nằm trong hạn mức lương lũy kế thì bấm xác nhận chuyển Tổng Giám đốc duyệt chi.</div>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã đơn</th>
+                <th>Nhân sự xin ứng</th>
+                <th>Đội trưởng trực tiếp</th>
+                <th>Quản lý CT duyệt công</th>
+                <th>Công đã duyệt</th>
+                <th>Lương lũy kế hiện có</th>
+                <th>Số tiền xin ứng</th>
+                <th>Tỷ lệ ứng / Lương</th>
+                <th>Trạng thái</th>
+                <th>Kế toán thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.advances.map(adv => {
+                const w = state.workers.find(x => x.code === adv.workerCode) || state.workers[0];
+                const ratio = Math.round((adv.amount / Math.max(1, adv.accruedSalary)) * 100);
                 return `
                   <tr>
-                    <td><strong style="color:var(--ds-primary);">${w.name}</strong><br/><small>${w.code}</small></td>
-                    <td>${w.daysMonthApproved} công (+${w.otHoursMonthApproved}h OT)</td>
-                    <td>${formatVND(gross)}</td>
-                    <td style="color:var(--ds-danger);">-${formatVND(approvedAdvance)}</td>
-                    <td style="color:var(--ds-primary); font-weight:700;">${formatVND(net)}</td>
-                    <td><button class="btn btn-soft btn-sm" onclick="window.NPApp.openPayslipModal('${w.id}')">Phiếu lương</button></td>
+                    <td><strong>${adv.id}</strong><br/><span style="font-size:10px;">${adv.date}</span></td>
+                    <td><strong>${adv.workerName}</strong> (${adv.workerCode})</td>
+                    <td>${w.leaderName}</td>
+                    <td><strong style="color:var(--ds-primary);">${w.managerName}</strong></td>
+                    <td><strong>${adv.daysWorkedSoFar} công</strong></td>
+                    <td><strong>${formatVND(adv.accruedSalary)}</strong></td>
+                    <td><strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong><br/><span style="font-size:10px;">${adv.reason}</span></td>
+                    <td><span class="badge ${ratio <= 70 ? 'badge-success' : 'badge-warning'}">${ratio}% lương lũy kế</span></td>
+                    <td>
+                      ${adv.status === 'CHO_KT_KIEM_TRA'
+                        ? `<span class="badge badge-orange">⏳ Chờ KT kiểm tra</span>`
+                        : adv.status === 'CHO_BGD_DUYET'
+                          ? `<span class="badge badge-navy">Đã trình Giám đốc</span>`
+                          : `<span class="badge badge-success">✓ Giám đốc đã duyệt</span>`
+                      }
+                    </td>
+                    <td>
+                      ${adv.status === 'CHO_KT_KIEM_TRA'
+                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'KT')">✓ Xác nhận &amp; Trình GĐ</button>`
+                        : `<span style="font-size:10.5px; color:var(--ds-success); font-weight:600;">✓ Đã đối chiếu</span>`
+                      }
+                    </td>
                   </tr>
                 `;
               }).join('')}
@@ -968,107 +1256,600 @@
     `;
   }
 
-  // ================= TAB 6: 👷 ĐỘI & CÔNG TRÌNH =================
-  function renderTabDoi(container) {
-    container.innerHTML = `
-      <div class="section-card">
-        <h3>
-          <div>
-            <span class="kicker">ĐỊNH VỊ CÔNG TRƯỜNG</span>
-            <span>Danh sách ${state.projects.length} Công trình &amp; Tâm GPS</span>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddProjectModal()">➕ Thêm Công trình mới</button>
-        </h3>
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Công trình</th>
-                <th>Địa chỉ định vị</th>
-                <th>Tọa độ GPS</th>
-                <th>Quản lý CT</th>
-                <th>Cập nhật GPS</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${state.projects.map(p => `
-                <tr>
-                  <td><strong style="color:var(--ds-primary);">${p.name}</strong></td>
-                  <td>📍 ${p.address}</td>
-                  <td><code>${p.lat}, ${p.lng}</code> (±${p.radiusM}m)</td>
-                  <td>${p.manager}</td>
-                  <td>
-                    <button class="btn btn-soft btn-sm" onclick="window.NPApp.setProjectToCurrentGps('${p.id}')">📍 Lấy GPS hiện tại</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  function renderKtPayroll() {
+    const filtered = state.workers.filter(w => {
+      if (filterManager !== 'ALL' && w.managerUsername !== filterManager) return false;
+      return true;
+    });
 
+    return `
       <div class="section-card">
-        <div>
-          <span class="kicker">TỔ ĐỘI THI CÔNG</span>
-          <h3>Danh sách ${state.teams.length} Đội Thi công</h3>
-        </div>
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Đội</th>
-                <th>Đội trưởng</th>
-                <th>SĐT</th>
-                <th>Quân số</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${state.teams.map(t => `
-                <tr>
-                  <td><strong style="color:var(--ds-primary);">${t.name}</strong></td>
-                  <td>${t.leader}</td>
-                  <td>${t.phone}</td>
-                  <td><strong>${state.workers.filter(w => w.teamId === t.id).length} CN</strong></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-  }
-
-  // ================= TAB 7: 👥 NHÂN SỰ (THÊM MỚI + XUẤT EXCEL) =================
-  function renderTabNhanSu(container) {
-    container.innerHTML = `
-      <div class="section-card">
-        <h3>
+        <div class="section-header">
           <div>
-            <span class="kicker">DỮ LIỆU NHÂN SỰ</span>
-            <span>Hồ sơ ${state.workers.length} Công nhân Công ty Nguyên Phát</span>
+            <span class="kicker">Tự ĐỘNG TÍNH LƯƠNG CHỈ TRÊN CÔNG ĐÃ DUYỆT</span>
+            <h3>Bảng Tính Lương Tháng 11/2026 (Phân Theo Quản Lý Công Trình)</h3>
+            <div class="section-desc">Công thức chuẩn: Lương thực lĩnh = (Ngày công đã duyệt × Đơn giá ngày) + (Giờ OT đã duyệt × Đơn giá giờ × 1.5) + (Công Chủ nhật × 2.0) − Ứng lương đã duyệt.</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">➕ Thêm Công nhân mới</button>
-        </h3>
-        <div class="data-table-wrap">
+          <div style="display:flex; gap:6px;">
+            <select onchange="window.NPApp.setFilterManager(this.value)" style="padding:5px 8px; border-radius:999px; border:1px solid var(--ds-line); font-size:11px;">
+              <option value="ALL" ${filterManager === 'ALL' ? 'selected' : ''}>Tất cả 3 Quản lý Công trình</option>
+              <option value="qlct_ct1" ${filterManager === 'qlct_ct1' ? 'selected' : ''}>Quản lý CT1: KS. Trần Minh Hoàng</option>
+              <option value="qlct_ct2" ${filterManager === 'qlct_ct2' ? 'selected' : ''}>Quản lý CT2: KS. Phạm Quốc Bảo</option>
+              <option value="qlct_ct3" ${filterManager === 'qlct_ct3' ? 'selected' : ''}>Quản lý CT3: KS. Đặng Văn Hùng</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">📥 Xuất Excel Bảng Lương (.CSV)</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
           <table class="data-table">
             <thead>
               <tr>
                 <th>Mã NV</th>
-                <th>Họ tên &amp; Tay nghề</th>
-                <th>Đội / CT</th>
-                <th>Lương ngày</th>
-                <th>Chấm công</th>
+                <th>Họ và Tên</th>
+                <th>Quản lý CT &amp; Đội trưởng</th>
+                <th>Đơn giá ngày</th>
+                <th>Công đã duyệt</th>
+                <th>Lương chính</th>
+                <th>Lương OT (1.5)</th>
+                <th>Lương CN (2.0)</th>
+                <th>Trừ tạm ứng</th>
+                <th>Thực lĩnh</th>
+                <th>Phiếu lương</th>
               </tr>
             </thead>
             <tbody>
-              ${state.workers.map(w => `
+              ${filtered.slice(0, 40).map(w => {
+                const hourly = w.dailyWage / 8;
+                const basePay = w.daysMonthApproved * w.dailyWage;
+                const otPay = Math.round(w.otHoursMonthApproved * hourly * 1.5);
+                const sunPay = Math.round(w.sundayDaysMonth * w.dailyWage * 2.0);
+                const gross = basePay + otPay + sunPay;
+                const adv = state.advances.filter(a => a.workerCode === w.code && a.status === 'BGD_DA_DUYET').reduce((s, a) => s + a.amount, 0);
+                const net = gross - adv;
+                return `
+                  <tr>
+                    <td><strong>${w.code}</strong></td>
+                    <td><strong>${w.name}</strong></td>
+                    <td>
+                      <strong style="color:var(--ds-primary);">${w.managerName}</strong>
+                      <div style="font-size:10px; color:var(--ds-text-muted);">${w.leaderName} (${w.teamId})</div>
+                    </td>
+                    <td>${formatVND(w.dailyWage)}</td>
+                    <td><strong>${w.daysMonthApproved} công</strong></td>
+                    <td>${formatVND(basePay)}</td>
+                    <td>${formatVND(otPay)} (${w.otHoursMonthApproved}h)</td>
+                    <td>${formatVND(sunPay)}</td>
+                    <td style="color:var(--ds-danger); font-weight:600;">-${formatVND(adv)}</td>
+                    <td><strong style="color:var(--ds-primary); font-size:12.5px;">${formatVND(net)}</strong></td>
+                    <td><button class="btn btn-soft btn-sm" onclick="window.NPApp.openPayslipModal('${w.id}')">Phiếu</button></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderKtHierarchyDirectory() {
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">ĐỐI CHIẾU CÂY NHÂN SỰ DÀNH CHO KẾ TOÁN</span>
+            <h3>Danh Bạ Phân Quyền: Nhân Viên Nào Thuộc Quản Lý Công Trình &amp; Đội Trưởng Nào</h3>
+            <div class="section-desc">Giúp Kế toán nắm rõ đầu mối chịu trách nhiệm khi cần xác minh ngày công, tăng ca hoặc hồ sơ tạm ứng của bất kỳ công nhân nào.</div>
+          </div>
+        </div>
+        <div class="grid-3">
+          ${state.projects.map(p => {
+            const pTeams = state.teams.filter(t => t.projectId === p.id);
+            const pWorkers = state.workers.filter(w => w.projectId === p.id);
+            return `
+              <div class="hierarchy-card">
+                <span class="kicker">QUẢN LÝ CÔNG TRÌNH ${p.id}</span>
+                <h4>👷 ${p.manager}</h4>
+                <div style="font-size:11px; color:var(--ds-text-muted); margin-bottom:8px;">Công trình: ${p.name} · Tổng số: <strong>${pWorkers.length} nhân sự</strong></div>
+                ${pTeams.map(tm => {
+                  const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
+                  return `
+                    <div style="padding:8px; border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:6px;">
+                      <div style="font-weight:700; color:var(--ds-primary); font-size:11.5px;">${tm.name} — ${tm.leader}</div>
+                      <div style="font-size:10.5px; color:var(--ds-text-muted); margin:2px 0 4px;">SĐT Đội trưởng: ${tm.phone} · Quân số: ${tmWorkers.length} người</div>
+                      <div style="font-size:10px; color:var(--ds-text); line-height:1.4;">
+                        Mã NV thuộc đội: <code>${tmWorkers[0]?.code}</code> → <code>${tmWorkers[tmWorkers.length - 1]?.code}</code>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // =================================================================================================
+  // III. GIAO DIỆN CẤP 3: QUẢN LÝ CÔNG TRÌNH (CHỈ THẤY CÔNG TRÌNH MÌNH, PHÂN VIỆC & DUYỆT CÔNG)
+  // =================================================================================================
+  function renderQlctApprove() {
+    const acc = getCurrentAccount();
+    const prj = getProject(acc.projectId);
+    const myWorkers = getScopedWorkersForCurrentAccount();
+    const myTeams = state.teams.filter(t => t.projectId === prj.id);
+
+    const present = myWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+    const unapproved = myWorkers.filter(w => w.approvalStatus !== 'DA_DUYET').length;
+    const forgotList = myWorkers.filter(w => w.forgotCheckoutFlag);
+
+    const filtered = myWorkers.filter(w => {
+      if (filterTeam !== 'ALL' && w.teamId !== filterTeam) return false;
+      if (filterStatus === 'UNAPPROVED' && w.approvalStatus === 'DA_DUYET') return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!w.name.toLowerCase().includes(q) && !w.code.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+
+    return `
+      <div class="kpi-grid-4">
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">QUÂN SỐ ${prj.id} HÔM NAY</span>
+            <div class="kpi-value">${present}<span class="unit">/${myWorkers.length} người</span></div>
+          </div>
+          <div class="kpi-sub">Thuộc ${myTeams.length} Đội dưới quyền ${acc.fullName}</div>
+        </div>
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">CHỜ TÔI DUYỆT CÔNG</span>
+            <div class="kpi-value" style="color:var(--ds-accent);">${unapproved}<span class="unit">ca</span></div>
+          </div>
+          <div class="kpi-sub">Đội trưởng đã điểm danh và gửi lên</div>
+        </div>
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">CA QUÊN CHECK-OUT 17:30</span>
+            <div class="kpi-value" style="color:var(--ds-danger);">${forgotList.length}<span class="unit">ca</span></div>
+          </div>
+          <div class="kpi-sub">Cần xác nhận chốt 8h hoặc tính OT</div>
+        </div>
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">ĐỘI TRƯỞNG DƯỚI QUYỀN</span>
+            <div class="kpi-value">${myTeams.length}<span class="unit">Đội trưởng</span></div>
+          </div>
+          <div class="kpi-sub">${myTeams.map(t => t.leader).join(' · ')}</div>
+        </div>
+      </div>
+
+      ${forgotList.length > 0 ? `
+        <div class="section-card" style="border-color:var(--ds-accent); background:var(--ds-warning-bg);">
+          <div class="section-header" style="border-bottom-color:rgba(154,91,0,0.2);">
+            <div>
+              <span class="kicker">CẢNH BÁO TỰ ĐỘNG SAU 17:30 TẠI ${prj.id}</span>
+              <h3>Có ${forgotList.length} Công Nhân Chưa Check-out Lúc 17:30 Cần Quản Lý Xác Nhận</h3>
+            </div>
+          </div>
+          <div style="display:grid; gap:6px;">
+            ${forgotList.map(w => `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; padding:8px 10px; border-radius:var(--ds-radius-sm); border:1px solid var(--ds-line); flex-wrap:wrap; gap:6px;">
+                <div>
+                  <strong>${w.name} (${w.code})</strong> · ${w.teamName} (Đội trưởng: ${w.leaderName}) · Vào ca: <code>${w.checkInTime}</code>
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn btn-soft btn-sm" onclick="window.NPApp.confirmForgotCheckout('${w.id}', 0)">Chốt đủ 8h hành chính (0h OT)</button>
+                  <button class="btn btn-primary btn-sm" onclick="window.NPApp.confirmForgotCheckout('${w.id}', 2)">Xác nhận có Tăng ca (+2h OT)</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">PHÊ DUYỆT BẢNG CÔNG CÔNG TRÌNH ${prj.name.toUpperCase()}</span>
+            <h3>Kiểm Tra Ảnh GPS &amp; Duyệt Công Cho Các Đội Dưới Quyền (${myWorkers.length} Nhân Sự)</h3>
+            <div class="section-desc">Đội trưởng chỉ có quyền điểm danh và nhập công. Quản lý Công trình (${acc.fullName}) kiểm tra ảnh GPS, điều chỉnh nếu sai sót và bấm Duyệt công.</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.approveAllVisible()">✅ Duyệt tất cả công hợp lệ của ${prj.id}</button>
+          </div>
+        </div>
+
+        <div class="filter-bar" style="margin-bottom:10px;">
+          <input type="text" placeholder="🔍 Tìm công nhân thuộc công trình của tôi..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
+          <select onchange="window.NPApp.setFilterTeam(this.value)">
+            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Tất cả Đội thuộc ${prj.id}</option>
+            ${myTeams.map(t => `<option value="${t.id}" ${filterTeam === t.id ? 'selected' : ''}>${t.name} — ${t.leader}</option>`).join('')}
+          </select>
+          <select onchange="window.NPApp.setFilterStatus(this.value)">
+            <option value="ALL" ${filterStatus === 'ALL' ? 'selected' : ''}>Tất cả trạng thái duyệt</option>
+            <option value="UNAPPROVED" ${filterStatus === 'UNAPPROVED' ? 'selected' : ''}>Chỉ hiện ca Chờ tôi duyệt (${unapproved})</option>
+          </select>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ảnh GPS</th>
+                <th>Mã NV &amp; Họ tên</th>
+                <th>Đội trưởng phụ trách</th>
+                <th>Việc được giao hôm nay</th>
+                <th>Giờ Vào - Ra</th>
+                <th>Công &amp; OT</th>
+                <th>Trạng thái</th>
+                <th>Thao tác của Quản lý CT</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.map(w => {
+                const thumb = getWorkerStampedPhoto(w);
+                return `
+                  <tr>
+                    <td>
+                      <img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${w.id}')" title="Xem ảnh GPS phóng to" />
+                    </td>
+                    <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.code} · ${w.roleName}</span></td>
+                    <td><strong>${w.leaderName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.teamName}</span></td>
+                    <td><span style="font-size:11px;">${w.assignedTaskToday || 'Thi công theo phân công đội'}</span></td>
+                    <td>
+                      ${w.checkInTime ? `Vào: <code>${w.checkInTime}</code><br/>Ra: <code>${w.checkOutTime || 'Đang làm'}</code>` : `<span class="badge badge-danger">Vắng mặt</span>`}
+                    </td>
+                    <td><strong>${w.hoursRegular ? '1.0 công' : '0 công'}</strong><br/><span style="font-size:10px; color:var(--ds-accent);">OT: +${w.hoursOtActual || 0}h</span></td>
+                    <td>${renderApprovalBadge(w.approvalStatus)}</td>
+                    <td>
+                      <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                        ${w.approvalStatus !== 'DA_DUYET'
+                          ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.approveSingleWorker('${w.id}')">✓ Duyệt</button>`
+                          : `<span class="badge badge-neutral">Đã khóa</span>`
+                        }
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAdjustModal('${w.id}')">✏️ Sửa giờ</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderQlctTasks() {
+    const acc = getCurrentAccount();
+    const prj = getProject(acc.projectId);
+    const myTeams = state.teams.filter(t => t.projectId === prj.id);
+    const myTasks = (state.tasks || []).filter(tsk => tsk.projectId === prj.id);
+
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">PHÂN VIỆC &amp; GIAO KHOÁN HẠNG MỤC TẠI ${prj.id}</span>
+            <h3>Giao Nhiệm Vụ Ngày &amp; Hạn Mức Tăng Ca Cho Các Đội Trưởng Dưới Quyền</h3>
+            <div class="section-desc">Quản lý Công trình (${acc.fullName}) giao hạng mục thi công, định biên quân số và hạn mức giờ tăng ca cho từng Đội trưởng. Đội trưởng sẽ nhận nhiệm vụ này trên màn hình Đội trưởng.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAssignTaskModal()">
+            + Giao nhiệm vụ mới cho Đội trưởng
+          </button>
+        </div>
+
+        <div class="grid-2">
+          ${myTeams.map(tm => {
+            const tmTasks = myTasks.filter(x => x.teamId === tm.id);
+            const tmWorkers = state.workers.filter(w => w.teamId === tm.id);
+            return `
+              <div class="hierarchy-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span class="kicker">${tm.id} · QUÂN SỐ ${tmWorkers.length} CÔNG NHÂN</span>
+                  <span class="badge badge-navy">Đội trưởng: ${tm.leader}</span>
+                </div>
+                <h4>${tm.name}</h4>
+                <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">SĐT Đội trưởng: ${tm.phone} · Tài khoản: <code>${tm.leaderUsername}</code></div>
+
+                <div style="margin-top:8px;">
+                  ${tmTasks.map(tsk => `
+                    <div style="padding:8px 10px; background:#FFFFFF; border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); margin-bottom:6px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="color:var(--ds-primary); font-size:12px;">📌 ${tsk.title}</strong>
+                        <span class="badge badge-success">${tsk.progressPercent}%</span>
+                      </div>
+                      <div style="font-size:10.5px; color:var(--ds-text-muted); margin-top:4px;">
+                        Yêu cầu: <strong>${tsk.requiredWorkers} công nhân</strong> · Hạn mức OT cho phép: <strong>+${tsk.allowOvertimeHours}h</strong> · Ngày: ${tsk.date}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderQlctStaff() {
+    const acc = getCurrentAccount();
+    const prj = getProject(acc.projectId);
+    const myTeams = state.teams.filter(t => t.projectId === prj.id);
+    const myWorkers = getScopedWorkersForCurrentAccount();
+
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">QUẢN LÝ NHÂN SỰ THUỘC QUYỀN TẠO CỦA ${acc.fullName.toUpperCase()}</span>
+            <h3>Danh Sách Đội Trưởng &amp; ${myWorkers.length} Công Nhân Dưới Quyền Quản Lý Của Tôi</h3>
+            <div class="section-desc">Mọi nhân viên do Quản lý Công trình (${acc.fullName}) hoặc Đội trưởng dưới quyền tạo ra đều được gắn nhãn Quản lý phụ trách để Kế toán và Tổng Giám đốc theo dõi.</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm Nhân viên / Công nhân dưới quyền tôi</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã NV</th>
+                <th>Họ và Tên</th>
+                <th>Chức danh / Tổ đội</th>
+                <th>Đội trưởng trực tiếp</th>
+                <th>Quản lý CT phụ trách</th>
+                <th>Người tạo hồ sơ</th>
+                <th>Đơn giá lương ngày</th>
+                <th>Công đã làm T11</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${myWorkers.map(w => `
                 <tr>
-                  <td><strong style="color:var(--ds-primary);">${w.code}</strong></td>
-                  <td><strong>${w.name}</strong><br/><small style="color:var(--ds-text-muted);">${w.skill}</small></td>
-                  <td>${w.teamId} · ${w.projectId}</td>
-                  <td>${formatVND(w.dailyWage)}</td>
+                  <td><strong>${w.code}</strong></td>
+                  <td><strong>${w.name}</strong></td>
+                  <td>${w.roleName} · <strong>${w.teamName}</strong></td>
+                  <td>${w.leaderName}</td>
+                  <td><span class="badge badge-navy">${w.managerName}</span></td>
+                  <td><span class="badge badge-neutral">${w.createdBy}</span></td>
+                  <td><strong>${formatVND(w.dailyWage)}</strong>/ngày</td>
+                  <td><strong>${w.daysMonthApproved} công</strong> (+${w.otHoursMonthApproved}h OT)</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderQlctSummary() {
+    const acc = getCurrentAccount();
+    const prj = getProject(acc.projectId);
+    const myWorkers = getScopedWorkersForCurrentAccount();
+
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">BẢNG TỔNG HỢP CÔNG TUẦN &amp; THÁNG TẠI ${prj.id}</span>
+            <h3>Tổng Kết Ngày Công Từng Nhân Sự Thuộc ${prj.name}</h3>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã NV</th>
+                <th>Họ và Tên</th>
+                <th>Đội thi công</th>
+                <th>Thứ 2</th>
+                <th>Thứ 3</th>
+                <th>Thứ 4</th>
+                <th>Thứ 5</th>
+                <th>Thứ 6</th>
+                <th>Thứ 7</th>
+                <th>CN</th>
+                <th>Tổng Công T11</th>
+                <th>Tổng OT T11</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${myWorkers.map(w => `
+                <tr>
+                  <td><strong>${w.code}</strong></td>
+                  <td><strong>${w.name}</strong></td>
+                  <td>${w.teamName}</td>
+                  ${(w.weekDays || [1, 1, 1, 1, 1, 1, 0]).map(d => `<td style="text-align:center; font-weight:700; color:${d > 0 ? 'var(--ds-success)' : 'var(--ds-text-muted)'};">${d}</td>`).join('')}
+                  <td><strong style="color:var(--ds-primary);">${w.daysMonthApproved} công</strong></td>
+                  <td><strong>${w.otHoursMonthApproved}h</strong></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  // =================================================================================================
+  // IV. GIAO DIỆN CẤP 4: ĐỘI TRƯỞNG THI CÔNG (CHỈ THẤY ~18-23 NGƯỜI TRONG ĐỘI MÌNH, ĐIỂM DANH & GIAO VIỆC)
+  // =================================================================================================
+  function renderDtCheckin() {
+    const acc = getCurrentAccount();
+    const tm = getTeam(acc.teamId);
+    const prj = getProject(acc.projectId);
+    const teamWorkers = getScopedWorkersForCurrentAccount();
+    const present = teamWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+    const workingNow = teamWorkers.filter(w => w.attendanceStatus === 'DANG_LAM').length;
+    const checkedOut = teamWorkers.filter(w => w.attendanceStatus === 'DA_RA').length;
+
+    return `
+      <div class="kpi-grid-4">
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">QUÂN SỐ ${tm.name.toUpperCase()}</span>
+            <div class="kpi-value">${present}<span class="unit">/${teamWorkers.length} người</span></div>
+          </div>
+          <div class="kpi-sub">Đội trưởng chỉ quản lý nhân sự thuộc ${tm.id}</div>
+        </div>
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">ĐANG LÀM VIỆC TRÊN CÔNG TRÌNH</span>
+            <div class="kpi-value" style="color:var(--ds-success);">${workingNow}<span class="unit">người</span></div>
+          </div>
+          <div class="kpi-sub">Đã chụp Camera GPS Check-in hợp lệ</div>
+        </div>
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">ĐÃ RA CA (CHECK-OUT)</span>
+            <div class="kpi-value">${checkedOut}<span class="unit">người</span></div>
+          </div>
+          <div class="kpi-sub">Giờ chuẩn kết thúc ca chiều: 17:30</div>
+        </div>
+        <div class="kpi-card">
+          <div>
+            <span class="kpi-label">QUẢN LÝ CÔNG TRÌNH DUYỆT</span>
+            <div class="kpi-value" style="font-size:14px;">${tm.managerName}</div>
+          </div>
+          <div class="kpi-sub">Đội trưởng nhập công → Trình ${tm.managerName} duyệt</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">BẢNG ĐIỂM DANH CAMERA GPS RIÊNG CỦA ${tm.name.toUpperCase()}</span>
+            <h3>Điểm Danh Vào Ca / Ra Ca Cho ${teamWorkers.length} Công Nhân Trong Đội Của Tôi</h3>
+            <div class="section-desc">Đội trưởng (${acc.fullName}) chụp ảnh Camera trực tiếp kèm GPS cho anh em trong đội. Đội trưởng không thấy nhân sự của đội khác và không được tự duyệt công.</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openCameraQuick('VAO', null)">📸 Chụp Camera Check-in Đội</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openCameraQuick('RA', null)">🏁 Chụp Camera Check-out Đội</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ảnh GPS</th>
+                <th>Mã NV &amp; Họ tên</th>
+                <th>Vai trò trong đội</th>
+                <th>Việc được Đội trưởng giao</th>
+                <th>Giờ Vào - Ra hôm nay</th>
+                <th>Trạng thái</th>
+                <th>Trạng thái QLCT Duyệt</th>
+                <th>Điểm danh nhanh</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${teamWorkers.map(w => {
+                const thumb = getWorkerStampedPhoto(w);
+                return `
+                  <tr>
+                    <td>
+                      <img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${w.id}')" />
+                    </td>
+                    <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.code}</span></td>
+                    <td>${w.roleName}</td>
+                    <td><strong>${w.assignedTaskToday || tm.dailyTargetTask}</strong></td>
+                    <td>
+                      ${w.checkInTime ? `Vào: <code>${w.checkInTime}</code><br/>Ra: <code>${w.checkOutTime || 'Đang làm'}</code>` : `<span class="badge badge-danger">Chưa điểm danh</span>`}
+                    </td>
+                    <td>${renderAttendanceBadge(w.attendanceStatus)}</td>
+                    <td>${renderApprovalBadge(w.approvalStatus)}</td>
+                    <td>
+                      <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-sm" onclick="window.NPApp.openCameraQuick('VAO', '${w.id}')">📸 Vào</button>
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openCameraQuick('RA', '${w.id}')">🏁 Ra</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDtTasks() {
+    const acc = getCurrentAccount();
+    const tm = getTeam(acc.teamId);
+    const teamWorkers = getScopedWorkersForCurrentAccount();
+    const teamTasks = (state.tasks || []).filter(tsk => tsk.teamId === tm.id);
+
+    return `
+      <!-- NHIỆM VỤ ĐỘI TRƯỞNG NHẬN TỪ QUẢN LÝ CÔNG TRÌNH -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">NHIỆM VỤ NHẬN TỪ QUẢN LÝ CÔNG TRÌNH (${tm.managerName.toUpperCase()})</span>
+            <h3>Hạng Mục Thi Công Hôm Nay Của ${tm.name}</h3>
+          </div>
+        </div>
+        ${teamTasks.map(tsk => `
+          <div style="padding:10px 12px; background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-left:4px solid var(--ds-accent); border-radius:var(--ds-radius-md); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <div style="font-size:10px; font-weight:700; color:var(--ds-primary);">NGƯỜI GIAO VIỆC: ${tsk.assignedBy.toUpperCase()} · NGÀY ${tsk.date}</div>
+              <div style="font-size:13.5px; font-weight:700; color:var(--ds-primary); margin-top:2px;">📌 ${tsk.title}</div>
+              <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">
+                Yêu cầu quân số: <strong>${tsk.requiredWorkers} người</strong> · Hạn mức tăng ca cho phép: <strong>+${tsk.allowOvertimeHours}h OT</strong>
+              </div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span class="badge badge-success">Tiến độ: ${tsk.progressPercent}%</span>
+              <button class="btn btn-primary btn-sm" onclick="window.NPApp.updateTeamTaskProgress('${tsk.id}')">📈 Cập nhật tiến độ báo QLCT</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- PHÂN VIỆC CỤ THỂ & ĐĂNG KÝ TĂNG CA CHO TỪNG CÔNG NHÂN TRONG ĐỘI -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">PHÂN CÔNG CHI TIẾT &amp; ĐĂNG KÝ TĂNG CA TRONG ĐỘI</span>
+            <h3>Giao Việc Cụ Thể &amp; Báo Tăng Ca Cho Từng Công Nhân Thuộc ${tm.name}</h3>
+            <div class="section-desc">Đội trưởng giao việc hôm nay cho từng anh em trong đội và đăng ký giờ tăng ca (nếu có) trước 17:30 để trình Quản lý Công trình (${tm.managerName}) phê duyệt.</div>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã NV</th>
+                <th>Họ và Tên Công nhân</th>
+                <th>Công việc cụ thể hôm nay</th>
+                <th>Giờ HC</th>
+                <th>Giờ OT đăng ký</th>
+                <th>Tổng công tích lũy T11</th>
+                <th>Thao tác Đội trưởng</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${teamWorkers.map(w => `
+                <tr>
+                  <td><strong>${w.code}</strong></td>
+                  <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.roleName}</span></td>
+                  <td><strong>${w.assignedTaskToday || tm.dailyTargetTask}</strong></td>
+                  <td>${w.hoursRegular || 8}h</td>
+                  <td>${w.hoursOtRegistered > 0 ? `<span class="badge badge-orange">+${w.hoursOtRegistered}h OT</span>` : `<span class="badge badge-neutral">0h</span>`}</td>
+                  <td><strong>${w.daysMonthApproved} công</strong> (+${w.otHoursMonthApproved}h OT)</td>
                   <td>
-                    <button class="btn btn-soft btn-sm" onclick="window.NPApp.openCameraQuick('VAO', '${w.id}')">📸 Chụp GPS</button>
+                    <div style="display:flex; gap:4px;">
+                      <button class="btn btn-soft btn-sm" onclick="window.NPApp.openWorkerTaskModal('${w.id}')">🛠️ Giao việc</button>
+                      <button class="btn btn-primary btn-sm" onclick="window.NPApp.openOtModal('${w.id}')">⏱️ Báo Tăng ca</button>
+                    </div>
                   </td>
                 </tr>
               `).join('')}
@@ -1079,178 +1860,461 @@
     `;
   }
 
-  // ================= TAB 8: 👑 ADMIN QUẢN TRỊ & TẠO TÀI KHOẢN THEO TỪNG VỊ TRÍ =================
-  function renderTabPhanQuyen(container) {
-    const accounts = state.accounts || [];
-    const curAcc = getCurrentAccount();
+  function renderDtMembers() {
+    const acc = getCurrentAccount();
+    const tm = getTeam(acc.teamId);
+    const teamWorkers = getScopedWorkersForCurrentAccount();
 
-    const permLabels = {
-      checkin: 'Chấm công GPS',
-      inputTeam: 'Nhập công/OT đội',
-      approveWork: 'Duyệt công (QLCT)',
-      accounting: 'Tính lương (KT)',
-      approveDirector: 'Duyệt ứng/lương (GĐ)',
-      adminUsers: 'Admin Tạo TK'
-    };
-
-    const accRows = accounts.map(acc => {
-      const scopeText = (acc.projectId === 'ALL' ? 'Toàn công ty' : acc.projectId) +
-        (acc.teamId && acc.teamId !== 'ALL' ? ` · ${acc.teamId}` : '');
-
-      const activePerms = Object.keys(permLabels)
-        .filter(k => acc.perms && acc.perms[k])
-        .map(k => `<span class="status-pill status-out" style="font-size:9px;">✓ ${permLabels[k]}</span>`)
-        .join(' ');
-
-      const isCurrent = curAcc && curAcc.id === acc.id;
-      const statusBadge = acc.status === 'ACTIVE'
-        ? `<span class="status-pill status-working">Hoạt động</span>`
-        : `<span class="status-pill status-unexcused">Đã khóa</span>`;
-
-      return `
-        <tr>
-          <td>
-            <strong style="color:var(--ds-primary);">${acc.username}</strong>
-            <br/><small>PIN/MK: <code>${acc.pin}</code></small>
-          </td>
-          <td>
-            <strong>${acc.fullName}</strong>
-            <br/><small style="color:var(--ds-text-muted);">Cấp ${acc.level} · ${acc.positionTitle}</small>
-          </td>
-          <td><strong>${scopeText}</strong></td>
-          <td style="max-width:260px;">${activePerms}</td>
-          <td>${statusBadge}</td>
-          <td style="white-space:nowrap;">
-            <button class="btn ${isCurrent ? 'btn-primary' : 'btn-navy'} btn-sm" onclick="window.NPApp.loginAsAccount('${acc.id}')">
-              ${isCurrent ? 'Đang đăng nhập' : 'Đăng nhập TK'}
-            </button>
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAccountFormModal('${acc.id}')">✏️ Sửa/Quyền</button>
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.toggleAccountStatus('${acc.id}')">${acc.status === 'ACTIVE' ? '🔒 Khóa' : '🔓 Mở'}</button>
-            ${acc.username !== 'admin' ? `<button class="btn btn-soft btn-sm" style="color:var(--ds-danger);" onclick="window.NPApp.deleteAccount('${acc.id}')">✕</button>` : ''}
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    container.innerHTML = `
-      <div class="section-card" style="border:1.5px solid var(--ds-accent); background:var(--ds-bg-soft);">
-        <h3>
+    return `
+      <div class="section-card">
+        <div class="section-header">
           <div>
-            <span class="kicker">TRUNG TÂM QUẢN TRỊ HỆ THỐNG (ADMIN)</span>
-            <span>Quản lý &amp; Tạo Tài khoản cho từng Vị trí (${accounts.length} Tài khoản)</span>
+            <span class="kicker">DANH SÁCH NHÂN SỰ THUỘC ${tm.name.toUpperCase()}</span>
+            <h3>Quản Lý ${teamWorkers.length} Công Nhân Trong Đội Của Tôi (Thuộc QLCT: ${tm.managerName})</h3>
+            <div class="section-desc">Khi Đội trưởng thêm công nhân mới vào đội, hệ thống tự động gắn công nhân đó vào Đội ${tm.id} và trực thuộc Quản lý Công trình ${tm.managerName}.</div>
           </div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openLoginModal()">🔐 Đăng nhập bằng Tên TK &amp; PIN</button>
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAccountFormModal(null)">➕ Tạo Tài khoản Vị trí mới</button>
-          </div>
-        </h3>
-        <p style="font-size:10.5px; color:var(--ds-text-muted); margin-bottom:8px;">
-          Admin có toàn quyền <strong>Tạo tài khoản mới cho từng vị trí</strong> (Giám đốc, Kế toán, Quản lý từng Công trình CT1/CT2/CT3, Đội trưởng từng Đội 1..6, Công nhân), gán phạm vi dữ liệu được phép xem, cấp/thu hồi từng quyền hạn chi tiết, đổi mã PIN hoặc khóa tài khoản khi nhân sự nghỉ việc.
-        </p>
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm Công nhân mới vào ${tm.name}</button>
+        </div>
 
-        <div class="data-table-wrap">
-          <table class="data-table" style="background:#FFFFFF;">
+        <div class="table-scroll">
+          <table class="data-table">
             <thead>
               <tr>
-                <th>Tài khoản &amp; PIN</th>
-                <th>Họ tên &amp; Vị trí chức danh</th>
-                <th>Phạm vi phụ trách</th>
-                <th>Quyền hạn được cấp</th>
-                <th>Trạng thái</th>
-                <th>Thao tác Admin</th>
+                <th>Mã NV (Tài khoản ĐN)</th>
+                <th>Họ và Tên Công nhân</th>
+                <th>Vai trò</th>
+                <th>Số điện thoại</th>
+                <th>Người tạo vào đội</th>
+                <th>Thuộc Quản lý CT</th>
+                <th>Tổng công đã làm T11</th>
               </tr>
             </thead>
-            <tbody>${accRows}</tbody>
+            <tbody>
+              ${teamWorkers.map(w => `
+                <tr>
+                  <td><strong>${w.code}</strong><br/><span style="font-size:9.5px; color:var(--ds-text-muted);">PIN mặc định: 0000</span></td>
+                  <td><strong>${w.name}</strong></td>
+                  <td>${w.roleName}</td>
+                  <td>${w.phone}</td>
+                  <td><span class="badge badge-neutral">${w.createdBy}</span></td>
+                  <td><span class="badge badge-navy">${w.managerName}</span></td>
+                  <td><strong style="color:var(--ds-primary);">${w.daysMonthApproved} công</strong> (+${w.otHoursMonthApproved}h OT)</td>
+                </tr>
+              `).join('')}
+            </tbody>
           </table>
         </div>
       </div>
     `;
   }
 
-  // ================= TAB 9: 🗺️ SƠ ĐỒ & QUY TẮC =================
-  function renderTabSoDo(container) {
-    container.innerHTML = `
-      <div class="section-card">
-        <div>
-          <span class="kicker">MÔ HÌNH QUẢN TRỊ</span>
-          <h3>Sơ đồ Phân cấp 5 Tầng — Công ty Nguyên Phát</h3>
+  // =================================================================================================
+  // V. GIAO DIỆN CẤP 5: CÔNG NHÂN / NHÂN VIÊN (CHỈ THẤY MÌNH TÔI + BẢNG TỔNG KẾT CÔNG & LƯƠNG CÁ NHÂN)
+  // =================================================================================================
+  function renderCnPersonalHome() {
+    const w = getPersonalWorkerRecord();
+    const prj = getProject(w.projectId);
+    const tm = getTeam(w.teamId);
+
+    const hourly = w.dailyWage / 8;
+    const basePay = w.daysMonthApproved * w.dailyWage;
+    const otPay = Math.round(w.otHoursMonthApproved * hourly * 1.5);
+    const sunPay = Math.round(w.sundayDaysMonth * w.dailyWage * 2.0);
+    const grossSalary = basePay + otPay + sunPay;
+    const myAdvances = state.advances.filter(a => a.workerCode === w.code);
+    const approvedAdvAmount = myAdvances.filter(a => a.status === 'BGD_DA_DUYET').reduce((s, a) => s + a.amount, 0);
+    const remainingSalary = grossSalary - approvedAdvAmount;
+    const thumb = getWorkerStampedPhoto(w);
+
+    return `
+      <!-- KHỐI TỔNG KẾT CÔNG & LƯƠNG CÁ NHÂN NỔI BẬT CHO NHÂN VIÊN -->
+      <div class="personal-summary-hero">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+          <div>
+            <span class="kicker" style="color:var(--ds-accent); margin-bottom:2px;">BẢNG TỔNG KẾT CÔNG &amp; THU NHẬP CÁ NHÂN THÁNG 11/2026</span>
+            <h3>Xin chào, ${w.name} (${w.code})</h3>
+            <div style="font-size:11px; opacity:0.9; margin-top:2px;">
+              Chức danh: <strong>${w.roleName}</strong> · Đội: <strong>${w.teamName}</strong> · Đội trưởng: <strong>${w.leaderName}</strong> · Quản lý CT: <strong>${w.managerName}</strong>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openCameraQuick('VAO', '${w.id}')">📸 Chụp Camera Check-in Vào Ca</button>
+            <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.openCameraQuick('RA', '${w.id}')">🏁 Check-out Ra Ca</button>
+          </div>
         </div>
-        <div class="org-flow-box">
-          <div class="org-node" style="background:var(--ds-primary-deep);">1. BAN GIÁM ĐỐC<br/><small>Báo cáo tự động 08:30 · Duyệt 100% Ứng lương &amp; Bảng lương</small></div>
-          <div>↓</div>
-          <div class="org-node">2. HÀNH CHÍNH – KẾ TOÁN<br/><small>Tổng hợp công Ngày/Tuần/Tháng · Chỉ tính lương trên công ĐÃ DUYỆT</small></div>
-          <div>↓</div>
-          <div class="org-node" style="background:var(--ds-primary-2);">3. QUẢN LÝ CÔNG TRÌNH<br/><small>Đối chiếu ảnh định vị GPS thực tế · Duyệt công &amp; khóa bảng công</small></div>
-          <div>↓</div>
-          <div class="org-node" style="background:var(--ds-accent); color:var(--ds-on-accent);">4. ĐỘI TRƯỞNG (6 Đội)<br/><small>Chấm công đội · Đăng ký tăng ca · KHÔNG được tự duyệt công</small></div>
-          <div>↓</div>
-          <div class="org-node">5. CÔNG NHÂN (${state.workers.length} Công nhân)<br/><small>Chụp Camera trực tiếp (Chặn thư viện) · Đóng dấu Địa điểm &amp; Thời gian</small></div>
+
+        <div class="personal-stat-grid">
+          <div class="personal-stat-box">
+            <div class="ps-label">TỔNG CÔNG ĐÃ LÀM TRONG THÁNG</div>
+            <div class="ps-val">${w.daysMonthApproved} <span style="font-size:11px; font-weight:500;">ngày công</span></div>
+            <div style="font-size:10px; opacity:0.8; margin-top:2px;">Đơn giá: ${formatVND(w.dailyWage)}/ngày</div>
+          </div>
+          <div class="personal-stat-box">
+            <div class="ps-label">TỔNG GIỜ TĂNG CA &amp; CHỦ NHẬT</div>
+            <div class="ps-val">${w.otHoursMonthApproved}h OT <span style="font-size:11px; font-weight:500;">· ${w.sundayDaysMonth} CN</span></div>
+            <div style="font-size:10px; opacity:0.8; margin-top:2px;">Tiền OT + CN: ${formatVND(otPay + sunPay)}</div>
+          </div>
+          <div class="personal-stat-box">
+            <div class="ps-label">LƯƠNG LŨY KẾ TÍNH ĐẾN HÔM NAY</div>
+            <div class="ps-val">${formatVND(grossSalary)}</div>
+            <div style="font-size:10px; opacity:0.8; margin-top:2px;">Đã tạm ứng: -${formatVND(approvedAdvAmount)}</div>
+          </div>
+          <div class="personal-stat-box" style="background:rgba(247,147,30,0.22); border-color:var(--ds-accent);">
+            <div class="ps-label">THỰC LĨNH CÒN LẠI CỦA TÔI</div>
+            <div class="ps-val" style="color:#FFFFFF;">${formatVND(remainingSalary)}</div>
+            <div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">Đã được QLCT ${w.managerName} duyệt</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NHIỆM VỤ HÔM NAY & TRẠNG THÁI CHẤM CÔNG HÔM NAY CỦA TÔI -->
+      <div class="grid-2" style="margin-bottom:10px;">
+        <div class="section-card" style="margin-bottom:0;">
+          <span class="kicker">NHIỆM VỤ &amp; PHÂN VIỆC HÔM NAY CỦA TÔI (22/11/2026)</span>
+          <h3>Công Việc Đội Trưởng ${w.leaderName} Giao Cho Tôi</h3>
+          <div style="margin-top:8px; padding:10px 12px; background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-left:4px solid var(--ds-primary); border-radius:var(--ds-radius-sm);">
+            <div style="font-size:13px; font-weight:700; color:var(--ds-primary);">🛠️ ${w.assignedTaskToday || tm.dailyTargetTask}</div>
+            <div style="font-size:11px; color:var(--ds-text-muted); margin-top:4px;">
+              📍 Địa điểm làm việc: <strong>${prj.name}</strong> (${prj.address})
+            </div>
+            <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">
+              👷 Đội trưởng phụ trách trực tiếp: <strong>${w.leaderName}</strong> (${tm.phone})
+            </div>
+            <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">
+              🏛️ Quản lý Công trình duyệt công: <strong>${w.managerName}</strong>
+            </div>
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 Gửi đơn Xin Ứng lương</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPersonalLeaveModal()">📝 Xin Nghỉ phép</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('cn-payslip')">💵 Xem Phiếu lương chi tiết</button>
+          </div>
+        </div>
+
+        <div class="section-card" style="margin-bottom:0;">
+          <span class="kicker">TRẠNG THÁI ĐIỂM DANH HÔM NAY CỦA TÔI</span>
+          <h3>Bằng Chứng Chấm Công Camera Live + GPS Hôm Nay</h3>
+          <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+            <img src="${thumb}" style="width:110px; height:84px; object-fit:cover; border-radius:var(--ds-radius-sm); border:1px solid var(--ds-line); cursor:pointer;" onclick="window.NPApp.openPhotoModal('${w.id}')" />
+            <div style="font-size:11px; line-height:1.45;">
+              <div>Trạng thái ca: ${renderAttendanceBadge(w.attendanceStatus)} · ${renderApprovalBadge(w.approvalStatus)}</div>
+              <div style="margin-top:3px;">Giờ Vào ca: <strong><code>${w.checkInTime || 'Chưa vào'}</code></strong> · Giờ Ra ca: <strong><code>${w.checkOutTime || 'Đang làm việc'}</code></strong></div>
+              <div style="margin-top:3px;">Công hôm nay: <strong>${w.hoursRegular ? '1.0 công (8h)' : '0 công'}</strong> · Tăng ca hôm nay: <strong>+${w.hoursOtActual || 0}h OT</strong></div>
+              <div style="margin-top:3px; color:var(--ds-text-muted);">Tọa độ GPS: <code>${w.lat}, ${w.lng}</code> (±${w.acc}m Hợp lệ)</div>
+            </div>
+          </div>
         </div>
       </div>
     `;
   }
 
-  // ================= MODAL XEM ẢNH & CAMERA CHẤM CÔNG =================
+  function renderCnPersonalHistory() {
+    const w = getPersonalWorkerRecord();
+    // Tạo danh sách 15 ngày công gần nhất của riêng công nhân này
+    const daysList = [];
+    for (let d = 22; d >= 8; d--) {
+      const isSun = (d === 15 || d === 8);
+      const worked = d <= 22;
+      const ot = (d % 3 === 0) ? 2 : 0;
+      daysList.push({
+        date: `${String(d).padStart(2, '0')}/11/2026`,
+        dayLabel: isSun ? 'Chủ nhật (Hệ số 2.0)' : 'Ngày thường (Hệ số 1.0)',
+        inTime: '06:58:12',
+        outTime: ot > 0 ? '19:30:05' : '17:30:00',
+        workDay: worked ? 1.0 : 0,
+        otHours: ot,
+        approvedBy: w.managerName,
+        task: w.assignedTaskToday
+      });
+    }
+
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">SỔ CHẤM CÔNG CÁ NHÂN CỦA ${w.name.toUpperCase()} (${w.code})</span>
+            <h3>Chi Tiết Từng Ngày Công &amp; Giờ Tăng Ca Đã Làm Trong Tháng 11/2026</h3>
+            <div class="section-desc">Tổng cộng: <strong>${w.daysMonthApproved} ngày công hành chính</strong> · <strong>${w.otHoursMonthApproved} giờ tăng ca OT</strong> · <strong>${w.sundayDaysMonth} công Chủ nhật</strong>.</div>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th>Loại ngày công</th>
+                <th>Công việc thực hiện</th>
+                <th>Giờ Vào - Giờ Ra</th>
+                <th>Số công</th>
+                <th>Giờ OT</th>
+                <th>Người duyệt công (QLCT)</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${daysList.map(item => `
+                <tr>
+                  <td><strong>${item.date}</strong></td>
+                  <td>${item.dayLabel}</td>
+                  <td>${item.task}</td>
+                  <td><code>${item.inTime}</code> → <code>${item.outTime}</code></td>
+                  <td><strong style="color:var(--ds-primary);">${item.workDay} công</strong></td>
+                  <td>${item.otHours > 0 ? `<span class="badge badge-orange">+${item.otHours}h OT</span>` : '0h'}</td>
+                  <td><strong>${item.approvedBy}</strong></td>
+                  <td><span class="badge badge-success">✓ Đã duyệt</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCnPersonalRequests() {
+    const w = getPersonalWorkerRecord();
+    const myAdvances = state.advances.filter(a => a.workerCode === w.code);
+    const accrued = w.daysMonthApproved * w.dailyWage;
+
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">ĐƠN TỪ CÁ NHÂN CỦA ${w.name.toUpperCase()} (${w.code})</span>
+            <h3>Gửi Đơn Xin Ứng Lương &amp; Xin Nghỉ Phép Của Tôi</h3>
+            <div class="section-desc">Công đã duyệt tháng này: <strong>${w.daysMonthApproved} công</strong> · Lương lũy kế hiện có: <strong>${formatVND(accrued)}</strong> · Hạn mức được phép ứng tối đa (70%): <strong>${formatVND(Math.round(accrued * 0.7))}</strong>.</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">+ Tạo đơn Xin Ứng lương</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPersonalLeaveModal()">+ Tạo đơn Xin Nghỉ phép</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã đơn</th>
+                <th>Ngày gửi</th>
+                <th>Công đã làm</th>
+                <th>Lương lũy kế</th>
+                <th>Số tiền tôi xin ứng</th>
+                <th>Lý do</th>
+                <th>Kế toán kiểm tra</th>
+                <th>Tổng Giám đốc duyệt</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${myAdvances.length === 0 ? `
+                <tr><td colspan="8" style="text-align:center; padding:16px; color:var(--ds-text-muted);">Bạn chưa có đơn xin ứng lương nào trong tháng này. Bấm "+ Tạo đơn Xin Ứng lương" để gửi yêu cầu.</td></tr>
+              ` : myAdvances.map(adv => `
+                <tr>
+                  <td><strong>${adv.id}</strong></td>
+                  <td>${adv.date}</td>
+                  <td>${adv.daysWorkedSoFar} công</td>
+                  <td>${formatVND(adv.accruedSalary)}</td>
+                  <td><strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong></td>
+                  <td>${adv.reason}</td>
+                  <td>${adv.checkedByKt ? `<span class="badge badge-success">✓ ${adv.checkedByKt}</span>` : `<span class="badge badge-warning">Đang chờ KT</span>`}</td>
+                  <td>${adv.status === 'BGD_DA_DUYET' ? `<span class="badge badge-success">✓ Đã duyệt chi</span>` : `<span class="badge badge-orange">Chờ GĐ duyệt</span>`}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCnPersonalPayslip() {
+    const w = getPersonalWorkerRecord();
+    const hourly = w.dailyWage / 8;
+    const basePay = w.daysMonthApproved * w.dailyWage;
+    const otPay = Math.round(w.otHoursMonthApproved * hourly * 1.5);
+    const sunPay = Math.round(w.sundayDaysMonth * w.dailyWage * 2.0);
+    const gross = basePay + otPay + sunPay;
+    const approvedAdvance = state.advances
+      .filter(a => a.workerCode === w.code && a.status === 'BGD_DA_DUYET')
+      .reduce((s, a) => s + a.amount, 0);
+    const net = gross - approvedAdvance;
+
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">PHIẾU LƯƠNG CÁ NHÂN THÁNG 11/2026</span>
+            <h3>Chi Tiết Thu Nhập Của ${w.name} (${w.code})</h3>
+            <div class="section-desc">Đội: ${w.teamName} · Đội trưởng: ${w.leaderName} · Quản lý Công trình duyệt công: ${w.managerName}</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ In / Lưu PDF Phiếu lương của tôi</button>
+        </div>
+
+        <table class="data-table">
+          <tbody>
+            <tr>
+              <td>1. Đơn giá ngày công thỏa thuận</td>
+              <td style="text-align:right; font-weight:700;">${formatVND(w.dailyWage)} / ngày (8 giờ)</td>
+            </tr>
+            <tr>
+              <td>2. Lương ngày công hành chính đã được QLCT (${w.managerName}) duyệt (${w.daysMonthApproved} công)</td>
+              <td style="text-align:right; font-weight:700;">${formatVND(basePay)}</td>
+            </tr>
+            <tr>
+              <td>3. Lương tăng ca OT đã duyệt (${w.otHoursMonthApproved} giờ × hệ số 1.5)</td>
+              <td style="text-align:right; font-weight:700;">${formatVND(otPay)}</td>
+            </tr>
+            <tr>
+              <td>4. Lương làm Chủ nhật (${w.sundayDaysMonth} công × hệ số 2.0)</td>
+              <td style="text-align:right; font-weight:700;">${formatVND(sunPay)}</td>
+            </tr>
+            <tr style="background:var(--ds-bg-soft);">
+              <td><strong>TỔNG THU NHẬP LŨY KẾ (A)</strong></td>
+              <td style="text-align:right; font-weight:700; font-size:13px;">${formatVND(gross)}</td>
+            </tr>
+            <tr>
+              <td style="color:var(--ds-danger);">5. Trừ tiền đã tạm ứng trong tháng (B)</td>
+              <td style="text-align:right; color:var(--ds-danger); font-weight:700;">-${formatVND(approvedAdvance)}</td>
+            </tr>
+            <tr style="background:var(--ds-bg-soft);">
+              <td><strong style="color:var(--ds-primary); font-size:13px;">THỰC LĨNH CÒN LẠI NHẬN CUỐI THÁNG (A - B)</strong></td>
+              <td style="text-align:right; color:var(--ds-primary); font-family:var(--ds-font-serif); font-size:16px; font-weight:700;">${formatVND(net)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // =================================================================================================
+  // VI. TRANG ADMIN QUẢN TRỊ & TẠO TÀI KHOẢN THEO VỊ TRÍ (CHỈ ADMIN / TỔNG GIÁM ĐỐC MỚI THẤY)
+  // =================================================================================================
+  function renderAdminAccountsTab() {
+    if (!isAdminAccount()) return '';
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">TRUNG TÂM QUẢN TRỊ TÀI KHOẢN &amp; PHÂN QUYỀN 5 CẤP (CHỈ ADMIN THẤY)</span>
+            <h3>Danh Sách Tài Khoản Theo Từng Vị Trí &amp; Chuyển Nhanh Giao Diện Để Kiểm Tra</h3>
+            <div class="section-desc">Admin / Tổng Giám đốc có thể tạo tài khoản mới cho Quản lý Công trình, Kế toán, Đội trưởng, Công nhân hoặc bấm <strong>"Vào giao diện này"</strong> để xem trực tiếp màn hình làm việc riêng của từng vị trí.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAccountFormModal(null)">
+            + Tạo Tài khoản Mới cho Vị trí
+          </button>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tên đăng nhập</th>
+                <th>PIN</th>
+                <th>Họ tên Nhân sự</th>
+                <th>Vị trí / Cấp bậc</th>
+                <th>Phạm vi Công trình / Đội</th>
+                <th>Thuộc Quản lý / Người tạo</th>
+                <th>Giao diện Chuyên biệt</th>
+                <th>Thao tác Admin</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.accounts.map(acc => {
+                const cfg = ROLE_CONFIG[acc.roleId] || ROLE_CONFIG.CN;
+                const isCur = acc.id === currentAccountId;
+                return `
+                  <tr style="${isCur ? 'background:rgba(247,147,30,0.1);' : ''}">
+                    <td><strong><code>${acc.username}</code></strong></td>
+                    <td><code>${acc.pin}</code></td>
+                    <td><strong>${acc.fullName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${acc.positionTitle}</span></td>
+                    <td><span class="badge badge-navy">${cfg.badge}</span></td>
+                    <td>CT: <strong>${acc.projectId}</strong> · Đội: <strong>${acc.teamId}</strong></td>
+                    <td>${acc.managerName || acc.createdBy || 'Tổng Giám đốc'}</td>
+                    <td>
+                      <span style="font-size:10.5px; color:var(--ds-text-muted);">
+                        ${cfg.tabs.map(t => t.shortLabel).join(' · ')}
+                      </span>
+                    </td>
+                    <td>
+                      <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                        ${isCur
+                          ? `<span class="badge badge-success">Đang sử dụng</span>`
+                          : `<button class="btn btn-primary btn-sm" onclick="window.NPApp.loginAsAccount('${acc.id}')">🚀 Vào giao diện này</button>`
+                        }
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAccountFormModal('${acc.id}')">✏️ Sửa</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  // =================================================================================================
+  // VII. CÁC MODAL THAO TÁC NGHIỆP VỤ (CAMERA GPS, GIAO VIỆC, THÊM NHÂN SỰ, TẠO TÀI KHOẢN, ỨNG LƯƠNG)
+  // =================================================================================================
   function openPhotoModal(workerId) {
     const w = state.workers.find(x => x.id === workerId);
     if (!w) return;
-    const proj = getProject(w.projectId);
-    const team = getTeam(w.teamId);
-    const photoUrl = getWatermarkedPhotoUrl(w);
-    const displayAddr = w.realAddress || proj.address;
+    const prj = getProject(w.projectId);
+    const imgUrl = getWorkerStampedPhoto(w);
 
-    document.getElementById('photoModalTitle').textContent = `Ảnh Chấm Công — ${w.name}`;
+    document.getElementById('photoModalTitle').textContent = `Ảnh Chấm Công GPS — ${w.name} (${w.code})`;
     document.getElementById('photoModalBody').innerHTML = `
-      <div style="text-align:center;">
-        <img src="${photoUrl}" alt="${w.name}" style="width:100%; max-width:440px; border-radius:var(--ds-radius-md); border:1px solid var(--ds-line);" />
-      </div>
-      <div style="margin-top:14px; background:var(--ds-bg-soft); padding:14px 16px; border-radius:var(--ds-radius-sm); border:1px solid var(--ds-line); font-size:13.5px; display:grid; gap:5px;">
-        <div><strong>Công nhân:</strong> ${w.name} (<code>${w.code}</code>) — ${team.name}</div>
-        <div><strong>Thời gian chấm công:</strong> <span style="color:var(--ds-primary); font-weight:700;">${w.checkInTime} Ngày ${w.date}</span></div>
-        <div><strong>Địa điểm định vị:</strong> <span style="color:var(--ds-primary); font-weight:700;">${displayAddr}</span></div>
-        <div><strong>Tọa độ GPS:</strong> <code>${w.lat}, ${w.lng}</code> (Sai số: <strong>±${w.acc}m</strong>)</div>
-      </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;">
-        <button class="btn btn-primary" onclick="window.NPApp.closeModal('photoModal'); window.NPApp.openCameraQuick('VAO', '${w.id}')">📸 Chụp Check-in</button>
-        <button class="btn btn-navy" onclick="window.NPApp.closeModal('photoModal'); window.NPApp.openCameraQuick('RA', '${w.id}')">Chụp Check-out</button>
+      <img src="${imgUrl}" style="width:100%; border-radius:var(--ds-radius-md); border:1px solid var(--ds-line); margin-bottom:10px;" />
+      <div style="background:var(--ds-bg-soft); padding:10px; border-radius:var(--ds-radius-sm); border:1px solid var(--ds-line); font-size:11.5px; display:grid; gap:4px;">
+        <div><strong>Nhân sự:</strong> ${w.name} (${w.code}) · <strong>Đội:</strong> ${w.teamName} (Đội trưởng: ${w.leaderName})</div>
+        <div><strong>Thuộc Quản lý Công trình:</strong> <span style="color:var(--ds-primary); font-weight:700;">${w.managerName}</span> (${prj.name})</div>
+        <div><strong>Tọa độ GPS:</strong> <code>${w.lat}, ${w.lng}</code> (Sai số ±${w.acc}m · Hợp lệ trong bán kính ${prj.radiusM}m)</div>
       </div>
     `;
     document.getElementById('photoModal').classList.add('open');
   }
 
-  function openCameraQuick(actionType, preselectedWorkerId) {
-    const selWorker = document.getElementById('camWorkerSelect');
-    const selProj = document.getElementById('camProjectSelect');
-    const selAction = document.getElementById('camActionType');
+  function openCameraQuick(actionType, workerId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
 
-    selWorker.innerHTML = state.workers.map(w =>
-      `<option value="${w.id}">${w.code} — ${w.name} (${w.teamId})</option>`
-    ).join('');
-
-    if (preselectedWorkerId) {
-      selWorker.value = preselectedWorkerId;
+    // Nếu là Tổng Giám đốc / Kế toán / Quản lý CT thì không chấm công cá nhân
+    if (acc.roleId === 'BGD' || acc.roleId === 'KT') {
+      alert('Tổng Giám đốc và Kế toán làm việc trên Cổng Quản trị / Kế toán, không cần chấm công công trường!');
+      return;
     }
 
-    selProj.innerHTML = state.projects.map(p =>
-      `<option value="${p.id}">${p.name}</option>`
-    ).join('');
+    const scopedList = getScopedWorkersForCurrentAccount();
+    const selWorker = document.getElementById('camWorkerSelect');
+    const selProject = document.getElementById('camProjectSelect');
+    const selAction = document.getElementById('camActionType');
 
-    if (actionType) {
+    if (selWorker) {
+      selWorker.innerHTML = scopedList.map(w =>
+        `<option value="${w.id}">${w.code} — ${w.name} (${w.teamName})</option>`
+      ).join('');
+      if (workerId) selWorker.value = workerId;
+      // Nếu là Công nhân thì khóa chỉ cho chọn chính mình
+      selWorker.disabled = (acc.roleId === 'CN');
+    }
+
+    if (selProject) {
+      const allowedProjects = (acc.projectId && acc.projectId !== 'ALL')
+        ? state.projects.filter(p => p.id === acc.projectId)
+        : state.projects;
+      selProject.innerHTML = allowedProjects.map(p =>
+        `<option value="${p.id}">${p.name}</option>`
+      ).join('');
+    }
+
+    if (selAction && actionType) {
       selAction.value = actionType;
     }
 
-    const headerTitle = document.getElementById('cameraModalHeaderTitle');
-    const snapBtn = document.getElementById('btnSnapSubmit');
-    if (selAction.value === 'RA') {
-      if (headerTitle) headerTitle.textContent = 'Chụp Camera Check-out (Ra ca)';
-      if (snapBtn) snapBtn.textContent = '📸 Chụp & Check-out ngay';
-    } else {
-      if (headerTitle) headerTitle.textContent = 'Chụp Camera Check-in (Vào ca)';
-      if (snapBtn) snapBtn.textContent = '📸 Chụp & Check-in ngay';
-    }
-
+    document.getElementById('cameraModalHeaderTitle').textContent =
+      actionType === 'RA' ? 'Chụp Camera Check-out (Ra ca)' : 'Chụp Camera Check-in (Vào ca)';
     document.getElementById('cameraModal').classList.add('open');
-    refreshRealGps();
     startHardwareCamera();
     drawLivePreviewOnCanvas();
   }
@@ -1259,208 +2323,465 @@
     openCameraQuick('VAO', null);
   }
 
-  function toggleCameraFacing() {
-    cameraFacingMode = cameraFacingMode === 'user' ? 'environment' : 'user';
+  async function startHardwareCamera() {
+    stopHardwareCamera();
+    const video = document.getElementById('liveVideo');
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        liveStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: cameraFacingMode, width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false
+        });
+        video.srcObject = liveStream;
+        await video.play();
+      }
+    } catch (e) {}
+    drawLivePreviewOnCanvas();
+  }
+
+  function stopHardwareCamera() {
     if (liveStream) {
       liveStream.getTracks().forEach(t => t.stop());
       liveStream = null;
     }
+  }
+
+  function toggleCameraFacing() {
+    cameraFacingMode = cameraFacingMode === 'user' ? 'environment' : 'user';
     startHardwareCamera();
+  }
+
+  function closeCameraModal() {
+    stopHardwareCamera();
+    document.getElementById('cameraModal').classList.remove('open');
   }
 
   function drawLivePreviewOnCanvas() {
     const canvas = document.getElementById('captureCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const wId = document.getElementById('camWorkerSelect').value || state.workers[0].id;
-    const projId = document.getElementById('camProjectSelect').value || 'CT1';
-    const actionType = document.getElementById('camActionType').value || 'VAO';
-    const worker = state.workers.find(x => x.id === wId) || state.workers[0];
-    const proj = getProject(projId);
-    const now = new Date();
-    const timeStr = now.toTimeString().slice(0, 8);
-    const dateStr = now.toLocaleDateString('vi-VN');
+    const video = document.getElementById('liveVideo');
 
-    const realLat = liveGps.hasRealGps ? liveGps.lat : proj.lat;
-    const realLng = liveGps.hasRealGps ? liveGps.lng : proj.lng;
-    const realAcc = liveGps.hasRealGps ? liveGps.acc : 15;
-    const realAddr = (liveGps.hasRealGps && liveGps.address && !liveGps.address.startsWith('Đang'))
-      ? liveGps.address
-      : proj.address;
+    const workerId = document.getElementById('camWorkerSelect')?.value;
+    const actionType = document.getElementById('camActionType')?.value || 'VAO';
+    const w = state.workers.find(x => x.id === workerId) || getPersonalWorkerRecord();
+    const prj = getProject(w.projectId);
 
-    ctx.fillStyle = '#07203F';
+    ctx.fillStyle = '#071E3E';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const video = document.getElementById('liveVideo');
     if (liveStream && video && video.readyState >= 2) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    } else if (sampleImgObj.complete && sampleImgObj.naturalWidth > 0) {
-      ctx.drawImage(sampleImgObj, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, 370);
+    } else if (sampleImgObj && sampleImgObj.complete && sampleImgObj.naturalWidth > 0) {
+      ctx.drawImage(sampleImgObj, 0, 0, canvas.width, 370);
     }
 
-    ctx.fillStyle = 'rgba(7, 32, 63, 0.92)';
-    ctx.fillRect(0, canvas.height - 165, canvas.width, 165);
-
-    ctx.fillStyle = '#F7931E';
-    ctx.fillRect(16, canvas.height - 152, 340, 22);
-    ctx.fillStyle = '#16233A';
-    ctx.font = 'bold 11.5px Segoe UI, sans-serif';
-    ctx.fillText(
-      actionType === 'VAO'
-        ? 'CHECK-IN VÀO CA · CAMERA TRỰC TIẾP GPS'
-        : 'CHECK-OUT RA CA · CAMERA TRỰC TIẾP GPS',
-      22,
-      canvas.height - 137
-    );
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 14.5px Segoe UI, sans-serif';
-    ctx.fillText(`Mã NV: ${worker.code}   |   Họ tên: ${worker.name}`, 16, canvas.height - 108);
-
-    ctx.fillStyle = '#F7931E';
-    ctx.font = 'bold 13.5px Segoe UI, sans-serif';
-    ctx.fillText(`Thời gian chấm công: ${timeStr} — Ngày ${dateStr}`, 16, canvas.height - 85);
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 12.5px Segoe UI, sans-serif';
-    ctx.fillText(`Địa điểm: ${realAddr.slice(0, 60)}`, 16, canvas.height - 62);
-
-    ctx.fillStyle = '#26A7DE';
-    ctx.font = '12px Segoe UI, sans-serif';
-    ctx.fillText(`Công trình: ${proj.name}`, 16, canvas.height - 42);
-
-    ctx.fillStyle = '#F8F6EF';
-    ctx.font = 'bold 12.5px Segoe UI, sans-serif';
-    ctx.fillText(`Tọa độ GPS: ${realLat}, ${realLng}   |   Sai số: ±${realAcc} m`, 16, canvas.height - 20);
+    const now = new Date();
+    const timeStr = now.toTimeString().slice(0, 8);
+    const lat = liveGps.hasRealGps ? liveGps.lat : prj.lat;
+    const lng = liveGps.hasRealGps ? liveGps.lng : prj.lng;
+    const acc = liveGps.hasRealGps ? liveGps.acc : 8;
+    const addr = liveGps.hasRealGps ? liveGps.address : prj.address;
 
     ctx.fillStyle = '#0B2D5B';
-    ctx.strokeStyle = '#F7931E';
-    ctx.lineWidth = 2;
-    ctx.fillRect(canvas.width - 108, canvas.height - 72, 92, 52);
-    ctx.strokeRect(canvas.width - 108, canvas.height - 72, 92, 52);
+    ctx.fillRect(0, 0, canvas.width, 42);
+    ctx.fillStyle = '#F7931E';
+    ctx.font = 'bold 14px "Be Vietnam Pro", sans-serif';
+    ctx.fillText(`NP ONE LIVE CAMERA · ${actionType === 'VAO' ? 'CHECK-IN VÀO CA' : 'CHECK-OUT RA CA'}`, 16, 26);
+
+    ctx.fillStyle = '#071E3E';
+    ctx.fillRect(0, 360, canvas.width, 160);
+    ctx.fillStyle = '#F7931E';
+    ctx.fillRect(0, 360, canvas.width, 3);
+
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 15px Georgia, serif';
-    ctx.fillText('NP ONE', canvas.width - 92, canvas.height - 43);
-  }
+    ctx.font = 'bold 18px "Be Vietnam Pro", sans-serif';
+    ctx.fillText(`${w.name} (${w.code})`, 18, 392);
 
-  function startHardwareCamera() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-    if (liveStream) return;
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: cameraFacingMode }, audio: false })
-      .then(stream => {
-        liveStream = stream;
-        const video = document.getElementById('liveVideo');
-        video.srcObject = stream;
-        video.play();
-        setInterval(() => {
-          if (document.getElementById('cameraModal').classList.contains('open')) {
-            drawLivePreviewOnCanvas();
-          }
-        }, 250);
-      })
-      .catch(() => {
-        drawLivePreviewOnCanvas();
-      });
-  }
+    ctx.fillStyle = '#F7931E';
+    ctx.font = '600 13px "Be Vietnam Pro", sans-serif';
+    ctx.fillText(`${w.teamName} · Đội trưởng: ${w.leaderName} · QLCT: ${w.managerName}`, 18, 416);
 
-  function closeCameraModal() {
-    if (liveStream) {
-      liveStream.getTracks().forEach(t => t.stop());
-      liveStream = null;
-    }
-    document.getElementById('cameraModal').classList.remove('open');
+    ctx.fillStyle = '#E3DFD3';
+    ctx.font = '12.5px "Be Vietnam Pro", sans-serif';
+    ctx.fillText(`Thời gian thực: ${timeStr} - 22/11/2026`, 18, 442);
+    ctx.fillText(`Địa điểm: ${String(addr).slice(0, 62)}`, 18, 466);
+    ctx.fillStyle = '#F7931E';
+    ctx.fillText(`Tọa độ GPS: ${lat}, ${lng} (±${acc}m Hợp lệ)`, 18, 492);
   }
 
   function snapAndSubmitCheckin() {
     drawLivePreviewOnCanvas();
     const canvas = document.getElementById('captureCanvas');
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-    const wId = document.getElementById('camWorkerSelect').value;
-    const actionType = document.getElementById('camActionType').value;
-    const projId = document.getElementById('camProjectSelect').value;
-
-    const worker = state.workers.find(x => x.id === wId);
-    const proj = getProject(projId);
-    const now = new Date();
-    const timeStr = now.toTimeString().slice(0, 8);
-    const dateStr = now.toLocaleDateString('vi-VN');
-
-    const realLat = liveGps.hasRealGps ? liveGps.lat : proj.lat;
-    const realLng = liveGps.hasRealGps ? liveGps.lng : proj.lng;
-    const realAcc = liveGps.hasRealGps ? liveGps.acc : 15;
-    const realAddr = (liveGps.hasRealGps && liveGps.address && !liveGps.address.startsWith('Đang'))
-      ? liveGps.address
-      : proj.address;
-
-    if (worker) {
-      const maxSeq = Math.max(...state.workers.map(w => w.seq || 4900));
-      worker.seq = maxSeq + 1;
-      worker.projectId = proj.id;
-      worker.lat = realLat;
-      worker.lng = realLng;
-      worker.acc = realAcc;
-      worker.realAddress = realAddr;
-      worker.date = dateStr;
-      worker.customPhotoDataUrl = dataUrl;
-      if (actionType === 'VAO') {
-        worker.checkInTime = timeStr;
-        worker.checkOutTime = null;
-        worker.attendanceStatus = 'DANG_LAM';
-      } else {
-        worker.checkOutTime = timeStr;
-        worker.attendanceStatus = 'DA_RA';
-        worker.forgotCheckoutFlag = false;
-      }
-      state.workers = [worker, ...state.workers.filter(x => x.id !== worker.id)];
-      saveState();
-      renderMain();
-    }
-    closeCameraModal();
-  }
-
-  function handleCheckout(workerId) {
-    openCameraQuick('RA', workerId);
-  }
-
-  // ================= MODAL ĐIỀU CHỈNH CÔNG (CÓ BÁO LỖI INLINE CHUẨN MỤC 6) =================
-  function openAdjustModal(workerId) {
+    const workerId = document.getElementById('camWorkerSelect')?.value;
+    const actionType = document.getElementById('camActionType')?.value || 'VAO';
     const w = state.workers.find(x => x.id === workerId);
     if (!w) return;
-    const role = getCurrentRole();
 
-    document.getElementById('adjustModalTitle').textContent = 'Điều chỉnh Chấm công (Lưu Audit Log)';
+    const nowStr = new Date().toTimeString().slice(0, 8);
+    if (actionType === 'VAO') {
+      w.checkInTime = nowStr;
+      w.attendanceStatus = 'DANG_LAM';
+      w.hoursRegular = 8;
+    } else {
+      w.checkOutTime = nowStr;
+      w.attendanceStatus = 'DA_RA';
+      w.forgotCheckoutFlag = false;
+    }
+    if (liveGps.hasRealGps) {
+      w.lat = liveGps.lat;
+      w.lng = liveGps.lng;
+      w.acc = liveGps.acc;
+      w.realAddress = liveGps.address;
+    }
+    try {
+      w.customPhotoDataUrl = canvas.toDataURL('image/jpeg', 0.86);
+    } catch (e) {}
+
+    saveState();
+    closeCameraModal();
+    renderMain();
+  }
+
+  // MODAL QUẢN LÝ CÔNG TRÌNH GIAO NHIỆM VỤ CHO ĐỘI TRƯỞNG
+  function openAssignTaskModal() {
+    const acc = getCurrentAccount();
+    const prjId = (acc && acc.projectId !== 'ALL') ? acc.projectId : 'CT1';
+    const myTeams = state.teams.filter(t => t.projectId === prjId);
+
+    document.getElementById('adjustModalTitle').textContent = `Giao Nhiệm Vụ & Hạn Mức OT Cho Đội Trưởng (${prjId})`;
     document.getElementById('adjustModalBody').innerHTML = `
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-left:4px solid var(--ds-accent); padding:12px 14px; border-radius:var(--ds-radius-sm); margin-bottom:14px; font-size:13px;">
-        <strong>Kiểm soát độc lập:</strong> Bảng công đã duyệt không tự ý sửa. Mọi điều chỉnh bắt buộc nhập lý do lưu vào Audit Log (${role.personName}).
-      </div>
       <div class="form-group">
-        <label>Công nhân</label>
-        <input type="text" value="${w.code} — ${w.name} (${w.teamId})" disabled />
-      </div>
-      <div class="form-group">
-        <label for="adjStatus">Trạng thái chấm công <span class="req">*</span></label>
-        <select id="adjStatus">
-          <option value="DANG_LAM" ${w.attendanceStatus === 'DANG_LAM' ? 'selected' : ''}>Đang làm (Có mặt)</option>
-          <option value="DA_RA" ${w.attendanceStatus === 'DA_RA' ? 'selected' : ''}>Đã Check-out</option>
-          <option value="NGHI_PHEP" ${w.attendanceStatus === 'NGHI_PHEP' ? 'selected' : ''}>Nghỉ phép (P)</option>
-          <option value="NGHI_KP" ${w.attendanceStatus === 'NGHI_KP' ? 'selected' : ''}>Nghỉ không phép (KP)</option>
+        <label>Chọn Đội trưởng nhận nhiệm vụ <span class="req">*</span></label>
+        <select id="tskTeamSelect">
+          ${myTeams.map(t => `<option value="${t.id}">${t.name} — Đội trưởng: ${t.leader}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
-        <label>Giờ công hành chính &amp; Giờ tăng ca (OT)</label>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-          <input type="number" id="adjRegHours" value="${w.hoursRegular}" min="0" max="8" step="0.5" />
-          <input type="number" id="adjOtHours" value="${w.hoursOtActual}" min="0" max="12" step="0.5" />
+        <label>Nội dung Hạng mục &amp; Khối lượng giao khoán trong ngày <span class="req">*</span></label>
+        <input type="text" id="tskTitleInput" placeholder="VD: Đổ bê tông dầm sàn tầng 5 khu B (95m³)" />
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="form-group">
+          <label>Định biên quân số yêu cầu (người)</label>
+          <input type="number" id="tskWorkersInput" value="18" min="1" max="50" />
+        </div>
+        <div class="form-group">
+          <label>Hạn mức Tăng ca cho phép (giờ OT)</label>
+          <input type="number" id="tskOtInput" value="2" min="0" max="6" />
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitAssignTask()">📌 Giao nhiệm vụ cho Đội trưởng</button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function submitAssignTask() {
+    const acc = getCurrentAccount();
+    const teamId = document.getElementById('tskTeamSelect').value;
+    const title = (document.getElementById('tskTitleInput').value || '').trim();
+    const reqW = Number(document.getElementById('tskWorkersInput').value || 18);
+    const otH = Number(document.getElementById('tskOtInput').value || 0);
+    if (!title) {
+      alert('Vui lòng nhập nội dung hạng mục công việc!');
+      return;
+    }
+    const tm = getTeam(teamId);
+    tm.dailyTargetTask = title;
+    state.tasks = state.tasks || [];
+    state.tasks.unshift({
+      id: 'TSK-0' + (state.tasks.length + 1),
+      projectId: tm.projectId,
+      teamId: tm.id,
+      title,
+      assignedBy: `${acc ? acc.fullName : tm.managerName} (Quản lý ${tm.projectId})`,
+      assignedToLeader: tm.leader,
+      requiredWorkers: reqW,
+      allowOvertimeHours: otH,
+      status: 'DANG_THUC_HIEN',
+      progressPercent: 10,
+      date: '22/11/2026'
+    });
+    saveState();
+    closeModal('adjustModal');
+    renderMain();
+  }
+
+  // ĐỘI TRƯỞNG GIAO VIỆC CỤ THỂ CHO TỪNG CÔNG NHÂN TRONG ĐỘI
+  function openWorkerTaskModal(workerId) {
+    const w = state.workers.find(x => x.id === workerId);
+    if (!w) return;
+    document.getElementById('adjustModalTitle').textContent = `Phân Việc Trong Ngày Cho ${w.name} (${w.code})`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="form-group">
+        <label>Công việc cụ thể giao cho ${w.name} hôm nay <span class="req">*</span></label>
+        <input type="text" id="workerTaskInput" value="${w.assignedTaskToday || ''}" placeholder="Nhập nhiệm vụ cụ thể trong ca..." />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitWorkerTask('${w.id}')">🛠️ Lưu phân công</button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function submitWorkerTask(workerId) {
+    const w = state.workers.find(x => x.id === workerId);
+    const val = (document.getElementById('workerTaskInput').value || '').trim();
+    if (w && val) {
+      w.assignedTaskToday = val;
+      saveState();
+      renderMain();
+    }
+    closeModal('adjustModal');
+  }
+
+  function updateTeamTaskProgress(taskId) {
+    const tsk = (state.tasks || []).find(x => x.id === taskId);
+    if (!tsk) return;
+    tsk.progressPercent = Math.min(100, (tsk.progressPercent || 50) + 15);
+    saveState();
+    renderMain();
+  }
+
+  // THÊM CÔNG NHÂN MỚI (TỰ ĐỘNG GẮN QUẢN LÝ CÔNG TRÌNH & ĐỘI TRƯỞNG TẠO RA)
+  function openAddWorkerModal() {
+    const acc = getCurrentAccount();
+    let allowedTeams = state.teams;
+    if (acc && acc.roleId === 'QLCT') {
+      allowedTeams = state.teams.filter(t => t.projectId === acc.projectId);
+    } else if (acc && acc.roleId === 'DT1') {
+      allowedTeams = state.teams.filter(t => t.id === acc.teamId);
+    }
+
+    const nextNum = state.workers.length + 1;
+    const suggestedCode = `NV.SME-${nextNum}`;
+
+    document.getElementById('adjustModalTitle').textContent = `Thêm Nhân Sự Mới Dưới Quyền Quản Lý (${acc ? acc.fullName : ''})`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm); font-size:11px; margin-bottom:8px;">
+        Người tạo hồ sơ: <strong style="color:var(--ds-primary);">${acc ? acc.fullName : 'Admin'}</strong>. Nhân sự này sẽ tự động được cấp tài khoản đăng nhập cổng Công nhân với Mã PIN mặc định <code>0000</code>.
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="form-group">
+          <label>Mã Nhân viên (Tên đăng nhập) <span class="req">*</span></label>
+          <input type="text" id="newWCode" value="${suggestedCode}" />
+        </div>
+        <div class="form-group">
+          <label>Họ và Tên Công nhân <span class="req">*</span></label>
+          <input type="text" id="newWName" placeholder="VD: NGUYỄN VĂN HẢI" />
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="form-group">
+          <label>Thuộc Đội thi công <span class="req">*</span></label>
+          <select id="newWTeam">
+            ${allowedTeams.map(t => `<option value="${t.id}">${t.name} (QLCT: ${t.managerName})</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Đơn giá lương ngày (VNĐ) <span class="req">*</span></label>
+          <input type="number" id="newWWage" value="480000" step="10000" />
         </div>
       </div>
       <div class="form-group">
-        <label for="adjReason">Lý do điều chỉnh <span class="req">*</span></label>
-        <textarea id="adjReason" rows="2" placeholder="Nhập lý do cụ thể (VD: Bổ sung biên bản xác nhận đổ bê tông ca tối)..."></textarea>
-        <div id="adjReasonErr" class="field-error-msg" style="display:none;">Vui lòng nhập rõ lý do điều chỉnh để lưu vào lịch sử Audit Log.</div>
+        <label>Công việc giao trong ngày</label>
+        <input type="text" id="newWTask" placeholder="VD: Thi công lắp dựng cốt thép dầm sàn" />
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitAdjustment('${w.id}')">Lưu điều chỉnh</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitAddWorker()">+ Lưu &amp; Cấp tài khoản Công nhân</button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function submitAddWorker() {
+    const acc = getCurrentAccount();
+    const code = (document.getElementById('newWCode').value || '').trim();
+    const name = (document.getElementById('newWName').value || '').trim().toUpperCase();
+    const teamId = document.getElementById('newWTeam').value;
+    const wage = Number(document.getElementById('newWWage').value || 450000);
+    const task = (document.getElementById('newWTask').value || '').trim();
+
+    if (!code || !name) {
+      alert('Vui lòng nhập đầy đủ Mã NV và Họ tên!');
+      return;
+    }
+    const tm = getTeam(teamId);
+    const prj = getProject(tm.projectId);
+
+    const newWorker = {
+      id: 'W' + (state.workers.length + 1),
+      seq: 5000 + state.workers.length + 1,
+      code,
+      name,
+      roleName: 'Công nhân kỹ thuật',
+      teamId: tm.id,
+      teamName: tm.name,
+      leaderName: tm.leader,
+      leaderUsername: tm.leaderUsername,
+      projectId: prj.id,
+      projectName: prj.name,
+      managerUsername: tm.managerUsername,
+      managerName: tm.managerName,
+      createdBy: acc ? acc.fullName : tm.managerName,
+      assignedTaskToday: task || tm.dailyTargetTask,
+      phone: '0905.888.999',
+      dailyWage: wage,
+      attendanceStatus: 'DANG_LAM',
+      checkInTime: '07:00:00',
+      checkOutTime: null,
+      lat: prj.lat,
+      lng: prj.lng,
+      acc: 8,
+      distanceM: 12,
+      gpsValid: true,
+      hoursRegular: 8,
+      hoursOtRegistered: 0,
+      hoursOtActual: 0,
+      otReason: '',
+      forgotCheckoutFlag: false,
+      approvalStatus: 'CHO_QL_DUYET',
+      approvedBy: '',
+      weekDays: [1, 1, 1, 1, 1, 1, 0],
+      daysMonthApproved: 1,
+      otHoursMonthApproved: 0,
+      sundayDaysMonth: 0
+    };
+
+    state.workers.unshift(newWorker);
+
+    // Tự động tạo tài khoản đăng nhập cho công nhân mới
+    state.accounts.push({
+      id: 'ACC-W-' + code,
+      username: code,
+      pin: '0000',
+      fullName: name,
+      positionTitle: `Công nhân ${tm.name}`,
+      roleId: 'CN',
+      level: 5,
+      projectId: prj.id,
+      teamId: tm.id,
+      workerCode: code,
+      managerName: tm.managerName,
+      leaderName: tm.leader,
+      createdBy: acc ? acc.fullName : tm.managerName,
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: false, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+    });
+
+    saveState();
+    closeModal('adjustModal');
+    renderMain();
+  }
+
+  // CÔNG NHÂN TỰ GỬI ĐƠN XIN ỨNG LƯƠNG / NGHỈ PHÉP
+  function openPersonalAdvanceModal() {
+    const w = getPersonalWorkerRecord();
+    const accrued = w.daysMonthApproved * w.dailyWage;
+    const maxAdv = Math.round(accrued * 0.7);
+
+    document.getElementById('adjustModalTitle').textContent = `Đơn Xin Ứng Lương Cá Nhân — ${w.name} (${w.code})`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:10px; border-radius:var(--ds-radius-sm); font-size:11.5px; margin-bottom:10px;">
+        <div>Công đã được QLCT (${w.managerName}) duyệt: <strong>${w.daysMonthApproved} ngày công</strong></div>
+        <div>Lương lũy kế hiện có: <strong>${formatVND(accrued)}</strong> · Hạn mức được ứng tối đa (70%): <strong style="color:var(--ds-primary);">${formatVND(maxAdv)}</strong></div>
+      </div>
+      <div class="form-group">
+        <label>Số tiền xin tạm ứng (VNĐ) <span class="req">*</span></label>
+        <input type="number" id="personalAdvAmount" value="${Math.min(2000000, maxAdv)}" step="100000" max="${maxAdv}" />
+      </div>
+      <div class="form-group">
+        <label>Lý do xin tạm ứng <span class="req">*</span></label>
+        <input type="text" id="personalAdvReason" value="Ứng tiền sinh hoạt gia đình" />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitPersonalAdvance()">💳 Gửi đơn cho Kế toán &amp; Giám đốc</button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function submitPersonalAdvance() {
+    const w = getPersonalWorkerRecord();
+    const amount = Number(document.getElementById('personalAdvAmount').value || 0);
+    const reason = (document.getElementById('personalAdvReason').value || '').trim();
+    const accrued = w.daysMonthApproved * w.dailyWage;
+
+    if (amount <= 0 || amount > accrued) {
+      alert('Số tiền xin ứng không hợp lệ hoặc vượt quá lương lũy kế đã làm!');
+      return;
+    }
+
+    state.advances.unshift({
+      id: 'UL-0' + (state.advances.length + 1),
+      workerId: w.id,
+      workerCode: w.code,
+      workerName: w.name,
+      teamName: w.teamName,
+      projectId: w.projectId,
+      amount,
+      reason: reason || 'Ứng lương cá nhân',
+      daysWorkedSoFar: w.daysMonthApproved,
+      accruedSalary: accrued,
+      date: '22/11/2026',
+      status: 'CHO_KT_KIEM_TRA',
+      checkedByKt: '',
+      approvedByBgd: ''
+    });
+
+    saveState();
+    closeModal('adjustModal');
+    selectTab('cn-requests');
+  }
+
+  function openPersonalLeaveModal() {
+    const w = getPersonalWorkerRecord();
+    document.getElementById('adjustModalTitle').textContent = `Đơn Xin Nghỉ Phép — ${w.name} (${w.code})`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="form-group">
+        <label>Ngày xin nghỉ <span class="req">*</span></label>
+        <input type="text" id="leaveDateInput" value="23/11/2026" />
+      </div>
+      <div class="form-group">
+        <label>Lý do xin nghỉ phép (Gửi Đội trưởng ${w.leaderName} &amp; QLCT ${w.managerName}) <span class="req">*</span></label>
+        <input type="text" id="leaveReasonInput" value="Giải quyết việc gia đình (1 ngày)" />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="window.NPApp.closeModal('adjustModal'); alert('Đã gửi đơn xin nghỉ phép tới Đội trưởng ${w.leaderName} và Quản lý Công trình ${w.managerName}!');">📝 Gửi đơn xin nghỉ</button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  // SỬA GIỜ CÔNG CÓ LƯU VẾT AUDIT LOG & ĐĂNG KÝ TĂNG CA
+  function openAdjustModal(workerId) {
+    const w = state.workers.find(x => x.id === workerId);
+    if (!w) return;
+    document.getElementById('adjustModalTitle').textContent = `Điều Chỉnh Giờ Công — ${w.name} (${w.code})`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="form-group">
+        <label>Giờ Vào ca mới <span class="req">*</span></label>
+        <input type="text" id="adjInTime" value="${w.checkInTime || '07:00:00'}" />
+      </div>
+      <div class="form-group">
+        <label>Giờ Ra ca mới</label>
+        <input type="text" id="adjOutTime" value="${w.checkOutTime || '17:30:00'}" />
+      </div>
+      <div class="form-group">
+        <label>Lý do điều chỉnh bắt buộc (Lưu vào Nhật ký Kiểm toán Giám đốc) <span class="req">*</span></label>
+        <textarea id="adjReason" rows="2" placeholder="Nhập lý do sửa giờ công..."></textarea>
+        <div id="adjErr" class="field-error-msg" style="display:none;">Bắt buộc nhập lý do sửa công!</div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitAdjustment('${w.id}')">Lưu &amp; Ghi Audit Log</button>
       </div>
     `;
     document.getElementById('adjustModal').classList.add('open');
@@ -1468,705 +2789,193 @@
 
   function submitAdjustment(workerId) {
     const w = state.workers.find(x => x.id === workerId);
-    if (!w) return;
-    const reasonEl = document.getElementById('adjReason');
-    const errEl = document.getElementById('adjReasonErr');
-    const reason = (reasonEl.value || '').trim();
+    const reason = (document.getElementById('adjReason').value || '').trim();
     if (!reason) {
-      reasonEl.style.borderColor = 'var(--ds-danger)';
-      if (errEl) errEl.style.display = 'block';
+      document.getElementById('adjErr').style.display = 'block';
       return;
     }
-    const newStatus = document.getElementById('adjStatus').value;
-    const newReg = Number(document.getElementById('adjRegHours').value || 0);
-    const newOt = Number(document.getElementById('adjOtHours').value || 0);
-    const role = getCurrentRole();
+    const acc = getCurrentAccount();
+    const oldVal = `${w.checkInTime || 'Trống'} - ${w.checkOutTime || 'Trống'}`;
+    w.checkInTime = document.getElementById('adjInTime').value.trim();
+    w.checkOutTime = document.getElementById('adjOutTime').value.trim();
+    w.attendanceStatus = 'DA_RA';
+    w.hoursRegular = 8;
 
     state.auditLogs.unshift({
-      id: 'LOG-' + (state.auditLogs.length + 103),
-      timestamp: new Date().toLocaleString('vi-VN'),
+      id: 'LOG-0' + (state.auditLogs.length + 1),
+      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
       workerCode: w.code,
       workerName: w.name,
-      actor: `${role.personName} (${role.title})`,
-      field: 'Điều chỉnh Công & OT',
-      oldValue: `${w.hoursRegular}h HC + ${w.hoursOtActual}h OT`,
-      newValue: `${newReg}h HC + ${newOt}h OT (${newStatus})`,
+      actorName: acc ? acc.fullName : w.managerName,
+      actorRole: acc ? acc.positionTitle : 'Quản lý Công trình',
+      field: 'Giờ vào / Giờ ra',
+      oldVal,
+      newVal: `${w.checkInTime} - ${w.checkOutTime}`,
       reason
     });
 
-    w.attendanceStatus = newStatus;
-    w.hoursRegular = newReg;
-    w.hoursOtActual = newOt;
-    w.hoursOtRegistered = newOt;
-    w.forgotCheckoutFlag = false;
-
-    if (role.level >= 4) {
-      w.approvalStatus = 'CHO_DUYET';
-      w.approvedBy = null;
-    }
-
     saveState();
-    document.getElementById('adjustModal').classList.remove('open');
+    closeModal('adjustModal');
     renderMain();
   }
 
-  // ================= MODAL ĐĂNG KÝ TĂNG CA CHUẨN (THAY CHO PROMPT) =================
   function openOtModal(workerId) {
-    const w = workerId ? state.workers.find(x => x.id === workerId) : state.workers[0];
-    document.getElementById('adjustModalTitle').textContent = 'Đăng ký Giờ Tăng ca (Đội trưởng báo OT)';
+    const w = state.workers.find(x => x.id === workerId);
+    if (!w) return;
+    document.getElementById('adjustModalTitle').textContent = `Đăng Ký Tăng Ca (OT) — ${w.name} (${w.code})`;
     document.getElementById('adjustModalBody').innerHTML = `
       <div class="form-group">
-        <label for="otWorkerSel">Chọn Công nhân đăng ký tăng ca <span class="req">*</span></label>
-        <select id="otWorkerSel">
-          ${state.workers.slice(0, 50).map(item => `<option value="${item.id}" ${w && item.id === w.id ? 'selected' : ''}>${item.code} — ${item.name} (${item.teamId})</option>`).join('')}
+        <label>Số giờ Tăng ca sau 17:30 <span class="req">*</span></label>
+        <select id="otHoursSelect">
+          <option value="0" ${w.hoursOtRegistered === 0 ? 'selected' : ''}>0 giờ (Chốt 17:30)</option>
+          <option value="2" ${w.hoursOtRegistered === 2 ? 'selected' : ''}>+2.0 giờ OT (17:30 → 19:30)</option>
+          <option value="3" ${w.hoursOtRegistered === 3 ? 'selected' : ''}>+3.0 giờ OT (17:30 → 20:30)</option>
+          <option value="4" ${w.hoursOtRegistered === 4 ? 'selected' : ''}>+4.0 giờ OT (17:30 → 21:30)</option>
         </select>
       </div>
       <div class="form-group">
-        <label for="otHoursInput">Số giờ tăng ca đăng ký (giờ) <span class="req">*</span></label>
-        <input type="number" id="otHoursInput" value="${w ? (w.hoursOtRegistered || 2) : 2}" min="0" max="12" step="0.5" />
+        <label>Hạng mục tăng ca trình Quản lý (${w.managerName}) duyệt <span class="req">*</span></label>
+        <input type="text" id="otReasonInput" value="${w.otReason || w.assignedTaskToday || 'Tăng ca hoàn thiện mẻ bê tông'}" />
       </div>
-      <div class="form-group">
-        <label for="otNoteInput">Hạng mục thi công tăng ca <span class="req">*</span></label>
-        <input type="text" id="otNoteInput" value="Đổ bê tông sàn & hoàn thiện" placeholder="Nhập công việc tăng ca..." />
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitOtModal()">Lưu đăng ký OT</button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
-  }
-
-  function submitOtModal() {
-    const wId = document.getElementById('otWorkerSel').value;
-    const hours = Number(document.getElementById('otHoursInput').value || 0);
-    const w = state.workers.find(x => x.id === wId);
-    if (w) {
-      w.hoursOtRegistered = hours;
-      w.hoursOtActual = hours;
-      w.approvalStatus = 'CHO_DUYET';
-      w.approvedBy = null;
-      saveState();
-      renderMain();
-    }
-    document.getElementById('adjustModal').classList.remove('open');
-  }
-
-  // ================= MODAL TẠO PHIẾU XIN ỨNG LƯƠNG CHUẨN (THAY CHO PROMPT) =================
-  function openAdvanceModal() {
-    const w0 = state.workers[0];
-    const accrued0 = w0.daysMonthApproved * w0.dailyWage;
-    document.getElementById('adjustModalTitle').textContent = 'Tạo Phiếu Xin Ứng Lương (Duyệt 100%)';
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="form-group">
-        <label for="advWorkerSel">Chọn Công nhân xin ứng lương <span class="req">*</span></label>
-        <select id="advWorkerSel" onchange="window.NPApp.updateAdvanceAccruedPreview()">
-          ${state.workers.slice(0, 60).map(w => `<option value="${w.id}">${w.code} — ${w.name} (${w.teamId})</option>`).join('')}
-        </select>
-      </div>
-      <div id="advAccruedBox" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:10px 14px; margin-bottom:14px; font-size:13.5px;">
-        Lương lũy kế đã duyệt: <strong style="color:var(--ds-primary);">${formatVND(accrued0)}</strong> · Hạn mức ứng an toàn (70%): <strong>${formatVND(Math.round(accrued0 * 0.7))}</strong>
-      </div>
-      <div class="form-group">
-        <label for="advAmountInput">Số tiền xin ứng (VNĐ) <span class="req">*</span></label>
-        <input type="number" id="advAmountInput" value="2000000" min="100000" step="100000" />
-      </div>
-      <div class="form-group">
-        <label for="advReasonInput">Lý do xin ứng lương <span class="req">*</span></label>
-        <input type="text" id="advReasonInput" value="Ứng lương sinh hoạt giữa tháng" placeholder="Nhập lý do xin ứng..." />
-        <div id="advErrMsg" class="field-error-msg" style="display:none;">Vui lòng nhập số tiền ứng hợp lệ và lý do xin ứng.</div>
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitAdvanceModal()">Gửi phiếu xin ứng</button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
-  }
-
-  function updateAdvanceAccruedPreview() {
-    const wId = document.getElementById('advWorkerSel').value;
-    const w = state.workers.find(x => x.id === wId);
-    const box = document.getElementById('advAccruedBox');
-    if (w && box) {
-      const accrued = w.daysMonthApproved * w.dailyWage;
-      box.innerHTML = `Lương lũy kế đã duyệt: <strong style="color:var(--ds-primary);">${formatVND(accrued)}</strong> · Hạn mức ứng an toàn (70%): <strong>${formatVND(Math.round(accrued * 0.7))}</strong>`;
-    }
-  }
-
-  function submitAdvanceModal() {
-    const wId = document.getElementById('advWorkerSel').value;
-    const amount = Number(document.getElementById('advAmountInput').value || 0);
-    const reason = (document.getElementById('advReasonInput').value || '').trim();
-    const errEl = document.getElementById('advErrMsg');
-    if (amount <= 0 || !reason) {
-      if (errEl) errEl.style.display = 'block';
-      return;
-    }
-    const w = state.workers.find(x => x.id === wId) || state.workers[0];
-    state.advances.unshift({
-      id: 'ADV-0' + (state.advances.length + 1),
-      workerCode: w.code,
-      workerName: w.name,
-      teamId: w.teamId,
-      projectId: w.projectId,
-      date: new Date().toLocaleDateString('vi-VN'),
-      amount,
-      reason,
-      accruedSalaryAtRequest: w.daysMonthApproved * w.dailyWage,
-      status: 'CHO_KT_KIEM_TRA',
-      checkedByKt: null,
-      approvedByBgd: null
-    });
-    saveState();
-    document.getElementById('adjustModal').classList.remove('open');
-    renderMain();
-  }
-
-  // ================= MODAL THÊM CÔNG NHÂN MỚI & THÊM CÔNG TRÌNH MỚI =================
-  function openAddWorkerModal() {
-    const nextIdx = state.workers.length + 1;
-    document.getElementById('adjustModalTitle').textContent = 'Thêm Công nhân mới vào Hệ thống';
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="form-group">
-        <label for="nwCode">Mã Công nhân <span class="req">*</span></label>
-        <input type="text" id="nwCode" value="NV.NP-${String(nextIdx).padStart(3, '0')}" />
-      </div>
-      <div class="form-group">
-        <label for="nwName">Họ và Tên <span class="req">*</span></label>
-        <input type="text" id="nwName" placeholder="VD: NGUYỄN VĂN MINH" />
-        <div id="nwErr" class="field-error-msg" style="display:none;">Vui lòng nhập đầy đủ Họ và Tên công nhân.</div>
-      </div>
-      <div class="form-group">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-          <div>
-            <label for="nwTeam">Đội thi công <span class="req">*</span></label>
-            <select id="nwTeam">
-              ${state.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label for="nwWage">Lương ngày (VNĐ) <span class="req">*</span></label>
-            <input type="number" id="nwWage" value="480000" step="10000" />
-          </div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="nwSkill">Tay nghề / Chức danh</label>
-        <input type="text" id="nwSkill" value="Thợ chính Xây dựng" />
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitAddWorker()">Thêm công nhân</button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
-  }
-
-  function submitAddWorker() {
-    const code = (document.getElementById('nwCode').value || '').trim();
-    const name = (document.getElementById('nwName').value || '').trim().toUpperCase();
-    if (!name) {
-      document.getElementById('nwErr').style.display = 'block';
-      return;
-    }
-    const teamId = document.getElementById('nwTeam').value;
-    const team = getTeam(teamId);
-    const proj = getProject(team.projectId);
-    const wage = Number(document.getElementById('nwWage').value || 450000);
-    const skill = (document.getElementById('nwSkill').value || 'Thợ xây dựng').trim();
-    const maxSeq = Math.max(...state.workers.map(w => w.seq || 4900));
-    const now = new Date();
-
-    state.workers.unshift({
-      id: 'W' + (state.workers.length + 1),
-      seq: maxSeq + 1,
-      code: code || `NV.NP-${state.workers.length + 1}`,
-      name,
-      teamId: team.id,
-      projectId: proj.id,
-      skill,
-      dailyWage: wage,
-      checkInTime: now.toTimeString().slice(0, 8),
-      checkOutTime: null,
-      date: now.toLocaleDateString('vi-VN'),
-      lat: liveGps.hasRealGps ? liveGps.lat : proj.lat,
-      lng: liveGps.hasRealGps ? liveGps.lng : proj.lng,
-      acc: liveGps.hasRealGps ? liveGps.acc : 15,
-      realAddress: liveGps.hasRealGps ? liveGps.address : proj.address,
-      attendanceStatus: 'DANG_LAM',
-      isLate: false,
-      lateMin: 0,
-      hoursRegular: 8,
-      hoursOtRegistered: 0,
-      hoursOtActual: 0,
-      forgotCheckoutFlag: false,
-      approvalStatus: 'CHO_DUYET',
-      approvedBy: null,
-      daysMonthApproved: 1,
-      otHoursMonthApproved: 0,
-      sundayDaysMonth: 0,
-      useRealSamplePhoto: false,
-      avatarSeed: state.workers.length + 1
-    });
-    saveState();
-    document.getElementById('adjustModal').classList.remove('open');
-    renderMain();
-  }
-
-  function openAddProjectModal() {
-    const nextNum = state.projects.length + 1;
-    const defLat = liveGps.hasRealGps ? liveGps.lat : 15.998583;
-    const defLng = liveGps.hasRealGps ? liveGps.lng : 107.988185;
-    const defAddr = (liveGps.hasRealGps && liveGps.address && !liveGps.address.startsWith('Đang'))
-      ? liveGps.address
-      : 'TP. Đà Nẵng';
-
-    document.getElementById('adjustModalTitle').textContent = 'Thêm Công trình mới & Định vị GPS';
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="form-group">
-        <label for="npName">Tên Công trình <span class="req">*</span></label>
-        <input type="text" id="npName" value="CT${nextNum} - Công trình Nguyên Phát ${nextNum}" />
-      </div>
-      <div class="form-group">
-        <label for="npAddr">Địa chỉ định vị <span class="req">*</span></label>
-        <input type="text" id="npAddr" value="${defAddr}" />
-      </div>
-      <div class="form-group">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-          <div>
-            <label for="npLat">Vĩ độ (Lat)</label>
-            <input type="number" id="npLat" value="${defLat}" step="0.000001" />
-          </div>
-          <div>
-            <label for="npLng">Kinh độ (Lng)</label>
-            <input type="number" id="npLng" value="${defLng}" step="0.000001" />
-          </div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="npMgr">Quản lý Công trình phụ trách</label>
-        <input type="text" id="npMgr" value="KS. Trần Minh Hoàng" />
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitAddProject()">Lưu Công trình</button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
-  }
-
-  function submitAddProject() {
-    const nextNum = state.projects.length + 1;
-    const name = (document.getElementById('npName').value || `CT${nextNum}`).trim();
-    const address = (document.getElementById('npAddr').value || '').trim();
-    const lat = Number(document.getElementById('npLat').value || 15.998583);
-    const lng = Number(document.getElementById('npLng').value || 107.988185);
-    const manager = (document.getElementById('npMgr').value || 'KS. Trần Minh Hoàng').trim();
-
-    state.projects.push({
-      id: 'CT' + nextNum,
-      code: 'CT-NP0' + nextNum,
-      name,
-      address,
-      lat,
-      lng,
-      radiusM: 200,
-      manager,
-      managerRole: 'Quản lý công trình CT' + nextNum
-    });
-    saveState();
-    document.getElementById('adjustModal').classList.remove('open');
-    renderMain();
-  }
-
-  function setProjectToCurrentGps(projectId) {
-    const p = state.projects.find(x => x.id === projectId);
-    if (!p) return;
-    if (liveGps.hasRealGps) {
-      p.lat = liveGps.lat;
-      p.lng = liveGps.lng;
-      if (liveGps.address && !liveGps.address.startsWith('Đang')) {
-        p.address = liveGps.address;
-      }
-      saveState();
-      renderMain();
-    } else {
-      refreshRealGps();
-    }
-  }
-
-  // ================= QUẢN TRỊ ADMIN: TẠO / SỬA / KHÓA / XÓA / ĐĂNG NHẬP TÀI KHOẢN THEO VỊ TRÍ =================
-  function getDefaultPermsForRole(roleId) {
-    if (roleId === 'BGD') return { checkin: true, inputTeam: true, approveWork: true, accounting: true, approveDirector: true, adminUsers: true, level: 1, title: 'Admin & Ban Giám Đốc' };
-    if (roleId === 'KT') return { checkin: true, inputTeam: false, approveWork: false, accounting: true, approveDirector: false, adminUsers: false, level: 2, title: 'Hành Chính – Kế Toán' };
-    if (roleId === 'QLCT') return { checkin: true, inputTeam: true, approveWork: true, accounting: false, approveDirector: false, adminUsers: false, level: 3, title: 'Quản lý Công trình' };
-    if (roleId === 'DT1') return { checkin: true, inputTeam: true, approveWork: false, accounting: false, approveDirector: false, adminUsers: false, level: 4, title: 'Đội trưởng Thi công' };
-    return { checkin: true, inputTeam: false, approveWork: false, accounting: false, approveDirector: false, adminUsers: false, level: 5, title: 'Công nhân' };
-  }
-
-  function openAccountFormModal(accId) {
-    const curAcc = getCurrentAccount();
-    if (curAcc && curAcc.perms && !curAcc.perms.adminUsers && currentRoleId !== 'BGD') {
-      alert('Chỉ tài khoản Admin / Ban Giám Đốc mới có quyền Tạo hoặc Chỉnh sửa tài khoản hệ thống!');
-      return;
-    }
-
-    const editing = accId ? (state.accounts || []).find(a => a.id === accId) : null;
-    const defRole = editing ? editing.roleId : 'QLCT';
-    const defPerms = editing ? editing.perms : getDefaultPermsForRole(defRole);
-
-    document.getElementById('adjustModalTitle').textContent = editing
-      ? `Chỉnh sửa Tài khoản — ${editing.username}`
-      : 'Tạo Tài khoản mới cho Vị trí';
-
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="form-group">
-        <label for="accRoleSel">Chọn Vị trí / Cấp bậc <span class="req">*</span></label>
-        <select id="accRoleSel" onchange="window.NPApp.applyPresetByRoleInModal(this.value)">
-          <option value="BGD" ${defRole === 'BGD' ? 'selected' : ''}>Cấp 1 — Admin / Ban Giám Đốc (Toàn quyền)</option>
-          <option value="KT" ${defRole === 'KT' ? 'selected' : ''}>Cấp 2 — Hành chính – Kế toán (Tổng hợp &amp; Tính lương)</option>
-          <option value="QLCT" ${defRole === 'QLCT' ? 'selected' : ''}>Cấp 3 — Quản lý Công trình (Kiểm tra &amp; Duyệt bảng công)</option>
-          <option value="DT1" ${defRole === 'DT1' ? 'selected' : ''}>Cấp 4 — Đội trưởng (Chấm công đội &amp; Báo tăng ca)</option>
-          <option value="CN" ${defRole === 'CN' ? 'selected' : ''}>Cấp 5 — Công nhân (Điểm danh GPS &amp; Xem công cá nhân)</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <div>
-            <label for="accUsername">Tên đăng nhập (Username) <span class="req">*</span></label>
-            <input type="text" id="accUsername" value="${editing ? editing.username : ''}" placeholder="VD: qlct_ct2 hoặc doitruong7" />
-          </div>
-          <div>
-            <label for="accPin">Mật khẩu / Mã PIN <span class="req">*</span></label>
-            <input type="text" id="accPin" value="${editing ? editing.pin : '1234'}" placeholder="VD: 1234" />
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <div>
-            <label for="accFullName">Họ và tên nhân sự <span class="req">*</span></label>
-            <input type="text" id="accFullName" value="${editing ? editing.fullName : ''}" placeholder="VD: KS. Nguyễn Văn A" />
-          </div>
-          <div>
-            <label for="accPosTitle">Chức danh vị trí hiển thị</label>
-            <input type="text" id="accPosTitle" value="${editing ? editing.positionTitle : 'Quản lý Công trình'}" />
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <div>
-            <label for="accProjScope">Phạm vi Công trình phụ trách</label>
-            <select id="accProjScope">
-              <option value="ALL" ${(!editing || editing.projectId === 'ALL') ? 'selected' : ''}>Toàn công ty (Tất cả CT)</option>
-              ${state.projects.map(p => `<option value="${p.id}" ${(editing && editing.projectId === p.id) ? 'selected' : ''}>${p.name}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label for="accTeamScope">Phạm vi Đội phụ trách</label>
-            <select id="accTeamScope">
-              <option value="ALL" ${(!editing || editing.teamId === 'ALL') ? 'selected' : ''}>Tất cả các Đội</option>
-              ${state.teams.map(t => `<option value="${t.id}" ${(editing && editing.teamId === t.id) ? 'selected' : ''}>${t.name}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:8px 10px;">
-        <label style="margin-bottom:5px;">Phân quyền chức năng chi tiết cho Tài khoản này:</label>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; font-size:10.5px;">
-          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permCheckin" style="width:auto; min-height:auto;" ${defPerms.checkin ? 'checked' : ''} /> Chấm công Camera GPS</label>
-          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permInputTeam" style="width:auto; min-height:auto;" ${defPerms.inputTeam ? 'checked' : ''} /> Nhập công &amp; Báo tăng ca</label>
-          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permApproveWork" style="width:auto; min-height:auto;" ${defPerms.approveWork ? 'checked' : ''} /> Duyệt công (Khóa công)</label>
-          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permAccounting" style="width:auto; min-height:auto;" ${defPerms.accounting ? 'checked' : ''} /> Tổng hợp &amp; Tính lương</label>
-          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permApproveDirector" style="width:auto; min-height:auto;" ${defPerms.approveDirector ? 'checked' : ''} /> Duyệt Ứng &amp; Bảng lương</label>
-          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permAdminUsers" style="width:auto; min-height:auto;" ${defPerms.adminUsers ? 'checked' : ''} /> Admin Tạo tài khoản</label>
-        </div>
-      </div>
-
-      <div id="accFormErr" class="field-error-msg" style="display:none; margin-bottom:8px;">Vui lòng nhập đầy đủ Tên đăng nhập, Mật khẩu/PIN và Họ tên nhân sự.</div>
-
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitAccountForm('${editing ? editing.id : ''}')">
-          ${editing ? 'Lưu cập nhật tài khoản' : 'Tạo tài khoản ngay'}
-        </button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitOtModal('${w.id}')">⏱️ Lưu Đăng ký Tăng ca</button>
       </div>
     `;
     document.getElementById('adjustModal').classList.add('open');
   }
 
-  function applyPresetByRoleInModal(roleId) {
-    const p = getDefaultPermsForRole(roleId);
-    const posInput = document.getElementById('accPosTitle');
-    if (posInput) posInput.value = p.title;
-    document.getElementById('permCheckin').checked = p.checkin;
-    document.getElementById('permInputTeam').checked = p.inputTeam;
-    document.getElementById('permApproveWork').checked = p.approveWork;
-    document.getElementById('permAccounting').checked = p.accounting;
-    document.getElementById('permApproveDirector').checked = p.approveDirector;
-    document.getElementById('permAdminUsers').checked = p.adminUsers;
+  function submitOtModal(workerId) {
+    const w = state.workers.find(x => x.id === workerId);
+    if (!w) return;
+    const h = Number(document.getElementById('otHoursSelect').value || 0);
+    const r = (document.getElementById('otReasonInput').value || '').trim();
+    w.hoursOtRegistered = h;
+    w.hoursOtActual = h;
+    w.otReason = r;
+    w.approvalStatus = 'CHO_QL_DUYET';
+    saveState();
+    closeModal('adjustModal');
+    renderMain();
   }
 
-  function submitAccountForm(existingId) {
-    const roleId = document.getElementById('accRoleSel').value;
-    const username = (document.getElementById('accUsername').value || '').trim();
-    const pin = (document.getElementById('accPin').value || '').trim();
-    const fullName = (document.getElementById('accFullName').value || '').trim();
-    const positionTitle = (document.getElementById('accPosTitle').value || '').trim();
-    const projectId = document.getElementById('accProjScope').value;
-    const teamId = document.getElementById('accTeamScope').value;
+  // ADMIN TẠO / SỬA TÀI KHOẢN CHO TỪNG VỊ TRÍ
+  function openAccountFormModal(accId) {
+    if (!isAdminAccount()) return;
+    const editing = accId ? state.accounts.find(a => a.id === accId) : null;
+    document.getElementById('adjustModalTitle').textContent = editing
+      ? `Chỉnh sửa Tài khoản Vị trí — ${editing.fullName}`
+      : 'Tạo Tài Khoản Mới Cho Vị Trí (5 Cấp)';
+
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="form-group">
+          <label>Tên đăng nhập <span class="req">*</span></label>
+          <input type="text" id="accFormUser" value="${editing ? editing.username : ''}" placeholder="VD: qlct_ct4 hoặc doitruong7" />
+        </div>
+        <div class="form-group">
+          <label>Mã PIN / Mật khẩu <span class="req">*</span></label>
+          <input type="text" id="accFormPin" value="${editing ? editing.pin : '1234'}" />
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="form-group">
+          <label>Họ và Tên Nhân sự <span class="req">*</span></label>
+          <input type="text" id="accFormName" value="${editing ? editing.fullName : ''}" placeholder="VD: KS. Nguyễn Hoàng Long" />
+        </div>
+        <div class="form-group">
+          <label>Vị trí &amp; Giao diện làm việc <span class="req">*</span></label>
+          <select id="accFormRole">
+            <option value="BGD" ${editing && editing.roleId === 'BGD' ? 'selected' : ''}>Cấp 1 · Tổng Giám Đốc / Admin</option>
+            <option value="KT" ${editing && editing.roleId === 'KT' ? 'selected' : ''}>Cấp 2 · Hành chính – Kế toán</option>
+            <option value="QLCT" ${!editing || editing.roleId === 'QLCT' ? 'selected' : ''}>Cấp 3 · Quản lý Công trình</option>
+            <option value="DT1" ${editing && editing.roleId === 'DT1' ? 'selected' : ''}>Cấp 4 · Đội trưởng Thi công</option>
+            <option value="CN" ${editing && editing.roleId === 'CN' ? 'selected' : ''}>Cấp 5 · Công nhân / Nhân viên</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="form-group">
+          <label>Phạm vi Công trình phụ trách</label>
+          <select id="accFormProject">
+            <option value="ALL" ${editing && editing.projectId === 'ALL' ? 'selected' : ''}>Toàn bộ Công trình (ALL)</option>
+            ${state.projects.map(p => `<option value="${p.id}" ${editing && editing.projectId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Phạm vi Đội thi công</label>
+          <select id="accFormTeam">
+            <option value="ALL" ${editing && editing.teamId === 'ALL' ? 'selected' : ''}>Tất cả Đội (ALL)</option>
+            ${state.teams.map(t => `<option value="${t.id}" ${editing && editing.teamId === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitAccountForm('${editing ? editing.id : ''}')">💾 Lưu Tài khoản Vị trí</button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function submitAccountForm(editId) {
+    const username = (document.getElementById('accFormUser').value || '').trim();
+    const pin = (document.getElementById('accFormPin').value || '').trim();
+    const fullName = (document.getElementById('accFormName').value || '').trim();
+    const roleId = document.getElementById('accFormRole').value;
+    const projectId = document.getElementById('accFormProject').value;
+    const teamId = document.getElementById('accFormTeam').value;
 
     if (!username || !pin || !fullName) {
-      document.getElementById('accFormErr').style.display = 'block';
+      alert('Vui lòng nhập đầy đủ Tên đăng nhập, Mã PIN và Họ tên!');
       return;
     }
 
-    const preset = getDefaultPermsForRole(roleId);
-    const perms = {
-      checkin: document.getElementById('permCheckin').checked,
-      inputTeam: document.getElementById('permInputTeam').checked,
-      approveWork: document.getElementById('permApproveWork').checked,
-      accounting: document.getElementById('permAccounting').checked,
-      approveDirector: document.getElementById('permApproveDirector').checked,
-      adminUsers: document.getElementById('permAdminUsers').checked
-    };
+    const cfg = ROLE_CONFIG[roleId] || ROLE_CONFIG.CN;
+    const levelMap = { BGD: 1, KT: 2, QLCT: 3, DT1: 4, CN: 5 };
 
-    if (!state.accounts) state.accounts = [];
-
-    if (existingId) {
-      const acc = state.accounts.find(a => a.id === existingId);
+    if (editId) {
+      const acc = state.accounts.find(a => a.id === editId);
       if (acc) {
-        acc.roleId = roleId;
-        acc.level = preset.level;
         acc.username = username;
         acc.pin = pin;
         acc.fullName = fullName;
-        acc.positionTitle = positionTitle || preset.title;
+        acc.roleId = roleId;
+        acc.level = levelMap[roleId] || 5;
+        acc.positionTitle = cfg.shortTitle;
         acc.projectId = projectId;
         acc.teamId = teamId;
-        acc.perms = perms;
       }
     } else {
-      const newAcc = {
-        id: 'ACC-' + String(state.accounts.length + 1).padStart(2, '0'),
+      state.accounts.push({
+        id: 'ACC-' + (state.accounts.length + 1),
         username,
         pin,
         fullName,
-        positionTitle: positionTitle || preset.title,
+        positionTitle: cfg.shortTitle,
         roleId,
-        level: preset.level,
+        level: levelMap[roleId] || 5,
         projectId,
         teamId,
+        createdBy: 'GĐ. Nguyễn Phát',
         status: 'ACTIVE',
-        perms
-      };
-      state.accounts.unshift(newAcc);
+        perms: {
+          checkin: roleId === 'DT1' || roleId === 'CN',
+          inputTeam: roleId === 'QLCT' || roleId === 'DT1',
+          approveWork: roleId === 'BGD' || roleId === 'QLCT',
+          accounting: roleId === 'BGD' || roleId === 'KT',
+          approveDirector: roleId === 'BGD',
+          adminUsers: roleId === 'BGD'
+        }
+      });
     }
 
     saveState();
-    document.getElementById('adjustModal').classList.remove('open');
+    closeModal('adjustModal');
     renderMain();
   }
 
-  function toggleAccountStatus(accId) {
-    const acc = (state.accounts || []).find(a => a.id === accId);
-    if (!acc) return;
-    if (acc.username === 'admin') {
-      alert('Không thể khóa tài khoản Admin Tổng!');
-      return;
-    }
-    acc.status = acc.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
-    saveState();
-    renderMain();
-  }
-
-  function deleteAccount(accId) {
-    const acc = (state.accounts || []).find(a => a.id === accId);
-    if (!acc || acc.username === 'admin') return;
-    state.accounts = state.accounts.filter(a => a.id !== accId);
-    saveState();
-    renderMain();
-  }
-
-  function loginAsAccount(accId) {
-    const acc = (state.accounts || []).find(a => a.id === accId);
-    if (!acc) return;
-    if (acc.status !== 'ACTIVE') {
-      alert('Tài khoản này đang bị khóa! Vui lòng mở khóa trên trang Admin trước.');
-      return;
-    }
-    currentAccountId = acc.id;
-    currentRoleId = acc.roleId;
-    isAuthenticated = true;
-
-    // Tự động áp dụng phạm vi lọc Công trình & Đội theo tài khoản vừa đăng nhập
-    filterProject = acc.projectId || 'ALL';
-    filterTeam = acc.teamId || 'ALL';
-
-    const sel = document.getElementById('roleSelect');
-    if (sel) sel.value = acc.roleId;
-    document.querySelectorAll('#roleQuickPills .role-mini-btn').forEach(b => {
-      b.classList.toggle('active', b.getAttribute('data-role') === acc.roleId);
-    });
-
-    const bannerTitle = document.getElementById('activeRoleBannerTitle');
-    if (bannerTitle) {
-      const scopeTag = acc.projectId === 'ALL' ? 'Toàn công ty' : `${acc.projectId}${acc.teamId !== 'ALL' ? ' · ' + acc.teamId : ''}`;
-      bannerTitle.textContent = `Tài khoản: ${acc.username} (${acc.positionTitle}) — ${acc.fullName} [${scopeTag}]`;
-    }
-    closeFullLoginScreen();
-    updateAdminVisibility();
-    toggleSidebar(false);
-    renderMorningReport830();
-    renderMain();
-  }
-
-  function logoutAccount() {
-    isAuthenticated = false;
-    toggleSidebar(false);
-    openFullLoginScreen();
-  }
-
-  function openFullLoginScreen() {
-    toggleSidebar(false);
-    const uEl = document.getElementById('fullLoginUser');
-    const pEl = document.getElementById('fullLoginPin');
-    if (uEl) uEl.value = '';
-    if (pEl) pEl.value = '';
-    const errEl = document.getElementById('fullLoginErr');
-    if (errEl) errEl.style.display = 'none';
-
-    const overlay = document.getElementById('fullLoginOverlay');
-    if (overlay) overlay.classList.add('open');
-  }
-
-  function closeFullLoginScreen() {
-    if (!isAuthenticated) return;
-    const overlay = document.getElementById('fullLoginOverlay');
-    if (overlay) overlay.classList.remove('open');
-  }
-
-  function quickSelectLoginAccount(accId) {
-    const acc = (state.accounts || []).find(a => a.id === accId);
-    if (!acc) return;
-    document.getElementById('fullLoginUser').value = acc.username;
-    document.getElementById('fullLoginPin').value = acc.pin;
-    submitFullLogin();
-  }
-
-  function submitFullLogin() {
-    const u = (document.getElementById('fullLoginUser').value || '').trim().toLowerCase();
-    const p = (document.getElementById('fullLoginPin').value || '').trim();
-    const errEl = document.getElementById('fullLoginErr');
-
-    // 1. Kiểm tra trong danh sách Tài khoản Admin đã tạo
-    let acc = (state.accounts || []).find(a => a.username.toLowerCase() === u && a.pin === p && a.status === 'ACTIVE');
-
-    // 2. Nếu nhân sự nhập Mã Công nhân (trong 108 công nhân) + PIN (mặc định 0000 hoặc 1234) thì tự động đăng nhập đúng công nhân đó
-    if (!acc) {
-      const worker = state.workers.find(w => w.code.toLowerCase() === u);
-      if (worker && (p === '0000' || p === '1234')) {
-        acc = {
-          id: 'ACC-W-' + worker.id,
-          username: worker.code,
-          pin: p,
-          fullName: worker.name,
-          positionTitle: `Công nhân ${worker.teamId} (${worker.skill})`,
-          roleId: 'CN',
-          level: 5,
-          projectId: worker.projectId,
-          teamId: worker.teamId,
-          workerCode: worker.code,
-          status: 'ACTIVE',
-          perms: { checkin: true, inputTeam: false, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
-        };
-        state.accounts.push(acc);
-        saveState();
-      }
-    }
-
-    if (!acc) {
-      if (errEl) errEl.style.display = 'block';
-      return;
-    }
-
-    closeFullLoginScreen();
-    loginAsAccount(acc.id);
-  }
-
-  function openLoginModal() {
-    openFullLoginScreen();
-  }
-
-  function fillQuickLogin(accId) {
-    const acc = (state.accounts || []).find(a => a.id === accId);
-    if (!acc) return;
-    document.getElementById('loginUser').value = acc.username;
-    document.getElementById('loginPin').value = acc.pin;
-  }
-
-  function submitLogin() {
-    const u = (document.getElementById('loginUser').value || '').trim().toLowerCase();
-    const p = (document.getElementById('loginPin').value || '').trim();
-    const acc = (state.accounts || []).find(a => a.username.toLowerCase() === u && a.pin === p && a.status === 'ACTIVE');
-    if (!acc) {
-      document.getElementById('loginErrMsg').style.display = 'block';
-      return;
-    }
-    document.getElementById('adjustModal').classList.remove('open');
-    loginAsAccount(acc.id);
-  }
-
-  // ================= ĐỔI MÃ PIN & BẬT/TẮT KHÓA PIN =================
-  function togglePinLockMode() {
-    requirePinOnRoleSwitch = !requirePinOnRoleSwitch;
-    renderMain();
-  }
-
-  function openChangePinModal(roleId) {
-    const r = state.roles.find(x => x.id === roleId);
-    if (!r) return;
-    document.getElementById('adjustModalTitle').textContent = `Đổi Mã PIN — ${r.title}`;
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="form-group">
-        <label>Vai trò &amp; Người đại diện</label>
-        <input type="text" value="${r.title} — ${r.personName}" disabled />
-      </div>
-      <div class="form-group">
-        <label for="newPinInput">Mã PIN mới (4 – 6 chữ số) <span class="req">*</span></label>
-        <input type="text" id="newPinInput" value="${r.pin}" maxlength="6" />
-        <div id="pinErrMsg" class="field-error-msg" style="display:none;">Mã PIN phải gồm ít nhất 4 ký tự.</div>
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitChangePin('${r.id}')">Lưu Mã PIN</button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
-  }
-
-  function submitChangePin(roleId) {
-    const r = state.roles.find(x => x.id === roleId);
-    const val = (document.getElementById('newPinInput').value || '').trim();
-    if (!val || val.length < 4) {
-      document.getElementById('pinErrMsg').style.display = 'block';
-      return;
-    }
-    if (r) {
-      r.pin = val;
-      saveState();
-      renderMain();
-    }
-    document.getElementById('adjustModal').classList.remove('open');
-  }
-
-  // ================= XUẤT FILE EXCEL (.CSV UTF-8 BOM) =================
+  // ================= XUẤT FILE EXCEL (.CSV UTF-8 BOM) CÓ CỘT QUẢN LÝ CÔNG TRÌNH & ĐỘI TRƯỞNG =================
   function downloadCsvFile(filename, rows) {
     const bom = '\uFEFF';
     const csvContent = bom + rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
@@ -2180,15 +2989,15 @@
   }
 
   function exportAttendanceCsv() {
-    const header = ['STT', 'Mã NV', 'Họ và Tên', 'Đội', 'Công trình', 'Giờ vào', 'Giờ ra', 'Trạng thái', 'Công tháng đã duyệt', 'Giờ OT tháng', 'Trạng thái duyệt'];
+    const header = ['STT', 'Mã NV', 'Họ và Tên', 'Đội thi công', 'Đội trưởng trực tiếp', 'Thuộc Quản lý Công trình', 'Người tạo hồ sơ', 'Công trình', 'Giờ vào', 'Giờ ra', 'Công T11 Đã duyệt', 'Giờ OT T11', 'Trạng thái duyệt'];
     const rows = state.workers.map((w, i) => [
-      i + 1, w.code, w.name, w.teamId, w.projectId, w.checkInTime, w.checkOutTime || '', w.attendanceStatus, w.daysMonthApproved, w.otHoursMonthApproved, w.approvalStatus
+      i + 1, w.code, w.name, w.teamName, w.leaderName, w.managerName, w.createdBy, w.projectId, w.checkInTime, w.checkOutTime || '', w.daysMonthApproved, w.otHoursMonthApproved, w.approvalStatus
     ]);
-    downloadCsvFile('Bang-Cong-NP-ONE-Thang-11-2026.csv', [header, ...rows]);
+    downloadCsvFile('Bang-Cong-NP-ONE-Theo-Quan-Ly-Thang-11-2026.csv', [header, ...rows]);
   }
 
   function exportPayrollCsv() {
-    const header = ['STT', 'Mã NV', 'Họ và Tên', 'Đội', 'Công trình', 'Đơn giá ngày', 'Công đã duyệt', 'Giờ OT', 'Công CN', 'Tổng lương gộp', 'Trừ ứng lương đã duyệt', 'Thực lĩnh'];
+    const header = ['STT', 'Mã NV', 'Họ và Tên', 'Đội thi công', 'Đội trưởng', 'Thuộc Quản lý Công trình', 'Công trình', 'Đơn giá ngày', 'Công đã duyệt', 'Giờ OT', 'Công CN', 'Tổng lương gộp', 'Trừ tạm ứng đã duyệt', 'Thực lĩnh'];
     const rows = state.workers.map((w, i) => {
       const hourly = w.dailyWage / 8;
       const basePay = w.daysMonthApproved * w.dailyWage;
@@ -2196,32 +3005,16 @@
       const sunPay = Math.round(w.sundayDaysMonth * w.dailyWage * 2.0);
       const gross = basePay + otPay + sunPay;
       const adv = state.advances.filter(a => a.workerCode === w.code && a.status === 'BGD_DA_DUYET').reduce((s, a) => s + a.amount, 0);
-      return [i + 1, w.code, w.name, w.teamId, w.projectId, w.dailyWage, w.daysMonthApproved, w.otHoursMonthApproved, w.sundayDaysMonth, gross, adv, gross - adv];
+      return [i + 1, w.code, w.name, w.teamName, w.leaderName, w.managerName, w.projectId, w.dailyWage, w.daysMonthApproved, w.otHoursMonthApproved, w.sundayDaysMonth, gross, adv, gross - adv];
     });
-    downloadCsvFile('Bang-Luong-NP-ONE-Thang-11-2026.csv', [header, ...rows]);
-  }
-
-  function runCutoff1730Check() {
-    let lockedCount = 0;
-    state.workers.forEach(w => {
-      if (w.attendanceStatus === 'DANG_LAM' && w.hoursOtRegistered === 0) {
-        w.hoursRegular = 8;
-        w.hoursOtActual = 0;
-        if (w.seq >= 4944) {
-          w.forgotCheckoutFlag = true;
-          lockedCount++;
-        }
-      }
-    });
-    saveState();
-    renderMain();
+    downloadCsvFile('Bang-Luong-NP-ONE-Theo-Quan-Ly-Thang-11-2026.csv', [header, ...rows]);
   }
 
   function confirmForgotCheckout(workerId, otHours) {
     const w = state.workers.find(x => x.id === workerId);
     if (!w) return;
     w.forgotCheckoutFlag = false;
-    w.checkOutTime = '17:30:00';
+    w.checkOutTime = otHours > 0 ? '19:30:00' : '17:30:00';
     w.attendanceStatus = 'DA_RA';
     w.hoursRegular = 8;
     w.hoursOtActual = otHours;
@@ -2230,64 +3023,65 @@
   }
 
   function approveSingleWorker(workerId) {
-    const role = getCurrentRole();
-    if (role.level >= 4) {
-      alert('Nguyên tắc kiểm soát: Đội trưởng / Công nhân chỉ được nhập công, KHÔNG được tự duyệt công! Hãy chuyển sang vai trò Quản lý công trình hoặc Ban Giám đốc.');
+    const acc = getCurrentAccount();
+    if (!acc || (acc.roleId !== 'QLCT' && acc.roleId !== 'BGD')) {
+      alert('Nguyên tắc kiểm soát: Đội trưởng và Công nhân KHÔNG được tự duyệt công!');
       return;
     }
     const w = state.workers.find(x => x.id === workerId);
     if (w) {
       w.approvalStatus = 'DA_DUYET';
-      w.approvedBy = role.personName;
+      w.approvedBy = acc.fullName;
       saveState();
+      renderRoleNavigationAndHeader();
       renderMain();
     }
   }
 
   function approveAllVisible() {
-    const role = getCurrentRole();
-    if (role.level >= 4) {
-      alert('Nguyên tắc kiểm soát: Đội trưởng chỉ được nhập công, KHÔNG được tự duyệt công! Hãy chuyển sang vai trò Quản lý công trình / Giám đốc.');
+    const acc = getCurrentAccount();
+    if (!acc || (acc.roleId !== 'QLCT' && acc.roleId !== 'BGD')) {
+      alert('Nguyên tắc kiểm soát: Chỉ Quản lý Công trình hoặc Tổng Giám đốc mới có quyền duyệt công!');
       return;
     }
-    state.workers.forEach(w => {
+    const list = getScopedWorkersForCurrentAccount();
+    list.forEach(w => {
       if (w.approvalStatus !== 'DA_DUYET') {
         w.approvalStatus = 'DA_DUYET';
-        w.approvedBy = role.personName;
+        w.approvedBy = acc.fullName;
       }
     });
     saveState();
+    renderRoleNavigationAndHeader();
     renderMain();
   }
 
   function advanceStep(advId, stepType) {
-    const role = getCurrentRole();
+    const acc = getCurrentAccount();
     const adv = state.advances.find(a => a.id === advId);
     if (!adv) return;
 
     if (stepType === 'KT') {
       adv.status = 'CHO_BGD_DUYET';
-      adv.checkedByKt = role.personName;
+      adv.checkedByKt = acc ? acc.fullName : 'KTT. Lê Thị Thu Thảo';
     } else if (stepType === 'BGD') {
-      if (role.level > 2) {
-        alert('Chỉ Ban Giám Đốc mới có quyền phê duyệt ứng lương!');
-        return;
-      }
       adv.status = 'BGD_DA_DUYET';
-      adv.approvedByBgd = 'GĐ. Nguyễn Phát';
+      adv.approvedByBgd = acc ? acc.fullName : 'GĐ. Nguyễn Phát';
     }
     saveState();
+    renderRoleNavigationAndHeader();
     renderMain();
   }
 
   function approveMonthlyPayroll() {
-    const role = getCurrentRole();
-    if (role.id !== 'BGD') {
-      alert('Chỉ Ban Giám Đốc mới có quyền Phê duyệt Bảng lương!');
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') {
+      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền Phê duyệt Bảng lương tháng!');
       return;
     }
     state.payrollMonthStatus = 'BGD_DA_DUYET';
     saveState();
+    renderRoleNavigationAndHeader();
     renderMain();
   }
 
@@ -2305,22 +3099,25 @@
     const net = gross - approvedAdvance;
 
     document.getElementById('payslipModalBody').innerHTML = `
-      <div style="border:1px solid var(--ds-line); border-radius:var(--ds-radius-md); padding:18px; background:var(--ds-bg);">
+      <div style="border:1px solid var(--ds-line); border-radius:var(--ds-radius-md); padding:14px; background:var(--ds-bg);">
         <span class="kicker">CÔNG TY NGUYÊN PHÁT · NP ONE HR</span>
-        <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:20px; color:var(--ds-primary); margin-bottom:10px;">
+        <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:16px; color:var(--ds-primary); margin-bottom:4px;">
           Phiếu Lương — ${w.name} (${w.code})
         </div>
-        <table class="data-table" style="margin-bottom:14px;">
+        <div style="font-size:11px; color:var(--ds-text-muted); margin-bottom:10px;">
+          Đội: <strong>${w.teamName}</strong> · Đội trưởng: <strong>${w.leaderName}</strong> · Quản lý CT duyệt công: <strong>${w.managerName}</strong>
+        </div>
+        <table class="data-table" style="margin-bottom:12px;">
           <tbody>
-            <tr><td>Công hành chính đã duyệt (${w.daysMonthApproved} công)</td><td style="text-align:right; font-weight:700;">${formatVND(basePay)}</td></tr>
-            <tr><td>Giờ tăng ca đã duyệt (${w.otHoursMonthApproved}h x 1.5)</td><td style="text-align:right; font-weight:700;">${formatVND(otPay)}</td></tr>
-            <tr><td>Công Chủ nhật (${w.sundayDaysMonth} công x 2.0)</td><td style="text-align:right; font-weight:700;">${formatVND(sunPay)}</td></tr>
+            <tr><td>Công hành chính đã duyệt (${w.daysMonthApproved} công × ${formatVND(w.dailyWage)})</td><td style="text-align:right; font-weight:700;">${formatVND(basePay)}</td></tr>
+            <tr><td>Giờ tăng ca đã duyệt (${w.otHoursMonthApproved}h × 1.5)</td><td style="text-align:right; font-weight:700;">${formatVND(otPay)}</td></tr>
+            <tr><td>Công Chủ nhật (${w.sundayDaysMonth} công × 2.0)</td><td style="text-align:right; font-weight:700;">${formatVND(sunPay)}</td></tr>
             <tr style="background:var(--ds-bg-soft);"><td><strong>TỔNG LƯƠNG GỘP</strong></td><td style="text-align:right; font-weight:700;">${formatVND(gross)}</td></tr>
             <tr><td style="color:var(--ds-danger);">Trừ Ứng lương đã duyệt</td><td style="text-align:right; color:var(--ds-danger); font-weight:700;">-${formatVND(approvedAdvance)}</td></tr>
-            <tr style="background:var(--ds-bg-soft);"><td><strong style="color:var(--ds-primary);">THỰC LĨNH THANH TOÁN</strong></td><td style="text-align:right; color:var(--ds-primary); font-family:var(--ds-font-serif); font-size:18px; font-weight:700;">${formatVND(net)}</td></tr>
+            <tr style="background:var(--ds-bg-soft);"><td><strong style="color:var(--ds-primary);">THỰC LĨNH THANH TOÁN</strong></td><td style="text-align:right; color:var(--ds-primary); font-family:var(--ds-font-serif); font-size:15px; font-weight:700;">${formatVND(net)}</td></tr>
           </tbody>
         </table>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
           <button class="btn btn-soft" onclick="window.NPApp.closeModal('payslipModal')">Đóng</button>
           <button class="btn btn-primary" onclick="window.print()">🖨️ In Phiếu lương</button>
         </div>
@@ -2330,42 +3127,8 @@
   }
 
   function closeModal(id) {
-    document.getElementById(id).classList.remove('open');
-  }
-
-  function switchRole(roleId) {
-    const targetRole = state.roles.find(r => r.id === roleId);
-    if (!targetRole) return;
-    if (requirePinOnRoleSwitch && roleId !== currentRoleId) {
-      const entered = prompt(`Nhập Mã PIN của ${targetRole.title} (Mặc định: ${targetRole.pin}):`, '');
-      if (entered !== targetRole.pin) {
-        alert('Mã PIN không đúng!');
-        const sel = document.getElementById('roleSelect');
-        if (sel) sel.value = currentRoleId;
-        return;
-      }
-    }
-    currentRoleId = roleId;
-    const sel = document.getElementById('roleSelect');
-    if (sel) sel.value = roleId;
-    document.querySelectorAll('#roleQuickPills .role-mini-btn').forEach(b => {
-      b.classList.toggle('active', b.getAttribute('data-role') === roleId);
-    });
-    const role = getCurrentRole();
-    const bannerTitle = document.getElementById('activeRoleBannerTitle');
-    if (bannerTitle) {
-      bannerTitle.textContent = `Đang xem: ${role.title} — ${role.personName}`;
-    }
-    toggleSidebar(false);
-    renderMorningReport830();
-    renderMain();
-  }
-
-  function resetDemoData() {
-    localStorage.removeItem(STORAGE_KEY);
-    state = JSON.parse(JSON.stringify(window.NP_SEED));
-    saveState();
-    renderMain();
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('open');
   }
 
   function openInstallModal() {
@@ -2380,7 +3143,7 @@
         deferredInstallPrompt = null;
       });
     } else {
-      alert('Trên trình duyệt hiện tại: Hãy làm theo hướng dẫn ngay bên dưới (Trên iPhone bấm nút Chia sẻ ⬆️ → Thêm vào MH chính; trên Android bấm dấu ⋮ → Cài đặt ứng dụng).');
+      alert('Trên iPhone bấm nút Chia sẻ (Share ⬆️) → Thêm vào MH chính; trên Android bấm dấu ⋮ → Cài đặt ứng dụng.');
     }
   }
 
@@ -2394,17 +3157,6 @@
       deferredInstallPrompt = e;
     });
 
-    const roleSelect = document.getElementById('roleSelect');
-    if (roleSelect) {
-      roleSelect.innerHTML = state.roles.map(r =>
-        `<option value="${r.id}">${r.title} — ${r.personName}</option>`
-      ).join('');
-      roleSelect.value = currentRoleId;
-      roleSelect.addEventListener('change', e => switchRole(e.target.value));
-    }
-
-    document.getElementById('btnOpenCamera').addEventListener('click', () => openCameraQuick('VAO', null));
-
     const camWorkerSelect = document.getElementById('camWorkerSelect');
     const camProjectSelect = document.getElementById('camProjectSelect');
     const camActionType = document.getElementById('camActionType');
@@ -2413,23 +3165,22 @@
     if (camActionType) camActionType.addEventListener('change', drawLivePreviewOnCanvas);
 
     sampleImgObj.onload = () => {
-      renderMain();
+      if (isAuthenticated) renderMain();
     };
 
-    updateAdminVisibility();
-    updateTopBadges();
-    renderMorningReport830();
-    renderMain();
-
+    // Hỗ trợ tham số ?autologin=<username> phục vụ kiểm thử tự động từng vai trò, mặc định bắt buộc màn hình Đăng nhập đầu tiên
     const params = new URLSearchParams(window.location.search);
-    if (params.get('tab') && TAB_TITLES[params.get('tab')]) {
-      selectTab(params.get('tab'));
-    }
-    if (params.get('login') === '1') {
+    const autoUser = params.get('autologin');
+    if (autoUser) {
+      const found = state.accounts.find(a => a.username.toLowerCase() === autoUser.toLowerCase());
+      if (found) {
+        activateAccountSession(found);
+        closeFullLoginScreen();
+      } else {
+        openFullLoginScreen();
+      }
+    } else {
       openFullLoginScreen();
-    }
-    if (params.get('action') === 'checkin') {
-      setTimeout(() => openCameraQuick('VAO', null), 300);
     }
 
     setTimeout(refreshRealGps, 400);
@@ -2449,52 +3200,41 @@
     toggleCameraFacing,
     refreshRealGps,
     snapAndSubmitCheckin,
-    handleCheckout,
+    openAssignTaskModal,
+    submitAssignTask,
+    openWorkerTaskModal,
+    submitWorkerTask,
+    updateTeamTaskProgress,
+    openAddWorkerModal,
+    submitAddWorker,
+    openPersonalAdvanceModal,
+    submitPersonalAdvance,
+    openPersonalLeaveModal,
     openAdjustModal,
     submitAdjustment,
     openOtModal,
     submitOtModal,
-    openAdvanceModal,
-    updateAdvanceAccruedPreview,
-    submitAdvanceModal,
-    openAddWorkerModal,
-    submitAddWorker,
-    openAddProjectModal,
-    submitAddProject,
-    setProjectToCurrentGps,
     openAccountFormModal,
-    applyPresetByRoleInModal,
     submitAccountForm,
-    toggleAccountStatus,
-    deleteAccount,
     loginAsAccount,
     logoutAccount,
-    openLoginModal,
     openFullLoginScreen,
     closeFullLoginScreen,
-    quickSelectLoginAccount,
     submitFullLogin,
-    fillQuickLogin,
-    submitLogin,
-    togglePinLockMode,
-    openChangePinModal,
-    submitChangePin,
     exportAttendanceCsv,
     exportPayrollCsv,
-    runCutoff1730Check,
     confirmForgotCheckout,
     approveSingleWorker,
     approveAllVisible,
     advanceStep,
     approveMonthlyPayroll,
     openPayslipModal,
-    switchRole,
-    resetDemoData,
     openInstallModal,
     triggerNativeInstall,
     setSearch(val) { searchQuery = val; renderMain(); },
     setFilterProject(val) { filterProject = val; renderMain(); },
     setFilterTeam(val) { filterTeam = val; renderMain(); },
+    setFilterManager(val) { filterManager = val; renderMain(); },
     setFilterStatus(val) { filterStatus = val; renderMain(); }
   };
 

@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="NP ONE" />
-  <title>NP ONE — Nguyên Phát Human Resources (Hệ thiết kế Navy · Cam)</title>
+  <title>NP ONE — Nguyên Phát Human Resources (Hệ thống Quản lý Công &amp; Phân việc 5 Cấp)</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="assets/logo-np-one-3d.png" />
   <link rel="apple-touch-icon" href="assets/logo-np-one-3d.png" />
@@ -15,92 +15,42 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- ================= MENU BÊN TRÁI TRƯỢT ĐÓNG/MỞ (LEFT DRAWER) ================= -->
+  <!-- ================= MENU BÊN TRÁI TRƯỢT ĐÓNG/MỞ (TỰ ĐỘNG THAY ĐỔI THEO VỊ TRÍ ĐĂNG NHẬP) ================= -->
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="window.NPApp.toggleSidebar(false)"></div>
   <aside class="left-sidebar" id="leftSidebar">
     <div class="sidebar-header">
       <div class="sidebar-brand">
         <img src="assets/logo-np-one-3d.png" alt="NP ONE" />
         <div>
-          <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:18px; color:#FFFFFF;">NP ONE</div>
-          <div style="font-size:12px; color:var(--ds-accent);">Nguyên Phát Human Resources</div>
+          <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:15px; color:#FFFFFF;">NP ONE</div>
+          <div style="font-size:10.5px; color:var(--ds-accent);">Nguyên Phát Human Resources</div>
         </div>
       </div>
       <button class="btn-sidebar-close" onclick="window.NPApp.toggleSidebar(false)" aria-label="Đóng menu">✕</button>
     </div>
 
-    <!-- THÔNG TIN TÀI KHOẢN ĐANG ĐĂNG NHẬP TRONG MENU TRÁI -->
+    <!-- THÔNG TIN TÀI KHOẢN & CẤP QUẢN LÝ ĐANG ĐĂNG NHẬP -->
     <div class="sidebar-role-box">
-      <label>Tài khoản đang đăng nhập:</label>
-      <div id="sidebarCurrentAccountInfo" style="font-size:11.5px; color:#FFFFFF; font-weight:600; line-height:1.4; margin-bottom:6px;">
+      <label id="sidebarRoleLevelLabel">Tài khoản đang đăng nhập:</label>
+      <div id="sidebarCurrentAccountInfo" style="font-size:11px; color:#FFFFFF; font-weight:600; line-height:1.38; margin-bottom:6px;">
         Chưa đăng nhập
       </div>
       <button class="btn btn-outline-dark btn-sm" style="width:100%;" onclick="window.NPApp.logoutAccount()">
-        🚪 Đăng xuất Tài khoản
+        🚪 Đăng xuất / Đổi Tài khoản
       </button>
     </div>
 
-    <!-- DANH SÁCH CHỨC NĂNG TRONG MENU TRÁI -->
-    <div class="sidebar-menu-list" id="sidebarMenu">
-      <div class="sidebar-group-title">Hiện trường &amp; Chấm công</div>
-      <button class="sidebar-item" onclick="window.NPApp.openCameraFromSidebar('VAO')">
-        <span class="sidebar-item-left"><span>📸</span> <span>Chụp Check-in / Check-out</span></span>
-        <span class="sidebar-badge" style="background:var(--ds-accent); color:var(--ds-on-accent);">GPS</span>
-      </button>
-      <button class="sidebar-item active" data-tab="quan-ly" onclick="window.NPApp.selectTab('quan-ly')">
-        <span class="sidebar-item-left"><span>📊</span> <span>Quản lý Chấm công</span></span>
-        <span class="sidebar-badge" id="badgeTotalFeed">108</span>
-      </button>
-      <button class="sidebar-item" data-tab="quan-so" onclick="window.NPApp.selectTab('quan-so')">
-        <span class="sidebar-item-left"><span>📈</span> <span>Quân số &amp; Báo cáo 08:30</span></span>
-        <span class="sidebar-badge" id="badgePresentSide">94/108</span>
-      </button>
-      <button class="sidebar-item" data-tab="tang-ca" onclick="window.NPApp.selectTab('tang-ca')">
-        <span class="sidebar-item-left"><span>🧰</span> <span>Công việc &amp; Tăng ca (17:30)</span></span>
-        <span class="sidebar-badge" id="badgeForgotCo">4</span>
-      </button>
-
-      <div class="sidebar-group-title">Kế toán &amp; Ban Giám đốc</div>
-      <button class="sidebar-item" data-tab="bang-cong" onclick="window.NPApp.selectTab('bang-cong')">
-        <span class="sidebar-item-left"><span>🕒</span> <span>Bảng Công (Ngày/Tuần/Tháng)</span></span>
-      </button>
-      <button class="sidebar-item" data-tab="luong" onclick="window.NPApp.selectTab('luong')">
-        <span class="sidebar-item-left"><span>💰</span> <span>Lương &amp; Duyệt Ứng lương</span></span>
-        <span class="sidebar-badge" id="badgePendingAdv">2</span>
-      </button>
-      <button class="sidebar-item" data-tab="doi" onclick="window.NPApp.selectTab('doi')">
-        <span class="sidebar-item-left"><span>👷</span> <span>Đội &amp; Công trình (GPS)</span></span>
-        <span class="sidebar-badge" id="badgeProjectCount">3 CT</span>
-      </button>
-      <button class="sidebar-item" data-tab="nhan-su" onclick="window.NPApp.selectTab('nhan-su')">
-        <span class="sidebar-item-left"><span>👥</span> <span>Hồ sơ Nhân sự</span></span>
-        <span class="sidebar-badge" id="badgeWorkerCountSide">108</span>
-      </button>
-
-      <div class="sidebar-group-title">Hệ thống</div>
-      <button class="sidebar-item admin-only-el" data-tab="phan-quyen" onclick="window.NPApp.selectTab('phan-quyen')">
-        <span class="sidebar-item-left"><span>👑</span> <span>Admin Quản trị &amp; Tạo Tài khoản</span></span>
-        <span class="sidebar-badge" id="badgeAccountCount">12 TK</span>
-      </button>
-      <button class="sidebar-item" data-tab="so-do" onclick="window.NPApp.selectTab('so-do')">
-        <span class="sidebar-item-left"><span>🗺️</span> <span>Sơ đồ &amp; 5 Quy tắc Kiểm soát</span></span>
-      </button>
-      <button class="sidebar-item" onclick="window.NPApp.logoutAccount()">
-        <span class="sidebar-item-left"><span>🚪</span> <span>Đăng xuất Hệ thống</span></span>
-      </button>
-      <button class="sidebar-item" onclick="window.NPApp.toggleTheme()">
-        <span class="sidebar-item-left"><span>🎨</span> <span>Đổi Bộ màu (Navy/Cam ↔ Vịnh/Vàng)</span></span>
-      </button>
-    </div>
+    <!-- DANH SÁCH MENU ĐỘNG THEO TỪNG VAI TRÒ (RENDER BỞI APP.JS) -->
+    <div class="sidebar-menu-list" id="sidebarMenu"></div>
 
     <div class="sidebar-footer">
-      <button class="btn btn-primary" style="width:100%;" onclick="window.NPApp.openInstallModal()">
+      <button class="btn btn-primary btn-sm" style="width:100%;" onclick="window.NPApp.openInstallModal()">
         📲 Cài Phím Tắt App Ra Màn Hình
       </button>
     </div>
   </aside>
 
-  <!-- ================= THANH MENU TRÊN CÙNG (68PX / ĐIỆN THOẠI 60PX) ================= -->
+  <!-- ================= THANH HEADER TRÊN CÙNG (TỰ ĐỘNG ĐỔI NÚT THEO VAI TRÒ) ================= -->
   <header class="top-header">
     <div class="top-header-inner">
       <div class="header-left">
@@ -110,99 +60,35 @@
         <div class="brand-box" onclick="window.NPApp.toggleSidebar(true)">
           <img class="brand-logo" src="assets/logo-np-one-3d.png" alt="NP ONE" />
           <div style="min-width:0;">
-            <div class="brand-title">NP ONE <span class="brand-gold">· Nguyên Phát</span></div>
-            <div class="brand-sub" id="currentTabSubtitle">Quản lý Chấm công · Camera GPS</div>
+            <div class="brand-title">NP ONE <span class="brand-gold" id="headerRoleBadge">· Nguyên Phát</span></div>
+            <div class="brand-sub" id="currentTabSubtitle">Hệ thống Quản lý Công 5 Cấp</div>
           </div>
         </div>
       </div>
 
-      <div class="header-right">
-        <button class="btn btn-outline-dark btn-sm hide-on-mobile" onclick="window.NPApp.toggleTheme()" title="Đổi Bộ màu 1 (Navy & Cam) ↔ Bộ màu 2 (Xanh vịnh & Vàng mật)">
-          🎨 Bộ màu
-        </button>
-        <button class="btn btn-outline-dark btn-sm admin-only-el" onclick="window.NPApp.selectTab('phan-quyen')" title="Chỉ Admin mới thấy: Quản trị & Tạo tài khoản cho từng vị trí">
-          👑 Tạo TK
-        </button>
-        <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.logoutAccount()" title="Đăng xuất tài khoản">
-          🚪 Đăng xuất
-        </button>
-        <!-- Quy tắc: Mỗi khối chỉ MỘT nút chính màu Cam -->
-        <button class="btn btn-primary btn-sm" id="btnOpenCamera">
-          📸 Chấm công
-        </button>
-      </div>
+      <div class="header-right" id="headerRightActions"></div>
     </div>
   </header>
 
-  <!-- ================= KHỐI HÀNH ĐỘNG NHANH & BÁO CÁO 08:30 ================= -->
+  <!-- ================= KHUNG THÔNG TIN VAI TRÒ & NHIỆM VỤ ĐẦU TRANG (ĐỘNG THEO VỊ TRÍ) ================= -->
   <div class="main-container">
-    <div class="compact-top-panel">
-      <!-- Khối nền Navy Chính: Hiển thị rõ tài khoản đang đăng nhập + Nút Đăng xuất + Nút Admin Tạo Tài khoản -->
-      <div class="mobile-action-bar">
-        <div class="mobile-action-info">
-          <span class="kicker" style="margin-bottom:2px;">TÀI KHOẢN ĐANG ĐĂNG NHẬP · PHÂN CẤP 5 TẦNG</span>
-          <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:14px; color:#FFFFFF;" id="activeRoleBannerTitle">
-            Vui lòng đăng nhập để sử dụng hệ thống
-          </div>
-          <div style="margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.logoutAccount()">
-              🚪 Đăng xuất / Đổi Tài khoản
-            </button>
-            <button class="btn btn-outline-dark btn-sm admin-only-el" onclick="window.NPApp.selectTab('phan-quyen')">
-              👑 Admin Tạo &amp; Cấp Tài khoản Vị trí
-            </button>
-          </div>
-        </div>
-        <div class="mobile-action-btns">
-          <button class="btn btn-primary" onclick="window.NPApp.openCameraQuick('VAO')">
-            📸 Check-in Vào ca
-          </button>
-          <button class="btn btn-outline-dark" onclick="window.NPApp.openCameraQuick('RA')">
-            Check-out Ra ca
-          </button>
-        </div>
-      </div>
-
-      <!-- Báo cáo 08:30 tự động cho Giám đốc -->
-      <div id="morningReportBanner"></div>
-    </div>
+    <div class="compact-top-panel" id="roleHeroSection"></div>
   </div>
 
-  <!-- ================= NỘI DUNG CHÍNH ================= -->
+  <!-- ================= NỘI DUNG CHÍNH THEO VAI TRÒ ================= -->
   <main class="main-container" id="appMain"></main>
 
-  <!-- ================= THANH PHÍM TẮT ĐÁY MÀN HÌNH ĐIỆN THOẠI ================= -->
-  <nav class="mobile-bottom-nav" id="mobileBottomNav">
-    <button class="bnav-item active" data-tab="quan-ly" onclick="window.NPApp.selectTab('quan-ly')">
-      <span class="bnav-icon">📊</span>
-      <span>Quản lý</span>
-    </button>
-    <button class="bnav-item" data-tab="quan-so" onclick="window.NPApp.selectTab('quan-so')">
-      <span class="bnav-icon">📈</span>
-      <span>Quân số</span>
-    </button>
-    <button class="bnav-item bnav-camera-fab" onclick="window.NPApp.openCameraQuick('VAO')">
-      <span class="bnav-icon">📸</span>
-      <span>Chấm công</span>
-    </button>
-    <button class="bnav-item" data-tab="bang-cong" onclick="window.NPApp.selectTab('bang-cong')">
-      <span class="bnav-icon">🕒</span>
-      <span>Bảng công</span>
-    </button>
-    <button class="bnav-item" data-tab="luong" onclick="window.NPApp.selectTab('luong')">
-      <span class="bnav-icon">💰</span>
-      <span>Lương</span>
-    </button>
-  </nav>
+  <!-- ================= THANH ĐIỀU HƯỚNG ĐÁY ĐIỆN THOẠI (ĐỘNG THEO VAI TRÒ) ================= -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav"></nav>
 
   <!-- ================= MÀN HÌNH ĐĂNG NHẬP ĐẦU TIÊN (BẮT BUỘC ĐĂNG NHẬP MỚI VÀO TRANG TÍNH NĂNG) ================= -->
   <div class="login-screen-overlay open" id="fullLoginOverlay">
     <div class="login-box">
       <div class="login-box-header">
         <img src="assets/logo-np-one-3d.png" alt="NP ONE" />
-        <span class="kicker" style="margin-bottom:2px;">HỆ THỐNG QUẢN LÝ CHẤM CÔNG 5 CẤP</span>
-        <h3 style="color:#FFFFFF; font-size:17px;">Đăng nhập NP ONE — Nguyên Phát</h3>
-        <div style="font-size:10.5px; color:#FFFFFF; opacity:0.82; margin-top:2px;">Vui lòng nhập Tên đăng nhập (hoặc Mã NV) và Mã PIN của bạn</div>
+        <span class="kicker" style="margin-bottom:2px;">HỆ THỐNG QUẢN LÝ CÔNG &amp; PHÂN VIỆC 5 CẤP</span>
+        <h3 style="color:#FFFFFF; font-size:16px;">Đăng nhập NP ONE — Nguyên Phát</h3>
+        <div style="font-size:10px; color:#FFFFFF; opacity:0.85; margin-top:2px;">Mỗi vị trí (Giám đốc · Kế toán · Quản lý CT · Đội trưởng · Công nhân) có giao diện làm việc riêng</div>
       </div>
       <form class="login-box-body" onsubmit="event.preventDefault(); window.NPApp.submitFullLogin();">
         <div class="form-group">
@@ -214,9 +100,9 @@
           <input type="password" id="fullLoginPin" placeholder="Nhập mật khẩu hoặc Mã PIN..." autocomplete="current-password" />
           <div id="fullLoginErr" class="field-error-msg" style="display:none;">Tên đăng nhập hoặc Mã PIN không đúng, hoặc tài khoản đã bị khóa!</div>
         </div>
-        <div style="margin-top:12px;">
+        <div style="margin-top:10px;">
           <button class="btn btn-primary" type="submit" style="width:100%;">
-            🔐 Đăng nhập Hệ thống
+            🔐 Đăng nhập vào Giao diện Vị trí
           </button>
         </div>
       </form>
@@ -234,7 +120,7 @@
     </div>
   </div>
 
-  <!-- MODAL 2: CHẤM CÔNG CAMERA TRỰC TIẾP (CHẶN TẢI ẢNH TỪ THƯ VIỆN) -->
+  <!-- MODAL 2: CHẤM CÔNG CAMERA TRỰC TIẾP (CHỈ DÀNH CHO CÔNG NHÂN & ĐỘI TRƯỞNG) -->
   <div class="modal-backdrop" id="cameraModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -246,13 +132,13 @@
           CHỐNG GIAN LẬN: Đã khóa chọn ảnh từ thư viện máy. Bắt buộc chụp Camera trực tiếp kèm Địa điểm &amp; Tọa độ GPS thực tế.
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="camWorkerSelectGroup">
           <label for="camWorkerSelect">Nhân sự điểm danh <span class="req">*</span></label>
           <select id="camWorkerSelect"></select>
         </div>
 
         <div class="form-group">
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
             <div>
               <label for="camActionType">Hình thức <span class="req">*</span></label>
               <select id="camActionType">
@@ -267,23 +153,22 @@
           </div>
         </div>
 
-        <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:12px 14px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
+        <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:8px 10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
             <span class="kicker" style="margin:0;">ĐỊNH VỊ GPS THỰC TẾ</span>
             <button class="btn btn-soft btn-sm" type="button" onclick="window.NPApp.refreshRealGps()">🎯 Lấy lại GPS</button>
           </div>
-          <div id="gpsLiveStatus" style="font-size:13.5px; color:var(--ds-text); font-weight:500; line-height:1.45;">
+          <div id="gpsLiveStatus" style="font-size:10.5px; color:var(--ds-text); font-weight:500; line-height:1.35;">
             Đang lấy tọa độ GPS thực tế từ thiết bị...
           </div>
         </div>
 
-        <div style="position:relative; background:var(--ds-primary-deep); border-radius:var(--ds-radius-md); overflow:hidden; border:1px solid var(--ds-line); margin-bottom:14px;">
-          <video id="liveVideo" autoplay playsinline muted style="width:100%; height:240px; object-fit:cover; display:none;"></video>
+        <div style="position:relative; background:var(--ds-primary-deep); border-radius:var(--ds-radius-md); overflow:hidden; border:1px solid var(--ds-line); margin-bottom:10px;">
+          <video id="liveVideo" autoplay playsinline muted style="width:100%; height:200px; object-fit:cover; display:none;"></video>
           <canvas id="captureCanvas" width="640" height="520" style="width:100%; height:auto; display:block;"></canvas>
         </div>
 
-        <!-- Quy tắc: Mỗi khối chỉ MỘT nút chính màu Cam -->
-        <div style="display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; justify-content:space-between; align-items:center; flex-wrap:wrap;">
           <button class="btn btn-soft" type="button" onclick="window.NPApp.toggleCameraFacing()">🔄 Đổi Camera</button>
           <button class="btn btn-primary" id="btnSnapSubmit" type="button" style="flex:1;" onclick="window.NPApp.snapAndSubmitCheckin()">
             📸 Chụp &amp; Lưu chấm công
@@ -293,11 +178,11 @@
     </div>
   </div>
 
-  <!-- MODAL 3: ĐIỀU CHỈNH BẢNG CÔNG / ĐĂNG KÝ TĂNG CA / THÊM NHÂN SỰ / ỨNG LƯƠNG -->
+  <!-- MODAL 3: FORM ĐA NĂNG (PHÂN VIỆC / ĐIỀU CHỈNH / TẠO TÀI KHOẢN / THÊM NHÂN SỰ / ỨNG LƯƠNG) -->
   <div class="modal-backdrop" id="adjustModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h4 id="adjustModalTitle">Điều chỉnh Chấm công (Lưu Audit Log)</h4>
+        <h4 id="adjustModalTitle">Thao tác Nghiệp vụ</h4>
         <button class="modal-close" onclick="window.NPApp.closeModal('adjustModal')">✕</button>
       </div>
       <div class="modal-body" id="adjustModalBody"></div>
@@ -315,7 +200,7 @@
     </div>
   </div>
 
-  <!-- MODAL 5: CÀI PHÍM TẮT ỨNG DỤNG RA MÀN HÌNH ĐIỆN THOẠI & MÁY TÍNH -->
+  <!-- MODAL 5: CÀI PHÍM TẮT ỨNG DỤNG -->
   <div class="modal-backdrop" id="installModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -323,33 +208,19 @@
         <button class="modal-close" onclick="window.NPApp.closeModal('installModal')">✕</button>
       </div>
       <div class="modal-body">
-        <div style="display:flex; align-items:center; gap:14px; background:var(--ds-primary); color:#FFFFFF; padding:16px; border-radius:var(--ds-radius-md); margin-bottom:16px;">
-          <img src="assets/logo-np-one-3d.png" alt="NP ONE" style="width:52px; height:52px; border-radius:50%; border:1.5px solid rgba(255,255,255,0.5);" />
+        <div style="display:flex; align-items:center; gap:10px; background:var(--ds-primary); color:#FFFFFF; padding:10px 12px; border-radius:var(--ds-radius-md); margin-bottom:10px;">
+          <img src="assets/logo-np-one-3d.png" alt="NP ONE" style="width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,0.5);" />
           <div>
-            <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:18px; color:#FFFFFF;">NP ONE — Nguyên Phát HR</div>
-            <div style="font-size:13px; color:var(--ds-accent);">Chấm công Camera GPS · Quân số · Tính lương 5 Cấp</div>
+            <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:14px; color:#FFFFFF;">NP ONE — Nguyên Phát HR</div>
+            <div style="font-size:10.5px; color:var(--ds-accent);">Hệ thống Quản lý Công &amp; Phân việc 5 Cấp</div>
           </div>
         </div>
-
-        <div id="nativeInstallSection" style="margin-bottom:16px;">
-          <button class="btn btn-primary" style="width:100%;" onclick="window.NPApp.triggerNativeInstall()">
-            📲 Cài đặt ngay ra màn hình chính
-          </button>
-        </div>
-
-        <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-md); padding:14px 16px; font-size:13.5px; display:grid; gap:10px;">
-          <div>
-            <strong style="color:var(--ds-primary);">Trên iPhone / iPad (Safari):</strong>
-            <ol style="margin-left:18px; margin-top:4px; color:var(--ds-text);">
-              <li>Bấm nút <strong>Chia sẻ (Share ⬆️)</strong> ở thanh dưới cùng Safari.</li>
-              <li>Chọn <strong>"Thêm vào MH chính" (Add to Home Screen)</strong>.</li>
-              <li>Bấm <strong>"Thêm" (Add)</strong> để gắn icon <strong>NP ONE</strong> ra màn hình chính iPhone.</li>
-            </ol>
-          </div>
-          <div style="border-top:1px solid var(--ds-line); padding-top:8px;">
-            <strong style="color:var(--ds-primary);">Trên Điện thoại Android (Chrome):</strong>
-            <div style="color:var(--ds-text); margin-top:2px;">Bấm nút Cam <strong>"Cài đặt ngay ra màn hình chính"</strong> phía trên (hoặc bấm dấu <strong>⋮</strong> góc phải Chrome → chọn <strong>"Cài đặt ứng dụng"</strong>).</div>
-          </div>
+        <button class="btn btn-primary" style="width:100%; margin-bottom:10px;" onclick="window.NPApp.triggerNativeInstall()">
+          📲 Cài đặt ngay ra màn hình chính
+        </button>
+        <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:10px 12px; font-size:11px; display:grid; gap:6px;">
+          <div><strong style="color:var(--ds-primary);">Trên iPhone (Safari):</strong> Bấm nút <strong>Chia sẻ (Share ⬆️)</strong> → Chọn <strong>"Thêm vào MH chính"</strong>.</div>
+          <div><strong style="color:var(--ds-primary);">Trên Android (Chrome):</strong> Bấm nút Cam phía trên hoặc dấu <strong>⋮</strong> → <strong>"Cài đặt ứng dụng"</strong>.</div>
         </div>
       </div>
     </div>
