@@ -1,12 +1,13 @@
 // Ứng dụng Quản lý Chấm công, Nhân sự & Tính lương 5 cấp NP ONE - Nguyên Phát HR
 // Phiên bản Hoàn thiện Bàn giao theo Hệ thiết kế Navy · Cam (v1.0 - 22/11/2026)
 (function () {
-  const STORAGE_KEY = 'NP_ONE_HR_STATE_V4';
+  const STORAGE_KEY = 'NP_ONE_HR_STATE_V5';
   const THEME_KEY = 'NP_ONE_THEME_V1';
 
   let state = loadState();
   let currentTab = 'quan-ly';
   let currentRoleId = 'BGD';
+  let currentAccountId = 'ACC-01';
   let requirePinOnRoleSwitch = false;
   let filterProject = 'ALL';
   let filterTeam = 'ALL';
@@ -38,7 +39,7 @@
     'luong': 'Lương & Duyệt Ứng lương',
     'doi': 'Đội & Công trình (Tọa độ GPS)',
     'nhan-su': 'Hồ sơ Nhân sự',
-    'phan-quyen': 'Phân quyền 5 Cấp & Mã PIN',
+    'phan-quyen': 'Admin Quản trị & Tạo Tài khoản theo Vị trí',
     'so-do': 'Sơ đồ & 5 Quy tắc Kiểm soát'
   };
 
@@ -47,12 +48,17 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && parsed.workers && parsed.workers.length >= 100) {
+        if (parsed && parsed.workers && parsed.workers.length >= 100 && parsed.accounts) {
           return parsed;
         }
       }
     } catch (e) {}
     return JSON.parse(JSON.stringify(window.NP_SEED));
+  }
+
+  function getCurrentAccount() {
+    if (!state.accounts || !state.accounts.length) return null;
+    return state.accounts.find(a => a.id === currentAccountId) || state.accounts[0];
   }
 
   function saveState() {
@@ -427,12 +433,14 @@
     const bAdv = document.getElementById('badgePendingAdv');
     const bProj = document.getElementById('badgeProjectCount');
     const bWCount = document.getElementById('badgeWorkerCountSide');
+    const bAccCount = document.getElementById('badgeAccountCount');
 
     if (bFeed) bFeed.textContent = state.workers.length;
     if (bPres) bPres.textContent = `${s.presentCount}/${s.total}`;
     if (bForgot) bForgot.textContent = s.forgotCoCount;
     if (bProj) bProj.textContent = `${state.projects.length} CT`;
     if (bWCount) bWCount.textContent = state.workers.length;
+    if (bAccCount && state.accounts) bAccCount.textContent = `${state.accounts.length} TK`;
     if (bAdv) {
       const pending = state.advances.filter(a => a.status !== 'BGD_DA_DUYET' && a.status !== 'TU_CHOI').length;
       bAdv.textContent = pending;
@@ -1046,14 +1054,97 @@
     `;
   }
 
-  // ================= TAB 8: 🔒 PHÂN QUYỀN 5 CẤP & ĐỔI MÃ PIN =================
+  // ================= TAB 8: 👑 ADMIN QUẢN TRỊ & TẠO TÀI KHOẢN THEO TỪNG VỊ TRÍ =================
   function renderTabPhanQuyen(container) {
+    const accounts = state.accounts || [];
+    const curAcc = getCurrentAccount();
+
+    const permLabels = {
+      checkin: 'Chấm công GPS',
+      inputTeam: 'Nhập công/OT đội',
+      approveWork: 'Duyệt công (QLCT)',
+      accounting: 'Tính lương (KT)',
+      approveDirector: 'Duyệt ứng/lương (GĐ)',
+      adminUsers: 'Admin Tạo TK'
+    };
+
+    const accRows = accounts.map(acc => {
+      const scopeText = (acc.projectId === 'ALL' ? 'Toàn công ty' : acc.projectId) +
+        (acc.teamId && acc.teamId !== 'ALL' ? ` · ${acc.teamId}` : '');
+
+      const activePerms = Object.keys(permLabels)
+        .filter(k => acc.perms && acc.perms[k])
+        .map(k => `<span class="status-pill status-out" style="font-size:9px;">✓ ${permLabels[k]}</span>`)
+        .join(' ');
+
+      const isCurrent = curAcc && curAcc.id === acc.id;
+      const statusBadge = acc.status === 'ACTIVE'
+        ? `<span class="status-pill status-working">Hoạt động</span>`
+        : `<span class="status-pill status-unexcused">Đã khóa</span>`;
+
+      return `
+        <tr>
+          <td>
+            <strong style="color:var(--ds-primary);">${acc.username}</strong>
+            <br/><small>PIN/MK: <code>${acc.pin}</code></small>
+          </td>
+          <td>
+            <strong>${acc.fullName}</strong>
+            <br/><small style="color:var(--ds-text-muted);">Cấp ${acc.level} · ${acc.positionTitle}</small>
+          </td>
+          <td><strong>${scopeText}</strong></td>
+          <td style="max-width:260px;">${activePerms}</td>
+          <td>${statusBadge}</td>
+          <td style="white-space:nowrap;">
+            <button class="btn ${isCurrent ? 'btn-primary' : 'btn-navy'} btn-sm" onclick="window.NPApp.loginAsAccount('${acc.id}')">
+              ${isCurrent ? 'Đang đăng nhập' : 'Đăng nhập TK'}
+            </button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAccountFormModal('${acc.id}')">✏️ Sửa/Quyền</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.toggleAccountStatus('${acc.id}')">${acc.status === 'ACTIVE' ? '🔒 Khóa' : '🔓 Mở'}</button>
+            ${acc.username !== 'admin' ? `<button class="btn btn-soft btn-sm" style="color:var(--ds-danger);" onclick="window.NPApp.deleteAccount('${acc.id}')">✕</button>` : ''}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
     container.innerHTML = `
+      <div class="section-card" style="border:1.5px solid var(--ds-accent); background:var(--ds-bg-soft);">
+        <h3>
+          <div>
+            <span class="kicker">TRUNG TÂM QUẢN TRỊ HỆ THỐNG (ADMIN)</span>
+            <span>Quản lý &amp; Tạo Tài khoản cho từng Vị trí (${accounts.length} Tài khoản)</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openLoginModal()">🔐 Đăng nhập bằng Tên TK &amp; PIN</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAccountFormModal(null)">➕ Tạo Tài khoản Vị trí mới</button>
+          </div>
+        </h3>
+        <p style="font-size:10.5px; color:var(--ds-text-muted); margin-bottom:8px;">
+          Admin có toàn quyền <strong>Tạo tài khoản mới cho từng vị trí</strong> (Giám đốc, Kế toán, Quản lý từng Công trình CT1/CT2/CT3, Đội trưởng từng Đội 1..6, Công nhân), gán phạm vi dữ liệu được phép xem, cấp/thu hồi từng quyền hạn chi tiết, đổi mã PIN hoặc khóa tài khoản khi nhân sự nghỉ việc.
+        </p>
+
+        <div class="data-table-wrap">
+          <table class="data-table" style="background:#FFFFFF;">
+            <thead>
+              <tr>
+                <th>Tài khoản &amp; PIN</th>
+                <th>Họ tên &amp; Vị trí chức danh</th>
+                <th>Phạm vi phụ trách</th>
+                <th>Quyền hạn được cấp</th>
+                <th>Trạng thái</th>
+                <th>Thao tác Admin</th>
+              </tr>
+            </thead>
+            <tbody>${accRows}</tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="section-card">
         <h3>
           <div>
-            <span class="kicker">BẢO MẬT &amp; PHÂN CẤP</span>
-            <span>Ma trận Phân quyền 5 Cấp &amp; Quản lý Mã PIN</span>
+            <span class="kicker">CHUYỂN NHANH 5 CẤP MẶC ĐỊNH</span>
+            <span>Ma trận 5 Cấp Phân quyền Chuẩn</span>
           </div>
           <button class="btn ${requirePinOnRoleSwitch ? 'btn-primary' : 'btn-soft'} btn-sm" onclick="window.NPApp.togglePinLockMode()">
             ${requirePinOnRoleSwitch ? '🔒 Đang BẬT hỏi mã PIN khi chuyển cấp' : '🔓 Đang TẮT hỏi PIN (Chế độ Test nhanh)'}
@@ -1075,7 +1166,7 @@
                   <td><strong>Cấp ${r.level}</strong></td>
                   <td><strong style="color:var(--ds-primary);">${r.title}</strong><br/><small>${r.personName}</small></td>
                   <td><code>${r.pin}</code></td>
-                  <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <td style="display:flex; gap:6px; flex-wrap:wrap;">
                     <button class="btn ${currentRoleId === r.id ? 'btn-primary' : 'btn-navy'} btn-sm" onclick="window.NPApp.switchRole('${r.id}')">
                       ${currentRoleId === r.id ? 'Đang sử dụng' : 'Chọn vai trò'}
                     </button>
@@ -1719,6 +1810,281 @@
     }
   }
 
+  // ================= QUẢN TRỊ ADMIN: TẠO / SỬA / KHÓA / XÓA / ĐĂNG NHẬP TÀI KHOẢN THEO VỊ TRÍ =================
+  function getDefaultPermsForRole(roleId) {
+    if (roleId === 'BGD') return { checkin: true, inputTeam: true, approveWork: true, accounting: true, approveDirector: true, adminUsers: true, level: 1, title: 'Admin & Ban Giám Đốc' };
+    if (roleId === 'KT') return { checkin: true, inputTeam: false, approveWork: false, accounting: true, approveDirector: false, adminUsers: false, level: 2, title: 'Hành Chính – Kế Toán' };
+    if (roleId === 'QLCT') return { checkin: true, inputTeam: true, approveWork: true, accounting: false, approveDirector: false, adminUsers: false, level: 3, title: 'Quản lý Công trình' };
+    if (roleId === 'DT1') return { checkin: true, inputTeam: true, approveWork: false, accounting: false, approveDirector: false, adminUsers: false, level: 4, title: 'Đội trưởng Thi công' };
+    return { checkin: true, inputTeam: false, approveWork: false, accounting: false, approveDirector: false, adminUsers: false, level: 5, title: 'Công nhân' };
+  }
+
+  function openAccountFormModal(accId) {
+    const curAcc = getCurrentAccount();
+    if (curAcc && curAcc.perms && !curAcc.perms.adminUsers && currentRoleId !== 'BGD') {
+      alert('Chỉ tài khoản Admin / Ban Giám Đốc mới có quyền Tạo hoặc Chỉnh sửa tài khoản hệ thống!');
+      return;
+    }
+
+    const editing = accId ? (state.accounts || []).find(a => a.id === accId) : null;
+    const defRole = editing ? editing.roleId : 'QLCT';
+    const defPerms = editing ? editing.perms : getDefaultPermsForRole(defRole);
+
+    document.getElementById('adjustModalTitle').textContent = editing
+      ? `Chỉnh sửa Tài khoản — ${editing.username}`
+      : 'Tạo Tài khoản mới cho Vị trí';
+
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="form-group">
+        <label for="accRoleSel">Chọn Vị trí / Cấp bậc <span class="req">*</span></label>
+        <select id="accRoleSel" onchange="window.NPApp.applyPresetByRoleInModal(this.value)">
+          <option value="BGD" ${defRole === 'BGD' ? 'selected' : ''}>Cấp 1 — Admin / Ban Giám Đốc (Toàn quyền)</option>
+          <option value="KT" ${defRole === 'KT' ? 'selected' : ''}>Cấp 2 — Hành chính – Kế toán (Tổng hợp &amp; Tính lương)</option>
+          <option value="QLCT" ${defRole === 'QLCT' ? 'selected' : ''}>Cấp 3 — Quản lý Công trình (Kiểm tra &amp; Duyệt bảng công)</option>
+          <option value="DT1" ${defRole === 'DT1' ? 'selected' : ''}>Cấp 4 — Đội trưởng (Chấm công đội &amp; Báo tăng ca)</option>
+          <option value="CN" ${defRole === 'CN' ? 'selected' : ''}>Cấp 5 — Công nhân (Điểm danh GPS &amp; Xem công cá nhân)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <label for="accUsername">Tên đăng nhập (Username) <span class="req">*</span></label>
+            <input type="text" id="accUsername" value="${editing ? editing.username : ''}" placeholder="VD: qlct_ct2 hoặc doitruong7" />
+          </div>
+          <div>
+            <label for="accPin">Mật khẩu / Mã PIN <span class="req">*</span></label>
+            <input type="text" id="accPin" value="${editing ? editing.pin : '1234'}" placeholder="VD: 1234" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <label for="accFullName">Họ và tên nhân sự <span class="req">*</span></label>
+            <input type="text" id="accFullName" value="${editing ? editing.fullName : ''}" placeholder="VD: KS. Nguyễn Văn A" />
+          </div>
+          <div>
+            <label for="accPosTitle">Chức danh vị trí hiển thị</label>
+            <input type="text" id="accPosTitle" value="${editing ? editing.positionTitle : 'Quản lý Công trình'}" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <label for="accProjScope">Phạm vi Công trình phụ trách</label>
+            <select id="accProjScope">
+              <option value="ALL" ${(!editing || editing.projectId === 'ALL') ? 'selected' : ''}>Toàn công ty (Tất cả CT)</option>
+              ${state.projects.map(p => `<option value="${p.id}" ${(editing && editing.projectId === p.id) ? 'selected' : ''}>${p.name}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label for="accTeamScope">Phạm vi Đội phụ trách</label>
+            <select id="accTeamScope">
+              <option value="ALL" ${(!editing || editing.teamId === 'ALL') ? 'selected' : ''}>Tất cả các Đội</option>
+              ${state.teams.map(t => `<option value="${t.id}" ${(editing && editing.teamId === t.id) ? 'selected' : ''}>${t.name}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:8px 10px;">
+        <label style="margin-bottom:5px;">Phân quyền chức năng chi tiết cho Tài khoản này:</label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; font-size:10.5px;">
+          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permCheckin" style="width:auto; min-height:auto;" ${defPerms.checkin ? 'checked' : ''} /> Chấm công Camera GPS</label>
+          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permInputTeam" style="width:auto; min-height:auto;" ${defPerms.inputTeam ? 'checked' : ''} /> Nhập công &amp; Báo tăng ca</label>
+          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permApproveWork" style="width:auto; min-height:auto;" ${defPerms.approveWork ? 'checked' : ''} /> Duyệt công (Khóa công)</label>
+          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permAccounting" style="width:auto; min-height:auto;" ${defPerms.accounting ? 'checked' : ''} /> Tổng hợp &amp; Tính lương</label>
+          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permApproveDirector" style="width:auto; min-height:auto;" ${defPerms.approveDirector ? 'checked' : ''} /> Duyệt Ứng &amp; Bảng lương</label>
+          <label style="display:flex; align-items:center; gap:5px; font-weight:500; margin:0;"><input type="checkbox" id="permAdminUsers" style="width:auto; min-height:auto;" ${defPerms.adminUsers ? 'checked' : ''} /> Admin Tạo tài khoản</label>
+        </div>
+      </div>
+
+      <div id="accFormErr" class="field-error-msg" style="display:none; margin-bottom:8px;">Vui lòng nhập đầy đủ Tên đăng nhập, Mật khẩu/PIN và Họ tên nhân sự.</div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitAccountForm('${editing ? editing.id : ''}')">
+          ${editing ? 'Lưu cập nhật tài khoản' : 'Tạo tài khoản ngay'}
+        </button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function applyPresetByRoleInModal(roleId) {
+    const p = getDefaultPermsForRole(roleId);
+    const posInput = document.getElementById('accPosTitle');
+    if (posInput) posInput.value = p.title;
+    document.getElementById('permCheckin').checked = p.checkin;
+    document.getElementById('permInputTeam').checked = p.inputTeam;
+    document.getElementById('permApproveWork').checked = p.approveWork;
+    document.getElementById('permAccounting').checked = p.accounting;
+    document.getElementById('permApproveDirector').checked = p.approveDirector;
+    document.getElementById('permAdminUsers').checked = p.adminUsers;
+  }
+
+  function submitAccountForm(existingId) {
+    const roleId = document.getElementById('accRoleSel').value;
+    const username = (document.getElementById('accUsername').value || '').trim();
+    const pin = (document.getElementById('accPin').value || '').trim();
+    const fullName = (document.getElementById('accFullName').value || '').trim();
+    const positionTitle = (document.getElementById('accPosTitle').value || '').trim();
+    const projectId = document.getElementById('accProjScope').value;
+    const teamId = document.getElementById('accTeamScope').value;
+
+    if (!username || !pin || !fullName) {
+      document.getElementById('accFormErr').style.display = 'block';
+      return;
+    }
+
+    const preset = getDefaultPermsForRole(roleId);
+    const perms = {
+      checkin: document.getElementById('permCheckin').checked,
+      inputTeam: document.getElementById('permInputTeam').checked,
+      approveWork: document.getElementById('permApproveWork').checked,
+      accounting: document.getElementById('permAccounting').checked,
+      approveDirector: document.getElementById('permApproveDirector').checked,
+      adminUsers: document.getElementById('permAdminUsers').checked
+    };
+
+    if (!state.accounts) state.accounts = [];
+
+    if (existingId) {
+      const acc = state.accounts.find(a => a.id === existingId);
+      if (acc) {
+        acc.roleId = roleId;
+        acc.level = preset.level;
+        acc.username = username;
+        acc.pin = pin;
+        acc.fullName = fullName;
+        acc.positionTitle = positionTitle || preset.title;
+        acc.projectId = projectId;
+        acc.teamId = teamId;
+        acc.perms = perms;
+      }
+    } else {
+      const newAcc = {
+        id: 'ACC-' + String(state.accounts.length + 1).padStart(2, '0'),
+        username,
+        pin,
+        fullName,
+        positionTitle: positionTitle || preset.title,
+        roleId,
+        level: preset.level,
+        projectId,
+        teamId,
+        status: 'ACTIVE',
+        perms
+      };
+      state.accounts.unshift(newAcc);
+    }
+
+    saveState();
+    document.getElementById('adjustModal').classList.remove('open');
+    renderMain();
+  }
+
+  function toggleAccountStatus(accId) {
+    const acc = (state.accounts || []).find(a => a.id === accId);
+    if (!acc) return;
+    if (acc.username === 'admin') {
+      alert('Không thể khóa tài khoản Admin Tổng!');
+      return;
+    }
+    acc.status = acc.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
+    saveState();
+    renderMain();
+  }
+
+  function deleteAccount(accId) {
+    const acc = (state.accounts || []).find(a => a.id === accId);
+    if (!acc || acc.username === 'admin') return;
+    state.accounts = state.accounts.filter(a => a.id !== accId);
+    saveState();
+    renderMain();
+  }
+
+  function loginAsAccount(accId) {
+    const acc = (state.accounts || []).find(a => a.id === accId);
+    if (!acc) return;
+    if (acc.status !== 'ACTIVE') {
+      alert('Tài khoản này đang bị khóa! Vui lòng mở khóa trên trang Admin trước.');
+      return;
+    }
+    currentAccountId = acc.id;
+    currentRoleId = acc.roleId;
+
+    // Tự động áp dụng phạm vi lọc Công trình & Đội theo tài khoản vừa đăng nhập
+    filterProject = acc.projectId || 'ALL';
+    filterTeam = acc.teamId || 'ALL';
+
+    const sel = document.getElementById('roleSelect');
+    if (sel) sel.value = acc.roleId;
+    document.querySelectorAll('#roleQuickPills .role-mini-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-role') === acc.roleId);
+    });
+
+    const bannerTitle = document.getElementById('activeRoleBannerTitle');
+    if (bannerTitle) {
+      const scopeTag = acc.projectId === 'ALL' ? 'Toàn công ty' : `${acc.projectId}${acc.teamId !== 'ALL' ? ' · ' + acc.teamId : ''}`;
+      bannerTitle.textContent = `Tài khoản: ${acc.username} (${acc.positionTitle}) — ${acc.fullName} [${scopeTag}]`;
+    }
+    toggleSidebar(false);
+    renderMorningReport830();
+    renderMain();
+  }
+
+  function openLoginModal() {
+    toggleSidebar(false);
+    const accounts = state.accounts || [];
+    document.getElementById('adjustModalTitle').textContent = 'Đăng nhập Tài khoản Vị trí';
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="form-group">
+        <label for="loginQuickSel">Chọn nhanh tài khoản mẫu để điền tự động:</label>
+        <select id="loginQuickSel" onchange="window.NPApp.fillQuickLogin(this.value)">
+          ${accounts.map(a => `<option value="${a.id}" ${a.id === currentAccountId ? 'selected' : ''}>[${a.username}] ${a.positionTitle} — ${a.fullName} (PIN: ${a.pin})</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="loginUser">Tên đăng nhập (Username / Mã NV) <span class="req">*</span></label>
+        <input type="text" id="loginUser" value="${accounts[0] ? accounts[0].username : 'admin'}" />
+      </div>
+      <div class="form-group">
+        <label for="loginPin">Mật khẩu / Mã PIN <span class="req">*</span></label>
+        <input type="password" id="loginPin" value="${accounts[0] ? accounts[0].pin : '9999'}" />
+        <div id="loginErrMsg" class="field-error-msg" style="display:none;">Tên đăng nhập hoặc Mã PIN không chính xác, hoặc tài khoản đã bị khóa!</div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Đóng</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitLogin()">🔐 Đăng nhập</button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function fillQuickLogin(accId) {
+    const acc = (state.accounts || []).find(a => a.id === accId);
+    if (!acc) return;
+    document.getElementById('loginUser').value = acc.username;
+    document.getElementById('loginPin').value = acc.pin;
+  }
+
+  function submitLogin() {
+    const u = (document.getElementById('loginUser').value || '').trim().toLowerCase();
+    const p = (document.getElementById('loginPin').value || '').trim();
+    const acc = (state.accounts || []).find(a => a.username.toLowerCase() === u && a.pin === p && a.status === 'ACTIVE');
+    if (!acc) {
+      document.getElementById('loginErrMsg').style.display = 'block';
+      return;
+    }
+    document.getElementById('adjustModal').classList.remove('open');
+    loginAsAccount(acc.id);
+  }
+
   // ================= ĐỔI MÃ PIN & BẬT/TẮT KHÓA PIN =================
   function togglePinLockMode() {
     requirePinOnRoleSwitch = !requirePinOnRoleSwitch;
@@ -2052,6 +2418,15 @@
     openAddProjectModal,
     submitAddProject,
     setProjectToCurrentGps,
+    openAccountFormModal,
+    applyPresetByRoleInModal,
+    submitAccountForm,
+    toggleAccountStatus,
+    deleteAccount,
+    loginAsAccount,
+    openLoginModal,
+    fillQuickLogin,
+    submitLogin,
     togglePinLockMode,
     openChangePinModal,
     submitChangePin,

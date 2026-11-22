@@ -452,10 +452,172 @@ window.NP_SEED = (function () {
     }
   ];
 
+  // Danh sách Tài khoản Hệ thống theo từng vị trí (Admin có thể Tạo mới / Sửa / Khóa / Phân quyền)
+  const ACCOUNTS = [
+    {
+      id: 'ACC-01',
+      username: 'admin',
+      pin: '9999',
+      fullName: 'GĐ. Nguyễn Phát (Admin Tổng)',
+      positionTitle: 'Admin & Ban Giám Đốc',
+      roleId: 'BGD',
+      level: 1,
+      projectId: 'ALL',
+      teamId: 'ALL',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: true, accounting: true, approveDirector: true, adminUsers: true }
+    },
+    {
+      id: 'ACC-02',
+      username: 'ketoan01',
+      pin: '8888',
+      fullName: 'KTT. Lê Thị Thu Thảo',
+      positionTitle: 'Hành Chính – Kế Toán',
+      roleId: 'KT',
+      level: 2,
+      projectId: 'ALL',
+      teamId: 'ALL',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: false, approveWork: false, accounting: true, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-03',
+      username: 'qlct_ct1',
+      pin: '7771',
+      fullName: 'KS. Trần Minh Hoàng',
+      positionTitle: 'Quản lý Công trình CT1',
+      roleId: 'QLCT',
+      level: 3,
+      projectId: 'CT1',
+      teamId: 'ALL',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: true, accounting: false, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-04',
+      username: 'qlct_ct2',
+      pin: '7772',
+      fullName: 'KS. Phạm Quốc Bảo',
+      positionTitle: 'Quản lý Công trình CT2',
+      roleId: 'QLCT',
+      level: 3,
+      projectId: 'CT2',
+      teamId: 'ALL',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: true, accounting: false, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-05',
+      username: 'qlct_ct3',
+      pin: '7773',
+      fullName: 'KS. Đặng Văn Hùng',
+      positionTitle: 'Quản lý Công trình CT3',
+      roleId: 'QLCT',
+      level: 3,
+      projectId: 'CT3',
+      teamId: 'ALL',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: true, accounting: false, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-06',
+      username: 'doitruong1',
+      pin: '1111',
+      fullName: 'ĐT1. Nguyễn Văn Sơn',
+      positionTitle: 'Đội trưởng Đội 1 (Kết cấu)',
+      roleId: 'DT1',
+      level: 4,
+      projectId: 'CT1',
+      teamId: 'D1',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-07',
+      username: 'doitruong2',
+      pin: '2222',
+      fullName: 'ĐT2. Lê Hoàng Nam',
+      positionTitle: 'Đội trưởng Đội 2 (Hoàn thiện)',
+      roleId: 'DT1',
+      level: 4,
+      projectId: 'CT1',
+      teamId: 'D2',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-08',
+      username: 'doitruong3',
+      pin: '3333',
+      fullName: 'ĐT3. Vũ Đình Trọng',
+      positionTitle: 'Đội trưởng Đội 3 (Cơ điện M&E)',
+      roleId: 'DT1',
+      level: 4,
+      projectId: 'CT2',
+      teamId: 'D3',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-09',
+      username: 'doitruong4',
+      pin: '4444',
+      fullName: 'ĐT4. Phan Thanh Hải',
+      positionTitle: 'Đội trưởng Đội 4 (Cốt pha)',
+      roleId: 'DT1',
+      level: 4,
+      projectId: 'CT2',
+      teamId: 'D4',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-10',
+      username: 'doitruong5',
+      pin: '5555',
+      fullName: 'ĐT5. Bùi Văn Kiên',
+      positionTitle: 'Đội trưởng Đội 5 (Kết cấu thép)',
+      roleId: 'DT1',
+      level: 4,
+      projectId: 'CT3',
+      teamId: 'D5',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-11',
+      username: 'doitruong6',
+      pin: '6666',
+      fullName: 'ĐT6. Đỗ Minh Tuấn',
+      positionTitle: 'Đội trưởng Đội 6 (Hạ tầng)',
+      roleId: 'DT1',
+      level: 4,
+      projectId: 'CT3',
+      teamId: 'D6',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: true, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+    },
+    {
+      id: 'ACC-12',
+      username: 'NV.SME-33',
+      pin: '0000',
+      fullName: 'CN. Hồ Văn Tham',
+      positionTitle: 'Công nhân Đội 1',
+      roleId: 'CN',
+      level: 5,
+      projectId: 'CT1',
+      teamId: 'D1',
+      workerCode: 'NV.SME-33',
+      status: 'ACTIVE',
+      perms: { checkin: true, inputTeam: false, approveWork: false, accounting: false, approveDirector: false, adminUsers: false }
+    }
+  ];
+
   return {
     projects: PROJECTS,
     teams: TEAMS,
     roles: ROLES,
+    accounts: ACCOUNTS,
     workers: buildAll108Workers(),
     advances: ADVANCES,
     auditLogs: AUDIT_LOGS,
