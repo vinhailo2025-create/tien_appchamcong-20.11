@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lora:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
   <style>
     :root {
-      /* Hệ thiết kế Navy & Cam (Bộ 1) */
       --ds-primary: #0B2D5B;
       --ds-primary-2: #123A70;
       --ds-primary-deep: #07203F;
@@ -47,34 +46,34 @@
       font-family: var(--ds-font-sans);
       background: var(--ds-bg-soft);
       color: var(--ds-text);
-      font-size: 15px;
-      line-height: 1.6;
-      padding: 24px 16px 60px;
+      font-size: 11px;
+      line-height: 1.38;
+      padding: 10px 8px 30px;
     }
     h1, h2, h3, h4 {
       font-family: var(--ds-font-serif);
       color: var(--ds-heading);
-      line-height: 1.2;
+      line-height: 1.15;
     }
     .toolbar {
-      max-width: 1020px;
-      margin: 0 auto 16px;
+      max-width: 780px;
+      margin: 0 auto 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       flex-wrap: wrap;
     }
     .btn-tool {
-      min-height: 44px;
-      padding: 11px 22px;
+      min-height: 26px;
+      padding: 4px 12px;
       border-radius: 999px;
-      font: 600 15px var(--ds-font-sans);
+      font: 600 11px var(--ds-font-sans);
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 5px;
       border: 1px solid var(--ds-line);
       background: var(--ds-bg);
       color: var(--ds-primary);
@@ -89,55 +88,53 @@
       color: var(--ds-on-accent);
       border-color: var(--ds-accent);
       font-weight: 700;
-      box-shadow: 0 6px 18px rgba(247, 147, 30, 0.32);
     }
     .sheet {
-      max-width: 1020px;
+      max-width: 780px;
       margin: 0 auto;
       background: var(--ds-bg);
-      border-radius: 20px;
+      border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 18px 40px rgba(11, 45, 91, 0.10);
+      box-shadow: 0 8px 20px rgba(11, 45, 91, 0.08);
       border: 1px solid var(--ds-line);
     }
-    /* Không dùng gradient theo đúng Quy tắc 7 của Hệ thiết kế Navy · Cam */
     .sheet-header {
       background: var(--ds-primary);
       color: #FFFFFF;
-      padding: 28px 32px;
-      border-bottom: 4px solid var(--ds-accent);
+      padding: 12px 16px;
+      border-bottom: 2.5px solid var(--ds-accent);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
+      gap: 12px;
       flex-wrap: wrap;
     }
     .header-brand {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 10px;
     }
     .header-brand img {
-      width: 64px;
-      height: 64px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
-      border: 1.5px solid rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.5);
       object-fit: cover;
       background: var(--ds-primary-deep);
     }
     .kicker-badge {
       display: inline-block;
       font-family: var(--ds-font-sans);
-      font-size: 12.5px;
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.12em;
       color: var(--ds-accent);
-      margin-bottom: 6px;
+      margin-bottom: 2px;
     }
     .sheet-header h1 {
       font-family: var(--ds-font-serif);
-      font-size: 26px;
+      font-size: 15px;
       font-weight: 700;
       color: #FFFFFF;
     }
@@ -145,58 +142,53 @@
       font-family: var(--ds-font-serif);
       font-style: italic;
       color: var(--ds-accent);
-      font-size: 15px;
-      margin-top: 4px;
+      font-size: 10.5px;
+      margin-top: 2px;
     }
     .price-highlight-box {
       background: var(--ds-primary-2);
-      border: 1.5px solid rgba(255, 255, 255, 0.5);
-      border-radius: 18px;
-      padding: 14px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 8px;
+      padding: 6px 12px;
       text-align: right;
     }
     .price-highlight-box .lbl {
-      font-size: 12px;
+      font-size: 8.5px;
       color: var(--ds-accent);
       text-transform: uppercase;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
       font-weight: 700;
     }
     .price-highlight-box .val {
       font-family: var(--ds-font-serif);
-      font-size: 30px;
+      font-size: 16px;
       font-weight: 700;
       color: #FFFFFF;
       line-height: 1.15;
-      margin-top: 2px;
     }
     .sheet-body {
-      padding: 28px 32px;
+      padding: 12px 16px;
     }
     .meta-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 8px;
       background: var(--ds-bg-soft);
       border: 1px solid var(--ds-line);
-      border-radius: 20px;
-      padding: 18px 22px;
-      margin-bottom: 24px;
-      font-size: 14.5px;
-    }
-    @media (max-width: 680px) {
-      .meta-grid { grid-template-columns: 1fr; }
-      .sheet-header, .sheet-body { padding: 18px; }
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      font-size: 10.5px;
     }
     .meta-grid div strong { color: var(--ds-primary); }
     .section-title {
       font-family: var(--ds-font-serif);
-      font-size: 20px;
+      font-size: 12.5px;
       font-weight: 700;
       color: var(--ds-heading);
-      margin-bottom: 14px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid var(--ds-accent);
+      margin-bottom: 6px;
+      padding-bottom: 3px;
+      border-bottom: 1.5px solid var(--ds-accent);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -204,12 +196,12 @@
     table.quote-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 14.5px;
-      margin-bottom: 24px;
+      font-size: 10px;
+      margin-bottom: 10px;
     }
     table.quote-table th, table.quote-table td {
       border: 1px solid var(--ds-line);
-      padding: 12px 14px;
+      padding: 5px 8px;
       vertical-align: top;
     }
     table.quote-table th {
@@ -222,138 +214,127 @@
       background: var(--ds-bg-soft);
     }
     table.quote-table td.stt {
-      width: 52px;
+      width: 32px;
       text-align: center;
       font-family: var(--ds-font-serif);
       font-weight: 700;
-      font-size: 16px;
+      font-size: 11px;
       color: var(--ds-sky);
     }
     table.quote-table td.amount {
-      width: 150px;
+      width: 95px;
       text-align: right;
       font-family: var(--ds-font-serif);
       font-weight: 700;
       color: var(--ds-primary);
       white-space: nowrap;
-      font-size: 16px;
+      font-size: 11px;
     }
     .item-title {
       font-family: var(--ds-font-serif);
       font-weight: 700;
-      font-size: 16px;
+      font-size: 11px;
       color: var(--ds-heading);
-      margin-bottom: 6px;
+      margin-bottom: 2px;
     }
     .item-list {
-      margin-left: 18px;
+      margin-left: 14px;
       color: var(--ds-text);
-      font-size: 14px;
+      font-size: 9.8px;
       display: grid;
-      gap: 4px;
+      gap: 1.5px;
     }
     .total-row td {
       background: var(--ds-bg-soft) !important;
       font-weight: 700;
-      font-size: 16px;
+      font-size: 11.5px;
       color: var(--ds-primary);
-      border-top: 2px solid var(--ds-primary);
+      border-top: 1.5px solid var(--ds-primary);
     }
     .policy-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 22px;
-    }
-    @media (max-width: 720px) {
-      .policy-grid { grid-template-columns: 1fr; }
+      gap: 8px;
+      margin-bottom: 8px;
     }
     .policy-box {
       background: var(--ds-bg);
       border: 1px solid var(--ds-line);
-      border-radius: 20px;
-      padding: 18px 20px;
-      font-size: 14px;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 9.8px;
     }
     .policy-box.featured {
-      border: 2px solid var(--ds-accent);
+      border: 1.5px solid var(--ds-accent);
       background: var(--ds-bg-soft);
     }
     .policy-box h4 {
       font-family: var(--ds-font-serif);
-      font-size: 17px;
+      font-size: 11px;
       color: var(--ds-heading);
-      margin-bottom: 8px;
+      margin-bottom: 3px;
     }
     .policy-box ul {
-      margin-left: 18px;
+      margin-left: 14px;
       display: grid;
-      gap: 5px;
+      gap: 2px;
       color: var(--ds-text);
     }
     .note-banner {
       background: var(--ds-bg-soft);
       border: 1px solid var(--ds-line);
-      border-left: 4px solid var(--ds-accent);
-      border-radius: 12px;
-      padding: 14px 18px;
-      font-size: 13.5px;
+      border-left: 3px solid var(--ds-accent);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 9.5px;
       color: var(--ds-text);
-      margin-bottom: 22px;
+      margin-bottom: 8px;
     }
     .sign-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       text-align: center;
-      margin-top: 18px;
-      padding-top: 12px;
-      font-size: 14.5px;
+      margin-top: 6px;
+      font-size: 10px;
     }
     .sign-space {
-      height: 68px;
+      height: 28px;
     }
     @page {
       size: A4;
-      margin: 7mm 9mm;
+      margin: 5mm 7mm;
     }
     @media print {
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      body { background: #FFFFFF; padding: 0; font-size: 9.6pt; line-height: 1.3; }
+      body { background: #FFFFFF; padding: 0; font-size: 9.5px; line-height: 1.3; }
       .toolbar { display: none; }
-      .sheet { box-shadow: none; border: none; max-width: 100%; border-radius: 0; }
-      .sheet-header { padding: 10px 14px; border-radius: 10px 10px 0 0; }
-      .sheet-header h1 { font-size: 15pt; }
-      .sheet-header p { font-size: 9.5pt; }
-      .header-brand img { width: 44px; height: 44px; }
-      .price-highlight-box { padding: 7px 12px; }
-      .price-highlight-box .val { font-size: 15pt; }
-      .sheet-body { padding: 6px 2px; }
-      .meta-grid { padding: 6px 10px; margin-bottom: 6px; font-size: 9pt; gap: 6px; border-radius: 10px; }
-      .section-title { margin-bottom: 4px; font-size: 11pt; padding-bottom: 3px; break-after: avoid; page-break-after: avoid; }
-      table.quote-table { margin-bottom: 6px; font-size: 9pt; }
-      table.quote-table th, table.quote-table td { padding: 4px 7px; }
-      table.quote-table tr { break-inside: avoid; page-break-inside: avoid; }
-      .item-title { font-size: 10pt; margin-bottom: 1.5px; }
-      .item-list { font-size: 8.8pt; gap: 1px; }
+      .sheet { box-shadow: none; border: none; max-width: 100%; }
+      .sheet-header { padding: 9px 14px; }
+      .sheet-body { padding: 8px 10px; }
+      .meta-grid { padding: 6px 10px; margin-bottom: 6px; font-size: 9.5px; }
+      .section-title { margin-bottom: 4px; font-size: 11.5px; padding-bottom: 2px; }
+      table.quote-table { margin-bottom: 6px; font-size: 9.2px; }
+      table.quote-table th, table.quote-table td { padding: 3.5px 7px; }
+      .item-title { font-size: 10px; margin-bottom: 1px; }
+      .item-list { font-size: 9px; gap: 1px; }
       .policy-grid { gap: 6px; margin-bottom: 6px; }
-      .policy-box { padding: 6px 9px; font-size: 8.8pt; border-radius: 10px; break-inside: avoid; page-break-inside: avoid; }
-      .policy-box h4 { font-size: 9.8pt; margin-bottom: 2px; }
-      .kicker-badge { font-size: 8pt; margin-bottom: 1.5px; }
-      .note-banner { padding: 5px 9px; font-size: 8.6pt; margin-bottom: 5px; break-inside: avoid; }
-      .sign-grid { break-inside: avoid; page-break-inside: avoid; margin-top: 2px; padding-top: 2px; font-size: 9.5pt; }
-      .sign-space { height: 32px; }
+      .policy-box { padding: 5px 8px; font-size: 9px; }
+      .policy-box h4 { font-size: 10px; margin-bottom: 2px; }
+      .note-banner { padding: 5px 8px; font-size: 8.8px; margin-bottom: 5px; }
+      .sign-grid { margin-top: 4px; font-size: 9.5px; }
+      .sign-space { height: 22px; }
     }
   </style>
 </head>
 <body>
   <div class="toolbar">
     <a class="btn-tool navy" href="/">⬅️ Quay lại Ứng dụng NP ONE</a>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn-tool" onclick="document.documentElement.toggleAttribute('data-theme'); if(document.documentElement.hasAttribute('data-theme')) document.documentElement.setAttribute('data-theme','bo-2');">🎨 Đổi Bộ màu 1 ↔ Bộ 2</button>
-      <a class="btn-tool" href="/Bao-Gia-NP-ONE-Nguyen-Phat-5tr.pdf" download="Bao-Gia-NP-ONE-Nguyen-Phat-5tr.pdf">⬇️ Tải File PDF (A4)</a>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button class="btn-tool" onclick="document.documentElement.toggleAttribute('data-theme'); if(document.documentElement.hasAttribute('data-theme')) document.documentElement.setAttribute('data-theme','bo-2');">🎨 Đổi Bộ màu</button>
+      <a class="btn-tool" href="/Bao-Gia-NP-ONE-Nguyen-Phat-5tr.pdf" download="Bao-Gia-NP-ONE-Nguyen-Phat-5tr.pdf">⬇️ Tải PDF (A4)</a>
       <button class="btn-tool primary" onclick="window.print()">🖨️ In / Xuất PDF</button>
     </div>
   </div>
@@ -371,7 +352,7 @@
       <div class="price-highlight-box">
         <div class="lbl">Chi phí xây dựng phần mềm</div>
         <div class="val">5.000.000 VNĐ</div>
-        <div style="font-size:12px; color:#FFFFFF; opacity:0.85;">Bảo hành miễn phí 01 năm đầu</div>
+        <div style="font-size:9px; color:#FFFFFF; opacity:0.85;">Bảo hành miễn phí 01 năm đầu</div>
       </div>
     </header>
 
@@ -391,7 +372,7 @@
 
       <div class="section-title">
         <span>I. CHI TIẾT CÁC HẠNG MỤC PHẦN MỀM HOÀN THIỆN</span>
-        <span style="font-family:var(--ds-font-sans); font-size:13px; color:var(--ds-text-muted); font-weight:500;">Đơn vị tính: VNĐ</span>
+        <span style="font-family:var(--ds-font-sans); font-size:9.5px; color:var(--ds-text-muted); font-weight:500;">Đơn vị tính: VNĐ</span>
       </div>
 
       <table class="quote-table">
@@ -408,9 +389,8 @@
             <td>
               <div class="item-title">Thiết kế Giao diện Hệ Navy · Cam &amp; Ứng dụng Điện thoại / Máy tính (PWA)</div>
               <ul class="item-list">
-                <li>Áp dụng chuẩn <strong>Hệ thiết kế Navy · Cam</strong> (Font tiêu đề <em>Lora</em>, chữ nội dung <em>Be Vietnam Pro</em>, độ tương phản đạt chuẩn đọc WCAG ngoài công trường nắng gắt).</li>
-                <li>Tối ưu giao diện điện thoại gọn nhẹ: <strong>Menu bên trái trượt đóng/mở linh hoạt</strong>, vùng bấm tối thiểu 44×44px, thanh 5 phím tắt nhanh dưới đáy màn hình.</li>
-                <li>Tích hợp bộ cài <strong>Phím tắt Ứng dụng (App Shortcut)</strong> trực tiếp ra màn hình chính iPhone (iOS), Android và Desktop Windows.</li>
+                <li>Áp dụng chuẩn <strong>Hệ thiết kế Navy · Cam</strong> (Font tiêu đề <em>Lora</em>, chữ nội dung <em>Be Vietnam Pro</em>, độ tương phản đạt chuẩn đọc WCAG ngoài công trường).</li>
+                <li>Tối ưu giao diện điện thoại gọn nhẹ: <strong>Menu bên trái trượt đóng/mở linh hoạt</strong>, thanh 5 phím tắt nhanh dưới đáy màn hình, cài đặt <strong>Phím tắt App</strong> ra màn hình chính iPhone, Android &amp; Desktop.</li>
               </ul>
             </td>
             <td class="amount">800.000</td>
@@ -422,9 +402,7 @@
               <div class="item-title">Phân hệ Chấm công Camera Trực tiếp (Chặn ảnh thư viện) &amp; Đóng dấu Định vị GPS</div>
               <ul class="item-list">
                 <li><strong>Chống gian lận hình ảnh:</strong> Bắt buộc mở Camera chụp trực tiếp tại chỗ (Check-in / Check-out), <strong>khóa 100% tính năng chọn ảnh cũ từ thư viện máy</strong>.</li>
-                <li><strong>Định vị GPS thực tế:</strong> Tự động lấy tọa độ vệ tinh GPS của thiết bị (Vĩ độ, Kinh độ, Sai số ±m) và tra cứu ra <strong>Địa chỉ thực tế + Tên Công trình</strong>.</li>
-                <li><strong>Đóng dấu Watermark tự động lên ảnh:</strong> Ghi rõ <em>Mã NV, Họ tên, Thời gian chấm công (Giờ:Phút:Giây Ngày/Tháng/Năm), Địa điểm định vị, Tọa độ GPS</em> và <em>Logo NP ONE</em> (tự động nén ảnh chuẩn HD nhẹ để tải nhanh trên 4G).</li>
-                <li>Hỗ trợ linh hoạt: Công nhân tự chụp điểm danh trên máy cá nhân hoặc Đội trưởng cầm máy chụp điểm danh cho công nhân trong đội.</li>
+                <li><strong>Định vị GPS &amp; Đóng dấu Watermark:</strong> Tự động bắt tọa độ GPS thực tế (Vĩ độ, Kinh độ, Sai số ±m), tra cứu ra <strong>Địa chỉ thực tế + Tên Công trình</strong> và đóng dấu lên ảnh kèm <em>Mã NV, Họ tên, Thời gian chấm công, Logo NP ONE</em>.</li>
               </ul>
             </td>
             <td class="amount">1.200.000</td>
@@ -435,10 +413,8 @@
             <td>
               <div class="item-title">Phân quyền 5 Cấp Độc lập, Khóa Bảng công &amp; Chống Cộng khống Tăng ca sau 17:30</div>
               <ul class="item-list">
-                <li><strong>Sơ đồ phân cấp 5 tầng:</strong> (1) Ban Giám đốc → (2) Hành chính - Kế toán → (3) Quản lý công trình → (4) Đội trưởng các đội → (5) Công nhân.</li>
-                <li><strong>Nguyên tắc Nhập &amp; Duyệt độc lập:</strong> Đội trưởng được nhập công, báo quân số, đăng ký tăng ca nhưng <strong>không được tự duyệt công</strong>; Quản lý công trình đối chiếu ảnh GPS và duyệt độc lập.</li>
-                <li><strong>Khóa bảng công &amp; Lịch sử Audit Log:</strong> Bảng công đã duyệt tự động khóa; mọi thao tác bấm <code>ĐIỀU CHỈNH</code> bắt buộc nhập lý do và lưu vết lịch sử chỉnh sửa.</li>
-                <li><strong>Chống "Quên Check-out = Cộng khống tăng ca":</strong> Sau 17:30, nếu công nhân quên Check-out và Đội trưởng không có phiếu đăng ký tăng ca, hệ thống tự động chốt giờ hành chính tối đa (8.0h, 0h OT) hoặc chuyển chờ xác nhận, tuyệt đối không tự nhảy giờ tăng ca.</li>
+                <li><strong>Phân cấp 5 tầng &amp; Độc lập Nhập/Duyệt:</strong> Ban Giám đốc → Kế toán → Quản lý công trình → Đội trưởng → Công nhân. Đội trưởng nhập công &amp; báo tăng ca nhưng <strong>không được tự duyệt</strong>; Quản lý công trình duyệt xong bảng công tự động khóa (mọi thao tác <code>ĐIỀU CHỈNH</code> bắt buộc nhập lý do lưu Audit Log).</li>
+                <li><strong>Chống "Quên Check-out = Cộng khống tăng ca":</strong> Sau 17:30, nếu công nhân quên Check-out và không có phiếu đăng ký tăng ca của Đội trưởng, hệ thống tự động chốt tối đa 8.0h hành chính (0h OT).</li>
               </ul>
             </td>
             <td class="amount">1.000.000</td>
@@ -449,9 +425,8 @@
             <td>
               <div class="item-title">Phân hệ Tổng hợp Công (Ngày/Tuần/Tháng), Duyệt 100% Ứng lương &amp; Tính Lương</div>
               <ul class="item-list">
-                <li>Tự động tổng hợp dữ liệu 7 bước: <em>Bảng công hằng ngày → Tổng hợp công tuần → Tổng hợp công tháng → Đối chiếu ứng lương → Bảng tính lương → Giám đốc duyệt → Phiếu lương</em>.</li>
-                <li><strong>Kiểm soát Ứng lương:</strong> 100% khoản ứng lương đều phải qua Kế toán kiểm tra công lũy kế và Ban Giám đốc phê duyệt trước khi chi &amp; tự động khấu trừ vào bảng lương.</li>
-                <li>Kế toán chỉ tính lương trên bảng công <strong>đã duyệt</strong>, hỗ trợ xuất file Excel (.CSV) và in <strong>Phiếu lương chi tiết</strong> cho từng công nhân.</li>
+                <li>Tự động tổng hợp dữ liệu 7 bước: <em>Bảng công ngày → Tuần → Tháng → Đối chiếu ứng lương → Bảng tính lương → Giám đốc duyệt → Phiếu lương</em>.</li>
+                <li><strong>Kiểm soát Ứng lương:</strong> 100% khoản ứng lương đều phải qua Kế toán kiểm tra công lũy kế và Ban Giám đốc phê duyệt trước khi chi &amp; tự động khấu trừ vào bảng lương; hỗ trợ xuất file Excel (.CSV).</li>
               </ul>
             </td>
             <td class="amount">1.200.000</td>
@@ -462,19 +437,18 @@
             <td>
               <div class="item-title">Báo cáo Quân số Tự động 08:30 sáng cho Giám đốc, Khởi tạo Dữ liệu &amp; Bàn giao</div>
               <ul class="item-list">
-                <li><strong>Thẻ Báo cáo tự động 08:30 sáng cho Giám đốc:</strong> Tổng hợp tức thì đầu ngày <em>Tổng quân số có mặt theo từng công trình, số người đi muộn, nghỉ phép, nghỉ không phép và ước tính chi phí nhân công trong ngày</em>.</li>
-                <li>Khởi tạo danh sách nhân sự (&gt;100 công nhân), hỗ trợ thêm/sửa nhân sự, thiết lập các đội thi công &amp; tọa độ công trình thực tế của Nguyên Phát.</li>
+                <li><strong>Thẻ Báo cáo tự động 08:30 sáng cho Giám đốc:</strong> Tổng hợp tức thì đầu ngày <em>Tổng quân số có mặt theo từng công trình, đi muộn, nghỉ phép, nghỉ không phép và ước tính chi phí nhân công trong ngày</em>. Khởi tạo danh sách &gt;100 công nhân, đội thi công &amp; công trình.</li>
               </ul>
             </td>
             <td class="amount">800.000</td>
           </tr>
 
           <tr class="total-row">
-            <td colspan="2" style="text-align:right; padding-right:16px;">
+            <td colspan="2" style="text-align:right; padding-right:12px;">
               TỔNG CHI PHÍ XÂY DỰNG PHẦN MỀM TRỌN GÓI:
-              <div style="font-size:12.5px; font-weight:400; color:var(--ds-text-muted); margin-top:2px;">(Bằng chữ: Năm triệu đồng chẵn — Chưa bao gồm chi phí Server lưu trữ nêu tại Mục II)</div>
+              <span style="font-size:9.5px; font-weight:400; color:var(--ds-text-muted); margin-left:6px;">(Năm triệu đồng chẵn — Chưa bao gồm Server Mục II)</span>
             </td>
-            <td class="amount" style="font-size:18px; color:var(--ds-danger);">5.000.000 VNĐ</td>
+            <td class="amount" style="font-size:12.5px; color:var(--ds-danger);">5.000.000 VNĐ</td>
           </tr>
         </tbody>
       </table>
@@ -489,8 +463,8 @@
           <h4>1. Thanh toán 50% &amp; 01 Tháng Chạy Test Thực tế</h4>
           <ul>
             <li><strong>Đợt 1 — Thanh toán 50% (2.500.000 VNĐ):</strong> Ngay khi xác nhận triển khai để thiết lập hệ thống, nạp danh sách công nhân/công trình và đưa vào <strong>chạy thực tế (Bản Test) trong 01 tháng</strong>.</li>
-            <li><strong>Trong 01 tháng chạy thử:</strong> Tiếp nhận feedback thực tế từ công trường và kế toán, hỗ trợ điều chỉnh và xử lý lỗi để hệ thống vận hành trơn tru.</li>
-            <li><strong>Đợt 2 — Thanh toán 50% còn lại (2.500.000 VNĐ):</strong> Sau khi kết thúc 01 tháng chạy thử và nghiệm thu chính thức (thanh toán trong vòng 03 – 05 ngày làm việc).</li>
+            <li><strong>Trong 01 tháng chạy thử:</strong> Tiếp nhận feedback thực tế và hỗ trợ điều chỉnh, xử lý lỗi để hệ thống vận hành trơn tru.</li>
+            <li><strong>Đợt 2 — Thanh toán 50% còn lại (2.500.000 VNĐ):</strong> Sau khi kết thúc 01 tháng chạy thử ổn định và nghiệm thu chính thức.</li>
           </ul>
         </div>
 
@@ -498,9 +472,9 @@
           <span class="kicker-badge">HẠ TẦNG LƯU TRỮ</span>
           <h4>2. Chi phí Máy chủ (Server Lưu trữ Dữ liệu &amp; Hình ảnh)</h4>
           <ul>
-            <li>Chi phí 5.000.000 VNĐ là chi phí phần mềm, <strong>chưa bao gồm Server</strong>. Khách hàng tùy chọn 1 trong 2 hình thức:</li>
-            <li><strong>Phương án A — Dùng Máy trạm của Công ty (Miễn phí 0đ/năm):</strong> Cài đặt trực tiếp lên máy tính/máy trạm có sẵn tại văn phòng Nguyên Phát (Công ty tự duy trì nguồn điện &amp; mạng Internet cho máy trạm).</li>
-            <li><strong>Phương án B — Thuê Cloud Server hoạt động 24/7:</strong> Chi phí từ <strong>2.000.000 – 3.000.000 VNĐ / 01 năm</strong> (tùy dung lượng lưu trữ ảnh chấm công thực tế).</li>
+            <li>Chi phí 5.000.000 VNĐ là chi phí phần mềm, <strong>chưa bao gồm Server</strong>:</li>
+            <li><strong>Phương án A — Dùng Máy trạm của Công ty (Miễn phí 0đ/năm):</strong> Cài đặt trực tiếp lên máy trạm có sẵn tại văn phòng Nguyên Phát.</li>
+            <li><strong>Phương án B — Thuê Cloud Server 24/7:</strong> Chi phí từ <strong>2.000.000 – 3.000.000 VNĐ / 01 năm</strong>.</li>
           </ul>
         </div>
 
@@ -508,10 +482,10 @@
           <span class="kicker-badge">CAM KẾT DÀI HẠN</span>
           <h4>3. Bảo hành 01 Năm &amp; Bàn giao Source Code</h4>
           <ul>
-            <li><strong>Năm đầu tiên (12 tháng):</strong> <strong>Miễn phí 100%</strong> bảo hành kỹ thuật và hỗ trợ vận hành phần mềm.</li>
+            <li><strong>Năm đầu tiên (12 tháng):</strong> <strong>Miễn phí 100%</strong> bảo hành kỹ thuật.</li>
             <li><strong>Từ năm thứ 2 trở đi (Linh hoạt 02 lựa chọn):</strong>
-              <br/>• <em>Lựa chọn 1 (Tiếp tục đồng hành bảo hành):</em> Phí duy trì bảo hành, bảo trì &amp; hỗ trợ kỹ thuật là <strong>3.000.000 VNĐ / năm</strong>.
-              <br/>• <em>Lựa chọn 2 (Không gia hạn bảo hành):</em> Đơn vị phát triển <strong>bàn giao toàn bộ Source Code (Mã nguồn)</strong> để Công ty Nguyên Phát tự chủ quản lý.
+              <br/>• <em>Tiếp tục đồng hành bảo hành:</em> Phí duy trì <strong>3.000.000 VNĐ / năm</strong>.
+              <br/>• <em>Không gia hạn bảo hành:</em> <strong>Bàn giao toàn bộ Source Code (Mã nguồn)</strong> để Công ty Nguyên Phát tự chủ quản lý.
             </li>
           </ul>
         </div>
@@ -520,29 +494,26 @@
           <span class="kicker-badge">VẬN HÀNH &amp; MỞ RỘNG</span>
           <h4>4. Quy trình Hỗ trợ Kỹ thuật &amp; Nâng cấp Tính năng</h4>
           <ul>
-            <li><strong>Sau 01 tháng chạy thử ban đầu:</strong>
-              <br/>• <em>Các lỗi gấp (ảnh hưởng trực tiếp đến chấm công/tính lương):</em> Hỗ trợ xử lý khắc phục <strong>ngay lập tức</strong>.
-              <br/>• <em>Các điều chỉnh nhỏ, không gấp:</em> Tổng hợp và cập nhật định kỳ <strong>01 tháng / 01 lần</strong> để đảm bảo hệ thống ổn định.
-            </li>
-            <li><strong>Nâng cấp / Phát triển thêm tính năng mới:</strong> Các yêu cầu mở rộng ngoài 05 hạng mục trong báo giá này sẽ được khảo sát và <strong>báo giá riêng</strong> theo từng hạng mục.</li>
+            <li><strong>Sau 01 tháng chạy thử ban đầu:</strong> Các lỗi gấp xử lý khắc phục <strong>ngay lập tức</strong>; các điều chỉnh nhỏ không gấp tổng hợp cập nhật định kỳ <strong>01 tháng / 01 lần</strong>.</li>
+            <li><strong>Nâng cấp tính năng mới:</strong> Các yêu cầu mở rộng ngoài 05 hạng mục trên sẽ được khảo sát và <strong>báo giá riêng</strong>.</li>
           </ul>
         </div>
       </div>
 
       <div class="note-banner">
-        <strong>Phối hợp vận hành hiệu quả:</strong> Để đảm bảo tốc độ xử lý nhanh và thống nhất, Công ty Nguyên Phát cử <strong>01 – 02 đầu mối chính</strong> (Ban Giám đốc / Kế toán trưởng) làm đầu mối tổng hợp feedback từ các đội công trình gửi cho bộ phận kỹ thuật. Ảnh chấm công được hệ thống tự động nén chuẩn HD nhẹ để tối ưu tốc độ 4G và tiết kiệm dung lượng lưu trữ.
+        <strong>Phối hợp vận hành hiệu quả:</strong> Công ty Nguyên Phát cử <strong>01 – 02 đầu mối chính</strong> (Ban Giám đốc / Kế toán trưởng) tổng hợp feedback gửi bộ phận kỹ thuật. Ảnh chấm công được tự động nén chuẩn HD nhẹ để tối ưu tốc độ 4G và tiết kiệm dung lượng.
       </div>
 
       <div class="sign-grid">
         <div>
           <strong>ĐẠI DIỆN KHÁCH HÀNG</strong>
-          <div style="font-size:12.5px; color:var(--ds-text-muted);">(Công ty Nguyên Phát)</div>
+          <div style="font-size:9px; color:var(--ds-text-muted);">(Công ty Nguyên Phát)</div>
           <div class="sign-space"></div>
           <div>.................................................</div>
         </div>
         <div>
           <strong>ĐƠN VỊ PHÁT TRIỂN &amp; TRIỂN KHAI</strong>
-          <div style="font-size:12.5px; color:var(--ds-text-muted);">(Xác nhận Báo giá &amp; Cam kết bảo hành)</div>
+          <div style="font-size:9px; color:var(--ds-text-muted);">(Xác nhận Báo giá &amp; Cam kết bảo hành)</div>
           <div class="sign-space"></div>
           <div>.................................................</div>
         </div>
