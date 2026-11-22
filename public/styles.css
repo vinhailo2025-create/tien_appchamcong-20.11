@@ -1322,6 +1322,121 @@ a {
   grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
 }
 
+/* ================= BẢNG LỊCH CHỌN KHOẢNG NGÀY (TỪ NGÀY -> ĐẾN NGÀY + THÁNG/NĂM) ================= */
+.date-range-trigger-btn {
+  background: var(--ds-bg-soft);
+  border: 1px solid var(--ds-accent);
+  color: var(--ds-primary);
+  padding: 3px 9px;
+  border-radius: var(--ds-radius-pill);
+  font-family: var(--ds-font-sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+}
+
+.date-range-trigger-btn:hover {
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+
+.cal-toolbar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cal-quick-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.cal-grid-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ds-primary);
+  margin-bottom: 4px;
+}
+
+.cal-grid-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-day-cell {
+  min-height: 30px;
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-sm);
+  background: #FFFFFF;
+  color: var(--ds-text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal-day-cell:hover:not(.empty) {
+  border-color: var(--ds-accent);
+}
+
+.cal-day-cell.empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+
+.cal-day-cell.in-range {
+  background: #FEF3C7;
+  color: var(--ds-primary);
+  border-color: #FDE68A;
+}
+
+.cal-day-cell.range-edge {
+  background: var(--ds-primary);
+  color: #FFFFFF;
+  border-color: var(--ds-primary);
+  font-weight: 700;
+}
+
+.checkin-mode-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.mode-pill-btn {
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: var(--ds-radius-pill);
+  border: 1.5px solid var(--ds-line);
+  background: var(--ds-bg-soft);
+  color: var(--ds-primary);
+  font-family: var(--ds-font-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mode-pill-btn.active {
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+  border-color: var(--ds-accent);
+}
+
 @media (max-width: 600px) {
   .header-right .hide-on-mobile {
     display: none !important;
