@@ -1,4 +1,4 @@
-const CACHE_NAME = 'np-one-hr-ui-v4';
+const CACHE_NAME = 'np-one-hr-ui-v5';
 const ASSETS = [
   '/',
   '/index.html',

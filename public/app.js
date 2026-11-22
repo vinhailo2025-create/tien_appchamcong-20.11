@@ -9,6 +9,8 @@
   let currentAccountId = null;
   let currentRoleId = 'BGD';
   let currentTab = 'bgd-overview';
+  const ROWS_PER_PAGE = 50;
+  const listPages = new Map();
 
   // Bộ lọc khoảng thời gian (Từ ngày ... đến ngày ..., chọn Tháng, chọn Năm)
   let dateRange = {
@@ -446,6 +448,7 @@
   }
 
   function applyDateRangeFilter() {
+    listPages.clear();
     closeModal('datePickerModal');
     renderRoleNavigationAndHeader();
     renderRoleHeroSection();
@@ -660,6 +663,7 @@
     isAuthenticated = true;
     currentAccountId = acc.id;
     currentRoleId = acc.roleId;
+    listPages.clear();
 
     if (acc.roleId === 'QLCT' && acc.projectId !== 'ALL') {
       filterProject = acc.projectId;
@@ -1000,6 +1004,51 @@
   }
 
   // ================= KHỐI BẢNG KÊ CHẤM CÔNG & ỨNG LƯƠNG CÁ NHÂN DÙNG CHUNG CHO KẾ TOÁN / QUẢN LÝ CT / ĐỘI TRƯỞNG / CÔNG NHÂN =================
+  function paginateRows(items, list, teamId) {
+    const key = encodeURIComponent(currentTab + ':' + list);
+    const total = items.length;
+    const pageCount = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+    const page = Math.min(listPages.get(key) || 1, pageCount);
+    const offset = (page - 1) * ROWS_PER_PAGE;
+    const rows = items.slice(offset, offset + ROWS_PER_PAGE);
+    const destination = teamId ? ` data-team="${encodeURIComponent(teamId)}"` : '';
+    const controls = pageCount > 1 ? `
+      <nav class="np-pagination" aria-label="Phân trang" data-np-pagination="${key}"${destination}>
+        <span class="np-page-range" role="status">${offset + 1}–${offset + rows.length} / ${total} dòng</span>
+        <div class="np-page-controls">
+          <button type="button" class="btn btn-soft" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>Trước</button>
+          <label><span class="np-page-sr">Chọn trang</span><select data-page-picker>
+            ${Array.from({ length: pageCount }, (_, index) => {
+              const value = index + 1;
+              return `<option value="${value}" ${page === value ? 'selected' : ''}>Trang ${value} / ${pageCount}</option>`;
+            }).join('')}
+          </select></label>
+          <button type="button" class="btn btn-soft" data-page="${page + 1}" ${page === pageCount ? 'disabled' : ''}>Sau</button>
+        </div>
+      </nav>` : '';
+    return { rows, controls, offset };
+  }
+
+  function changeListPage(control, value) {
+    const nav = control.closest('[data-np-pagination]');
+    const page = Number(value);
+    if (!nav || !getCurrentAccount() || !Number.isInteger(page) || page < 1 || page > nav.querySelector('select').options.length) return;
+    const key = nav.dataset.npPagination;
+    listPages.set(key, page);
+    if (nav.dataset.team) openTeamMembersDetailModal(decodeURIComponent(nav.dataset.team));
+    else renderMain();
+
+    const updated = document.querySelector(`[data-np-pagination="${CSS.escape(key)}"]`);
+    const range = updated?.querySelector('.np-page-range');
+    if (range) {
+      range.tabIndex = -1;
+      range.focus({ preventScroll: true });
+    }
+    const content = updated?.previousElementSibling || updated?.parentElement;
+    if (content?.classList.contains('table-scroll')) content.scrollTop = 0;
+    content?.scrollIntoView({ block: 'start' });
+  }
+
   function renderPersonalStatementBlock(person, roleBadgeText) {
     const prj = getProject(person.projectId);
     const scaledDays = getScaledDaysWorked(person.daysMonthApproved);
@@ -1038,6 +1087,9 @@
         approver: person.managerName
       });
     }
+
+    const advancePage = paginateRows(myAdvances, 'personal-advances');
+    const dailyPage = paginateRows(dailyRows, 'personal-days');
 
     return `
       <!-- BẢNG TỔNG KẾT CÔNG & LƯƠNG CÁ NHÂN THEO KHOẢNG NGÀY ĐÃ CHỌN -->
@@ -1117,7 +1169,7 @@
               <tbody>
                 ${myAdvances.length === 0 ? `
                   <tr><td colspan="5" style="text-align:center; padding:10px; color:var(--ds-text-muted);">Chưa có đơn ứng lương.</td></tr>
-                ` : myAdvances.map(adv => `
+                ` : advancePage.rows.map(adv => `
                   <tr>
                     <td><strong>${adv.id}</strong></td>
                     <td>${adv.date}</td>
@@ -1129,6 +1181,7 @@
               </tbody>
             </table>
           </div>
+          ${advancePage.controls}
         </div>
       </div>
 
@@ -1155,7 +1208,7 @@
               </tr>
             </thead>
             <tbody>
-              ${dailyRows.slice(0, 25).map(r => `
+              ${dailyPage.rows.map(r => `
                 <tr>
                   <td><strong>${r.dateStr}</strong></td>
                   <td>${r.dayType}</td>
@@ -1170,6 +1223,7 @@
             </tbody>
           </table>
         </div>
+        ${dailyPage.controls}
       </div>
     `;
   }
@@ -1420,6 +1474,7 @@
                 <div style="margin-top:6px;">
                   ${pTeams.map(tm => {
                     const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
+                    const teamPage = paginateRows(tmWorkers, 'members-' + tm.id);
                     const tmPresent = tmWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
                     const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
                     const isOpen = !!expandedTeams[tm.id];
@@ -1462,12 +1517,12 @@
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  ${tmWorkers.map((w, idx) => {
+                                  ${teamPage.rows.map((w, idx) => {
                                     const wPin = getAccountPinByUsernameOrCode(w.code);
                                     const sDays = getScaledDaysWorked(w.daysMonthApproved);
                                     return `
                                       <tr>
-                                        <td>${idx + 1}</td>
+                                        <td>${teamPage.offset + idx + 1}</td>
                                         <td><strong><code>${w.code}</code></strong><br/><span style="font-size:9px; color:var(--ds-primary);">PIN: <code>${wPin}</code></span></td>
                                         <td>
                                           <strong style="cursor:pointer; color:var(--ds-primary);" onclick="window.NPApp.openPhotoModal('${w.id}')" title="Bấm xem ảnh GPS chấm công">${w.name}</strong>
@@ -1489,6 +1544,7 @@
                                 </tbody>
                               </table>
                             </div>
+                            ${teamPage.controls}
                           </div>
                         ` : ''}
                       </div>
@@ -1522,6 +1578,8 @@
       }
       return true;
     });
+
+    const workerPage = paginateRows(filtered, 'personnel');
 
     return `
       <div class="section-card">
@@ -1571,7 +1629,7 @@
               </tr>
             </thead>
             <tbody>
-              ${filtered.slice(0, 40).map(w => {
+              ${workerPage.rows.map(w => {
                 const isWorking = (w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA');
                 const pin = getAccountPinByUsernameOrCode(w.code);
                 return `
@@ -1609,6 +1667,7 @@
             </tbody>
           </table>
         </div>
+        ${workerPage.controls}
       </div>
     `;
   }
@@ -1625,6 +1684,8 @@
     });
 
     const daysCols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+    const attendancePage = paginateRows(filtered, 'excel-attendance');
 
     return `
       <div class="section-card">
@@ -1666,10 +1727,10 @@
               </tr>
             </thead>
             <tbody>
-              ${filtered.slice(0, 25).map((w, idx) => {
+              ${attendancePage.rows.map((w, idx) => {
                 let totalHours = 0;
                 const cells = daysCols.map(d => {
-                  const seed = (idx + d * 3) % 13;
+                  const seed = (attendancePage.offset + idx + d * 3) % 13;
                   if (seed === 5) return `<td class="excel-cell excel-N">N</td>`;
                   if (seed === 9) { totalHours += 8; return `<td class="excel-cell excel-TC">TC</td>`; }
                   if (seed === 11) return `<td class="excel-cell excel-P">P</td>`;
@@ -1678,7 +1739,7 @@
                 }).join('');
                 return `
                   <tr>
-                    <td>${idx + 1}</td>
+                    <td>${attendancePage.offset + idx + 1}</td>
                     <td><strong><code>${w.code}</code></strong></td>
                     <td><strong>${w.name}</strong></td>
                     <td>${w.teamId}</td>
@@ -1691,6 +1752,7 @@
             </tbody>
           </table>
         </div>
+        ${attendancePage.controls}
 
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; padding-top:8px; border-top:1px solid var(--ds-line); font-size:10.5px;">
           <span><strong class="excel-cell excel-8" style="display:inline-block; padding:1px 6px;">8</strong> : Công thường (8h)</span>
@@ -1710,6 +1772,8 @@
       { id: 3, team: 'Đội 03 – NP Tower (ĐT3. Vũ Đình Trọng)', content: 'Tạm ứng thi công M&E đợt 2', amount: 75000000, status: 'Chờ duyệt' },
       { id: 4, team: 'Đội 04 – NP Tower (ĐT4. Phan Thanh Hải)', content: `Thanh toán kỳ ${formatDateRangeShortLabel()}`, amount: 125000000, status: 'Đã duyệt' }
     ];
+
+    const paymentPage = paginateRows(paymentList, 'payables');
 
     return `
       <div class="section-card">
@@ -1762,7 +1826,7 @@
               </tr>
             </thead>
             <tbody>
-              ${paymentList.map(item => `
+              ${paymentPage.rows.map(item => `
                 <tr>
                   <td><strong>${item.id}</strong></td>
                   <td><strong>${item.team}</strong></td>
@@ -1785,12 +1849,15 @@
             </tbody>
           </table>
         </div>
+        ${paymentPage.controls}
       </div>
     `;
   }
 
   function renderBgdStaffCheck() {
     const staffList = state.staffAttendance || [];
+    const staffPage = paginateRows(staffList, 'staff-time');
+
     return `
       <div class="section-card">
         <div class="section-header">
@@ -1816,7 +1883,7 @@
               </tr>
             </thead>
             <tbody>
-              ${staffList.map(stf => {
+              ${staffPage.rows.map(stf => {
                 const thumb = getWorkerStampedPhoto(stf);
                 const curPin = getAccountPinByUsernameOrCode(stf.username);
                 const scaledDays = getScaledDaysWorked(stf.daysMonthApproved);
@@ -1843,6 +1910,7 @@
             </tbody>
           </table>
         </div>
+        ${staffPage.controls}
       </div>
     `;
   }
@@ -1854,6 +1922,9 @@
     }, 0);
     const totalAdv = state.advances.filter(a => a.status === 'BGD_DA_DUYET').reduce((s, a) => s + a.amount, 0);
     const delRequests = state.deleteRequests || [];
+
+    const deletePage = paginateRows(delRequests, 'deletion-requests');
+    const advancePage = paginateRows(state.advances, 'director-advances');
 
     return `
       <!-- PHÊ DUYỆT YÊU CẦU XÓA TÀI KHOẢN / NHÂN SỰ -->
@@ -1881,7 +1952,7 @@
             <tbody>
               ${delRequests.length === 0 ? `
                 <tr><td colspan="9" style="text-align:center; padding:14px; color:var(--ds-text-muted);">Không có yêu cầu xóa nào.</td></tr>
-              ` : delRequests.map(req => `
+              ` : deletePage.rows.map(req => `
                 <tr>
                   <td><strong>${req.id}</strong></td>
                   <td>${req.createdAt}</td>
@@ -1911,6 +1982,7 @@
             </tbody>
           </table>
         </div>
+        ${deletePage.controls}
       </section>
 
       <section class="section-card np-approval np-approval-payroll">
@@ -1943,7 +2015,7 @@
               </tr>
             </thead>
             <tbody>
-              ${state.advances.map(adv => {
+              ${advancePage.rows.map(adv => {
                 const person = state.workers.find(x => x.code === adv.workerCode) ||
                                (state.staffAttendance || []).find(s => s.code === adv.workerCode || s.username === adv.workerCode) ||
                                state.workers[0];
@@ -1975,11 +2047,14 @@
             </tbody>
           </table>
         </div>
+        ${advancePage.controls}
       </section>
     `;
   }
 
   function renderBgdAudit() {
+    const auditPage = paginateRows(state.auditLogs, 'audit');
+
     return `
       <div class="section-card">
         <div class="section-header">
@@ -2002,7 +2077,7 @@
               </tr>
             </thead>
             <tbody>
-              ${state.auditLogs.map(log => `
+              ${auditPage.rows.map(log => `
                 <tr>
                   <td><strong>${log.id}</strong></td>
                   <td>${log.timestamp}</td>
@@ -2016,6 +2091,7 @@
             </tbody>
           </table>
         </div>
+        ${auditPage.controls}
       </div>
     `;
   }
@@ -2040,6 +2116,8 @@
       }
       return true;
     });
+
+    const attendancePage = paginateRows(filtered, 'company-attendance');
 
     return `
       <div class="section-card">
@@ -2081,7 +2159,7 @@
               </tr>
             </thead>
             <tbody>
-              ${filtered.slice(0, 45).map(w => {
+              ${attendancePage.rows.map(w => {
                 const thumb = getWorkerStampedPhoto(w);
                 const scaledD = getScaledDaysWorked(w.daysMonthApproved);
                 return `
@@ -2101,11 +2179,14 @@
             </tbody>
           </table>
         </div>
+        ${attendancePage.controls}
       </div>
     `;
   }
 
   function renderKtAdvances() {
+    const advancePage = paginateRows(state.advances, 'accounting-advances');
+
     return `
       <div class="section-card">
         <div class="section-header">
@@ -2132,7 +2213,7 @@
               </tr>
             </thead>
             <tbody>
-              ${state.advances.map(adv => {
+              ${advancePage.rows.map(adv => {
                 const w = state.workers.find(x => x.code === adv.workerCode) ||
                           (state.staffAttendance || []).find(s => s.code === adv.workerCode || s.username === adv.workerCode) ||
                           state.workers[0];
@@ -2169,6 +2250,7 @@
             </tbody>
           </table>
         </div>
+        ${advancePage.controls}
       </div>
     `;
   }
@@ -2178,6 +2260,8 @@
       if (filterManager !== 'ALL' && w.managerUsername !== filterManager) return false;
       return true;
     });
+
+    const payrollPage = paginateRows(filtered, 'payroll');
 
     return `
       <div class="section-card">
@@ -2214,7 +2298,7 @@
               </tr>
             </thead>
             <tbody>
-              ${filtered.slice(0, 40).map(w => {
+              ${payrollPage.rows.map(w => {
                 const scaledD = getScaledDaysWorked(w.daysMonthApproved);
                 const hourly = w.dailyWage / 8;
                 const basePay = scaledD * w.dailyWage;
@@ -2244,6 +2328,7 @@
             </tbody>
           </table>
         </div>
+        ${payrollPage.controls}
       </div>
     `;
   }
@@ -2273,6 +2358,7 @@
                 <div style="font-size:11px; color:var(--ds-text-muted); margin-bottom:8px;">${p.name}</div>
                 ${pTeams.map(tm => {
                   const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
+                  const teamPage = paginateRows(tmWorkers, 'members-' + tm.id);
                   const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
                   const isOpen = !!expandedTeams[tm.id];
                   return `
@@ -2291,9 +2377,9 @@
                               <tr><th>#</th><th>Mã &amp; PIN</th><th>Họ tên</th><th>Công</th></tr>
                             </thead>
                             <tbody>
-                              ${tmWorkers.map((w, idx) => `
+                              ${teamPage.rows.map((w, idx) => `
                                 <tr>
-                                  <td>${idx + 1}</td>
+                                  <td>${teamPage.offset + idx + 1}</td>
                                   <td><code>${w.code}</code> · <code>${getAccountPinByUsernameOrCode(w.code)}</code></td>
                                   <td><strong>${w.name}</strong></td>
                                   <td><strong>${getScaledDaysWorked(w.daysMonthApproved)}c</strong></td>
@@ -2302,6 +2388,7 @@
                             </tbody>
                           </table>
                         </div>
+                        ${teamPage.controls}
                       ` : ''}
                     </div>
                   `;
@@ -2336,6 +2423,10 @@
       }
       return true;
     });
+
+    const approvalPage = paginateRows(filtered, 'attendance-approval');
+
+    const forgotPage = paginateRows(forgotList, 'checkout-alerts');
 
     return `
       <div class="kpi-grid-4">
@@ -2378,7 +2469,7 @@
             </div>
           </div>
           <div style="display:grid; gap:6px;">
-            ${forgotList.map(w => `
+            ${forgotPage.rows.map(w => `
               <div style="display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; padding:8px 10px; border-radius:var(--ds-radius-sm); border:1px solid var(--ds-line); flex-wrap:wrap; gap:6px;">
                 <div style="min-width:0; word-break:break-word;">
                   <strong>${w.name} (${w.code})</strong> · ${w.teamName} · Vào: <code>${w.checkInTime}</code>
@@ -2390,6 +2481,7 @@
               </div>
             `).join('')}
           </div>
+          ${forgotPage.controls}
         </div>
       ` : ''}
 
@@ -2431,7 +2523,7 @@
               </tr>
             </thead>
             <tbody>
-              ${filtered.map(w => {
+              ${approvalPage.rows.map(w => {
                 const thumb = getWorkerStampedPhoto(w);
                 const scaledD = getScaledDaysWorked(w.daysMonthApproved);
                 return `
@@ -2462,6 +2554,7 @@
             </tbody>
           </table>
         </div>
+        ${approvalPage.controls}
       </div>
     `;
   }
@@ -2487,6 +2580,7 @@
         <div class="grid-2">
           ${myTeams.map(tm => {
             const tmTasks = myTasks.filter(x => x.teamId === tm.id);
+            const taskPage = paginateRows(tmTasks, 'project-tasks-' + tm.id);
             const tmWorkers = state.workers.filter(w => w.teamId === tm.id);
             const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
             return `
@@ -2499,7 +2593,7 @@
                 <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">SĐT: ${tm.phone} · TK: <code>${tm.leaderUsername}</code> · PIN: <code>${dtPin}</code></div>
 
                 <div style="margin-top:8px;">
-                  ${tmTasks.map(tsk => `
+                  ${taskPage.rows.map(tsk => `
                     <div style="padding:8px 10px; background:#FFFFFF; border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); margin-bottom:6px;">
                       <div style="display:flex; justify-content:space-between; align-items:center;">
                         <strong style="color:var(--ds-primary); font-size:12px;">📌 ${tsk.title}</strong>
@@ -2511,6 +2605,7 @@
                     </div>
                   `).join('')}
                 </div>
+                ${taskPage.controls}
               </div>
             `;
           }).join('')}
@@ -2522,6 +2617,8 @@
   function renderQlctStaff() {
     const acc = getCurrentAccount();
     const myWorkers = getScopedWorkersForCurrentAccount();
+
+    const staffPage = paginateRows(myWorkers, 'project-personnel');
 
     return `
       <div class="section-card">
@@ -2550,7 +2647,7 @@
               </tr>
             </thead>
             <tbody>
-              ${myWorkers.map(w => {
+              ${staffPage.rows.map(w => {
                 const pin = getAccountPinByUsernameOrCode(w.code);
                 const scaledD = getScaledDaysWorked(w.daysMonthApproved);
                 const pendingDel = (state.deleteRequests || []).find(r => r.targetCode === w.code && r.status === 'CHO_BGD_DONG_Y');
@@ -2575,6 +2672,7 @@
             </tbody>
           </table>
         </div>
+        ${staffPage.controls}
       </div>
     `;
   }
@@ -2583,6 +2681,8 @@
     const acc = getCurrentAccount();
     const prj = getProject(acc.projectId);
     const myWorkers = getScopedWorkersForCurrentAccount();
+
+    const summaryPage = paginateRows(myWorkers, 'project-summary');
 
     return `
       <div class="section-card">
@@ -2611,7 +2711,7 @@
               </tr>
             </thead>
             <tbody>
-              ${myWorkers.map(w => `
+              ${summaryPage.rows.map(w => `
                 <tr>
                   <td><strong>${w.code}</strong></td>
                   <td><strong>${w.name}</strong></td>
@@ -2624,6 +2724,7 @@
             </tbody>
           </table>
         </div>
+        ${summaryPage.controls}
       </div>
     `;
   }
@@ -2638,6 +2739,8 @@
     const present = teamWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
     const leaveCount = teamWorkers.length - present;
     const otCount = teamWorkers.filter(w => (w.hoursOtRegistered || 0) > 0).length;
+
+    const workerPage = paginateRows(teamWorkers, 'team-checkin');
 
     return `
       <div class="section-card">
@@ -2714,7 +2817,7 @@
               </tr>
             </thead>
             <tbody>
-              ${teamWorkers.map(w => {
+              ${workerPage.rows.map(w => {
                 const thumb = getWorkerStampedPhoto(w);
                 return `
                   <tr>
@@ -2738,6 +2841,7 @@
             </tbody>
           </table>
         </div>
+        ${workerPage.controls}
       </div>
     `;
   }
@@ -2748,6 +2852,10 @@
     const teamWorkers = getScopedWorkersForCurrentAccount();
     const teamTasks = (state.tasks || []).filter(tsk => tsk.teamId === tm.id);
 
+    const workerPage = paginateRows(teamWorkers, 'team-work');
+
+    const taskPage = paginateRows(teamTasks, 'team-tasks');
+
     return `
       <div class="section-card">
         <div class="section-header">
@@ -2756,7 +2864,8 @@
             <h3>Hạng Mục Thi Công — ${tm.name}</h3>
           </div>
         </div>
-        ${teamTasks.map(tsk => `
+        <div>
+          ${taskPage.rows.map(tsk => `
           <div style="padding:10px 12px; background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-left:4px solid var(--ds-accent); border-radius:var(--ds-radius-md); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <div>
               <div style="font-size:10px; font-weight:700; color:var(--ds-primary);">${tsk.assignedBy.toUpperCase()} · ${tsk.date}</div>
@@ -2770,7 +2879,9 @@
               <button class="btn btn-primary btn-sm" onclick="window.NPApp.updateTeamTaskProgress('${tsk.id}')">📈 Cập nhật tiến độ</button>
             </div>
           </div>
-        `).join('')}
+          `).join('')}
+        </div>
+        ${taskPage.controls}
       </div>
 
       <div class="section-card">
@@ -2794,7 +2905,7 @@
               </tr>
             </thead>
             <tbody>
-              ${teamWorkers.map(w => `
+              ${workerPage.rows.map(w => `
                 <tr>
                   <td><strong>${w.code}</strong></td>
                   <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.roleName}</span></td>
@@ -2813,6 +2924,7 @@
             </tbody>
           </table>
         </div>
+        ${workerPage.controls}
       </div>
     `;
   }
@@ -2821,6 +2933,8 @@
     const acc = getCurrentAccount();
     const tm = getTeam(acc.teamId);
     const teamWorkers = getScopedWorkersForCurrentAccount();
+
+    const workerPage = paginateRows(teamWorkers, 'team-members');
 
     return `
       <div class="section-card">
@@ -2847,7 +2961,7 @@
               </tr>
             </thead>
             <tbody>
-              ${teamWorkers.map(w => {
+              ${workerPage.rows.map(w => {
                 const pin = getAccountPinByUsernameOrCode(w.code);
                 const pendingDel = (state.deleteRequests || []).find(r => r.targetCode === w.code && r.status === 'CHO_BGD_DONG_Y');
                 return `
@@ -2871,6 +2985,7 @@
             </tbody>
           </table>
         </div>
+        ${workerPage.controls}
       </div>
     `;
   }
@@ -2892,6 +3007,8 @@
         task: w.assignedTaskToday
       });
     }
+
+    const historyPage = paginateRows(daysList, 'personal-history');
 
     return `
       <div class="section-card">
@@ -2916,7 +3033,7 @@
               </tr>
             </thead>
             <tbody>
-              ${daysList.map(item => `
+              ${historyPage.rows.map(item => `
                 <tr>
                   <td><strong>${item.date}</strong></td>
                   <td>${item.dayLabel}</td>
@@ -2931,6 +3048,7 @@
             </tbody>
           </table>
         </div>
+        ${historyPage.controls}
       </div>
     `;
   }
@@ -2938,6 +3056,8 @@
   function renderCnPersonalRequests() {
     const w = getMyOwnAttendanceRecord();
     const myAdvances = state.advances.filter(a => a.workerCode === w.code);
+
+    const advancePage = paginateRows(myAdvances, 'worker-advances');
 
     return `
       <div class="section-card">
@@ -2969,7 +3089,7 @@
             <tbody>
               ${myAdvances.length === 0 ? `
                 <tr><td colspan="8" style="text-align:center; padding:16px; color:var(--ds-text-muted);">Chưa có đơn ứng lương.</td></tr>
-              ` : myAdvances.map(adv => `
+              ` : advancePage.rows.map(adv => `
                 <tr>
                   <td><strong>${adv.id}</strong></td>
                   <td>${adv.date}</td>
@@ -2984,6 +3104,7 @@
             </tbody>
           </table>
         </div>
+        ${advancePage.controls}
       </div>
     `;
   }
@@ -3051,6 +3172,8 @@
 
   function renderAdminAccountsTab() {
     if (!isAdminAccount()) return '';
+    const accountPage = paginateRows(state.accounts, 'accounts');
+
     return `
       <div class="section-card">
         <div class="section-header">
@@ -3077,7 +3200,7 @@
               </tr>
             </thead>
             <tbody>
-              ${state.accounts.map(acc => {
+              ${accountPage.rows.map(acc => {
                 const cfg = ROLE_CONFIG[acc.roleId] || ROLE_CONFIG.CN;
                 const isCur = acc.id === currentAccountId;
                 return `
@@ -3110,6 +3233,7 @@
             </tbody>
           </table>
         </div>
+        ${accountPage.controls}
       </div>
     `;
   }
@@ -4302,6 +4426,7 @@
     const tm = getTeam(teamId);
     const prj = getProject(tm.projectId);
     const tmWorkers = state.workers.filter(w => w.teamId === tm.id);
+    const teamPage = paginateRows(tmWorkers, 'members-' + tm.id, tm.id);
     const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
 
     document.getElementById('adjustModalTitle').textContent = `🌳 Cây Nhân Sự: ${tm.name} — Đội trưởng ${tm.leader} (${tmWorkers.length} người)`;
@@ -4324,12 +4449,12 @@
             </tr>
           </thead>
           <tbody>
-            ${tmWorkers.map((w, idx) => {
+            ${teamPage.rows.map((w, idx) => {
               const thumb = getWorkerStampedPhoto(w);
               const wPin = getAccountPinByUsernameOrCode(w.code);
               return `
                 <tr>
-                  <td>${idx + 1}</td>
+                  <td>${teamPage.offset + idx + 1}</td>
                   <td><img src="${thumb}" class="photo-thumb" loading="lazy" decoding="async" style="width:42px; height:32px;" onclick="window.NPApp.openPhotoModal('${w.id}')" /></td>
                   <td><strong><code>${w.code}</code></strong><br/><span style="font-size:9.5px; color:var(--ds-primary);">PIN: <code>${wPin}</code></span></td>
                   <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.roleName}</span></td>
@@ -4344,6 +4469,7 @@
           </tbody>
         </table>
       </div>
+      ${teamPage.controls}
       <div style="display:flex; justify-content:flex-end; margin-top:10px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Đóng</button>
       </div>
@@ -4353,6 +4479,13 @@
 
   function init() {
     initTheme();
+    document.addEventListener('click', event => {
+      const control = event.target.closest('[data-np-pagination] button[data-page]');
+      if (control) changeListPage(control, control.dataset.page);
+    });
+    document.addEventListener('change', event => {
+      if (event.target.matches('[data-np-pagination] select[data-page-picker]')) changeListPage(event.target, event.target.value);
+    });
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
@@ -4462,11 +4595,11 @@
     openPayslipModal,
     openInstallModal,
     triggerNativeInstall,
-    setSearch(val) { searchQuery = val; renderMain(); },
-    setFilterProject(val) { filterProject = val; renderMain(); },
-    setFilterTeam(val) { filterTeam = val; renderMain(); },
-    setFilterManager(val) { filterManager = val; renderMain(); },
-    setFilterStatus(val) { filterStatus = val; renderMain(); }
+    setSearch(val) { searchQuery = val; listPages.clear(); renderMain(); },
+    setFilterProject(val) { filterProject = val; listPages.clear(); renderMain(); },
+    setFilterTeam(val) { filterTeam = val; listPages.clear(); renderMain(); },
+    setFilterManager(val) { filterManager = val; listPages.clear(); renderMain(); },
+    setFilterStatus(val) { filterStatus = val; listPages.clear(); renderMain(); }
   };
 
   document.addEventListener('DOMContentLoaded', init);
