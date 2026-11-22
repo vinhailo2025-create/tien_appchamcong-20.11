@@ -805,18 +805,27 @@ a {
   background: var(--ds-bg-soft);
 }
 
-/* ================= THANH ĐIỀU HƯỚNG ĐÁY ĐIỆN THOẠI COMPACT (40PX) ================= */
+/* ================= THANH ĐIỀU HƯỚNG ĐÁY ĐIỆN THOẠI COMPACT (50PX) ================= */
 .mobile-bottom-nav {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 40px;
+  height: 50px;
   background: var(--ds-primary-deep);
   border-top: 1px solid var(--ds-primary-2);
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
   z-index: 250;
+  padding: 2px 4px env(safe-area-inset-bottom, 2px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.mobile-bottom-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .bnav-item {
@@ -828,15 +837,21 @@ a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
   font-family: var(--ds-font-sans);
   font-size: 9.5px;
+  line-height: 1.15;
   font-weight: 600;
   cursor: pointer;
+  flex: 1 1 0;
+  min-width: 58px;
+  padding: 2px 3px;
+  white-space: nowrap;
 }
 
+.bnav-item .b-icon,
 .bnav-item .bnav-icon {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -1316,10 +1331,6 @@ a {
   margin-top: 2px;
 }
 
-.mobile-bottom-nav {
-  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-}
-
 /* ================= BẢNG LỊCH CHỌN KHOẢNG NGÀY (TỪ NGÀY -> ĐẾN NGÀY + THÁNG/NĂM) ================= */
 .date-range-trigger-btn {
   background: var(--ds-bg-soft);
@@ -1723,11 +1734,14 @@ a {
     gap: 6px;
   }
   .brand-title {
-    font-size: 12px;
+    font-size: 12.5px;
+  }
+  .brand-title .brand-gold {
+    display: none !important;
   }
   .brand-sub {
     font-size: 9px;
-    max-width: 155px;
+    max-width: 110px;
   }
   .compact-role-strip {
     padding: 7px 9px;
@@ -1772,10 +1786,10 @@ a {
     word-break: break-word;
   }
   .bnav-item {
-    font-size: 8.8px;
-    padding: 0 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 9.5px;
+    padding: 2px 3px;
+  }
+  body {
+    padding-bottom: 60px;
   }
 }

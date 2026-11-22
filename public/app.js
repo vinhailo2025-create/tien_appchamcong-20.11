@@ -803,10 +803,11 @@
       `;
     }
 
-    // 4. Cập nhật Thanh điều hướng đáy điện thoại (Mobile Bottom Nav)
+    // 4. Cập nhật Thanh điều hướng đáy điện thoại (Mobile Bottom Nav: tối đa 5 mục chính trên 1 hàng, không bao giờ xuống 2 dòng hoặc mất góc chữ)
     const bottomNav = document.getElementById('mobileBottomNav');
     if (bottomNav) {
-      bottomNav.innerHTML = cfg.tabs.map(t => `
+      const mobileTabs = cfg.tabs.slice(0, 5);
+      bottomNav.innerHTML = mobileTabs.map(t => `
         <button class="bnav-item ${currentTab === t.id ? 'active' : ''}" data-tab="${t.id}" onclick="window.NPApp.selectTab('${t.id}')">
           <span class="b-icon">${t.icon}</span>
           <span>${t.shortLabel}</span>
@@ -1302,20 +1303,20 @@
             </div>
             <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-finance')">Chi tiết ▸</button>
           </div>
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(92px, 1fr)); gap:6px;">
             <div class="v2-fin-box rev">
               <div style="font-size:10px; color:#5B6678; font-weight:700;">Doanh thu</div>
-              <div style="font-size:14px; font-weight:800; color:#1E8E3E; margin-top:3px;">620.000.000đ</div>
+              <div style="font-size:12.5px; font-weight:800; color:#1E8E3E; margin-top:3px;">620.000.000đ</div>
               <div style="font-size:9.5px; color:#1E8E3E; font-weight:700; margin-top:2px;">↑ +14%</div>
             </div>
             <div class="v2-fin-box cost">
               <div style="font-size:10px; color:#5B6678; font-weight:700;">Chi phí</div>
-              <div style="font-size:14px; font-weight:800; color:#C0392B; margin-top:3px;">512.000.000đ</div>
+              <div style="font-size:12.5px; font-weight:800; color:#C0392B; margin-top:3px;">512.000.000đ</div>
               <div style="font-size:9.5px; color:#C0392B; font-weight:700; margin-top:2px;">Lương &amp; Đội khoán</div>
             </div>
             <div class="v2-fin-box prof">
               <div style="font-size:10px; color:#5B6678; font-weight:700;">Lợi nhuận</div>
-              <div style="font-size:14px; font-weight:800; color:#1976D2; margin-top:3px;">108.000.000đ</div>
+              <div style="font-size:12.5px; font-weight:800; color:#1976D2; margin-top:3px;">108.000.000đ</div>
               <div style="font-size:9.5px; color:#1976D2; font-weight:700; margin-top:2px;">(17,4%)</div>
             </div>
           </div>
