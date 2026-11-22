@@ -1,0 +1,130 @@
+.np-brand-menu {
+  padding: 0;
+  color: inherit;
+  border: 0;
+  background: none;
+  text-align: start;
+  font: inherit;
+}
+
+#fullLoginOverlay {
+  background: radial-gradient(ellipse at 12% 7%, #d9e9f8, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, #fae8d3, transparent 46%), #f3f7fc;
+  padding: 18px;
+}
+
+.login-box {
+  max-width: 410px;
+  margin: auto;
+  border: 1px solid #d8e4f0;
+  border-radius: 18px;
+  box-shadow: 0 22px 70px rgb(16 45 84 / 14%);
+  animation: np-login-in 280ms ease-out both;
+}
+
+.login-box-header {
+  padding: 20px 22px;
+  background: radial-gradient(ellipse at 8% 0, #1a547a, transparent 75%), #0f2d51;
+  border-bottom: 3px solid #f7931e;
+}
+
+.login-box-header h1 { margin: 7px 0 0; color: white; font: 750 25px var(--ds-font-sans); }
+.login-box-header img { width: 56px; height: 56px; }
+.login-box-header .kicker { color: #fbd096; letter-spacing: .08em; }
+.login-box-body { padding: 22px; }
+.login-box-body input { min-height: 46px; border-radius: 8px; font-size: 16px; }
+.login-box-body .btn-primary { min-height: 44px; border-radius: 8px; font-size: 14px; }
+.np-password { position: relative; }
+.np-password input { padding-inline-end: 49px; }
+
+.np-password-toggle {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  inset: 50% 2px auto auto;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 7px;
+  color: #3d5977;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 140ms;
+}
+.np-password-toggle:hover { background: #ecf4fb; }
+.np-password-toggle svg, .np-notices summary svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.np-password-toggle .np-eye-slash { display: none; }
+.np-password-toggle[aria-pressed="true"] .np-eye-slash { display: block; }
+
+#appMain { min-width: 0; max-width: 1360px; }
+.v2-kpi-card, #appMain > .section-card { border-radius: 10px; }
+#appMain .section-header > * { min-width: 0; }
+#appMain .section-header h3 { margin-top: 0; text-wrap: pretty; }
+.np-approval-period { margin: 3px 0 0; color: var(--ds-text-muted); font-size: 11px; }
+.np-approval.np-approval-payroll .section-header { padding-bottom: 10px; }
+.np-approval .np-approval-details { display: none; }
+.np-excel-scroll { min-width: 0; max-width: 100%; overflow: auto; overscroll-behavior-inline: contain; }
+.np-excel-scroll .data-table { white-space: nowrap; }
+
+.np-notices { position: relative; }
+.np-notices summary {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  list-style: none;
+  cursor: pointer;
+}
+.np-notices summary::-webkit-details-marker { display: none; }
+.np-notices-count { position: absolute; inset: -5px -5px auto auto; min-width: 16px; padding: 1px 3px; border: 1px solid white; border-radius: 15px; background: #b83036; color: white; text-align: center; font-size: 9px; }
+.np-notices-panel { position: absolute; z-index: 10; inset: calc(100% + 7px) 0 auto auto; width: min(300px, calc(100vw - 24px)); max-height: 55dvh; overflow: auto; padding: 11px; border: 1px solid var(--ds-line); border-radius: 9px; background: #fff; color: #102d54; box-shadow: 0 12px 30px rgb(16 45 84 / 20%); }
+.np-notices-panel ul { display: grid; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; }
+.np-notices-panel p { margin: 7px 0 1px; color: #4b6682; }
+.np-notices-panel button { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 7px; min-height: 40px; border: 0; border-radius: 6px; background: #edf5fc; color: #174e7d; text-align: start; font: 650 12px var(--ds-font-sans); cursor: pointer; }
+.np-notices-panel button:hover { background: #e0eef9; }
+
+@keyframes np-login-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 720px) {
+  .top-header-inner { gap: 5px; }
+  .top-header .btn-menu-toggle { display: none; }
+  .np-brand-menu { min-height: 44px; }
+  .np-brand-menu .brand-logo { width: 30px; height: 30px; }
+  .np-brand-menu .brand-sub { max-width: clamp(60px, 24vw, 120px); }
+  .np-notices summary { width: 34px; height: 34px; }
+  .np-notices summary svg { width: 18px; height: 18px; }
+  .np-notices { flex-shrink: 0; }
+  .dt-quick-grid-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dt-quick-tile { min-height: 64px; }
+  #appMain .section-header button { min-height: 38px; white-space: normal; }
+
+  #appMain table[data-np-card-table] { display: block; position: relative; width: 100%; min-width: 0; }
+  #appMain table[data-np-card-table] thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #appMain table[data-np-card-table] tbody { display: grid; gap: 7px; }
+  #appMain table[data-np-card-table] tbody tr { display: grid; grid-template-columns: minmax(0,1fr); padding: 6px 9px; border: 1px solid #dce6f0; border-radius: 8px; background: #fff; }
+  #appMain table[data-np-card-table] tbody :is(td, th) { display: block; position: relative; min-width: 0; width: auto; padding: 5px 0; border: 0; background: none; white-space: normal; overflow-wrap: anywhere; text-align: start; }
+  #appMain table[data-np-card-table] tbody [data-np-label] { padding-inline-start: calc(36% + 8px); min-height: 26px; border-bottom: 1px solid #edf3f9; }
+  #appMain table[data-np-card-table] tbody [data-np-label]::before { position: absolute; inset: 5px auto auto 0; width: 36%; content: attr(data-np-label); color: #45637e; font-size: 10px; font-weight: 700; }
+  #appMain table[data-np-card-table] tbody [data-np-label]:last-child { border: 0; }
+  #appMain table[data-np-card-table] :is(button, img, select, input, textarea) { max-width: 100%; }
+  #appMain table[data-np-card-table] button { white-space: normal; }
+  #appMain .np-approval .np-approval-extra { display: none; }
+  #appMain .np-approval .np-approval-expanded .np-approval-extra { display: block; order: var(--np-approval-order); }
+  #appMain .np-approval .np-approval-name { order: -1; }
+  #appMain .np-approval .np-approval-actions { order: 20; display: flex; flex-wrap: wrap; gap: 6px; padding-inline-start: 0; align-items: center; }
+  #appMain .np-approval .np-approval-actions::before { display: none; }
+  #appMain .np-approval .np-approval-actions button { min-height: 38px; border-radius: 7px; }
+  #appMain .np-approval .np-approval-details { display: inline-flex; }
+}
+@media (max-width: 365px) {
+  .np-brand-menu .brand-sub { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .login-box { animation: none; } }

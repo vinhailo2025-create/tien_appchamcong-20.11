@@ -1,8 +1,11 @@
-const CACHE_NAME = 'np-one-hr-v3';
+const CACHE_NAME = 'np-one-hr-ui-v4';
 const ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
+  '/ui-polish.css',
+  '/ui-polish.js',
+  '/assets/np-shield.webp',
   '/seed.js',
   '/app.js',
   '/manifest.json',

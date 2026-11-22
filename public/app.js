@@ -719,15 +719,16 @@
     if (!acc) return;
     const cfg = ROLE_CONFIG[acc.roleId] || ROLE_CONFIG.BGD;
     const badges = getBadgeCounts();
+    document.body.dataset.npRole = acc.roleId;
 
-    // 1. Cập nhật thông tin tài khoản trong Sidebar (Duy nhất 1 nơi hiển thị Họ tên + TK + PIN)
+    // 1. Cập nhật thông tin tài khoản trong Sidebar
     const roleLvl = document.getElementById('sidebarRoleLevelLabel');
     if (roleLvl) roleLvl.textContent = cfg.badge;
     const sideInfo = document.getElementById('sidebarCurrentAccountInfo');
     if (sideInfo) {
       sideInfo.innerHTML = `
         <div style="font-size:12.5px; font-weight:700; color:#FFFFFF;">${acc.fullName}</div>
-        <div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">TK: <code>${acc.username}</code> · PIN: <code>${acc.pin}</code></div>
+        <div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">TK: <code>${acc.username}</code></div>
       `;
     }
 
@@ -797,9 +798,20 @@
         `;
       }
 
+      const notices = cfg.tabs.filter(tab => tab.badgeKey && badges[tab.badgeKey] > 0);
+      const count = notices.reduce((sum, tab) => sum + badges[tab.badgeKey], 0);
       headerRight.innerHTML = `
         ${renderDateRangeButtonHtml()}
         ${primaryBtnHtml}
+        <details class="np-notices">
+          <summary aria-label="Thông báo${count ? ', ' + count + ' mục chờ xử lý' : ''}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/></svg>
+            ${count ? `<span class="np-notices-count" aria-hidden="true">${count}</span>` : ''}
+          </summary>
+          <div class="np-notices-panel"><strong>Thông báo</strong>
+          ${count ? `<ul>${notices.map(tab => `<li><button type="button" onclick="window.NPApp.selectTab('${tab.id}')"><span>${tab.label}</span><b>${badges[tab.badgeKey]}</b></button></li>`).join('')}</ul>` : '<p>Chưa có thông báo mới.</p>'}
+          </div>
+        </details>
       `;
     }
 
@@ -1169,6 +1181,7 @@
     const acc = getCurrentAccount();
     if (!acc) return;
 
+    main.dataset.npView = currentTab;
     renderRoleHeroSection();
 
     // 1. GIAO DIỆN TỔNG GIÁM ĐỐC / ADMIN (BGD)
@@ -1639,7 +1652,7 @@
           <input type="text" placeholder="🔍 Tìm mã NV, họ tên..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
         </div>
 
-        <div class="table-scroll">
+        <div class="table-scroll np-excel-scroll" tabindex="0" role="region" aria-label="Bảng công theo ngày">
           <table class="data-table">
             <thead>
               <tr>
@@ -1810,7 +1823,7 @@
                 const gross = scaledDays * stf.dailyWage + Math.round(stf.otHoursMonthApproved * (stf.dailyWage / 8) * 1.5);
                 return `
                   <tr>
-                    <td><img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${stf.id}')" /></td>
+                    <td><img src="${thumb}" class="photo-thumb" loading="lazy" decoding="async" onclick="window.NPApp.openPhotoModal('${stf.id}')" /></td>
                     <td><strong>${stf.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${stf.code} · ${stf.teamName}</span></td>
                     <td><span class="badge ${stf.roleId === 'KT' ? 'badge-orange' : 'badge-navy'}">${stf.roleName}</span></td>
                     <td><code>${stf.username}</code> · PIN: <strong style="color:var(--ds-primary);"><code>${curPin}</code></strong></td>
@@ -1844,11 +1857,10 @@
 
     return `
       <!-- PHÊ DUYỆT YÊU CẦU XÓA TÀI KHOẢN / NHÂN SỰ -->
-      <div class="section-card" style="border-color:var(--ds-danger);">
+      <section class="section-card np-approval np-approval-delete">
         <div class="section-header">
           <div>
-            <span class="kicker" style="color:var(--ds-danger);">PHÊ DUYỆT XÓA</span>
-            <h3>Yêu Cầu Xóa Tài Khoản / Nhân Sự (${delRequests.filter(r => r.status === 'CHO_BGD_DONG_Y').length} chờ duyệt)</h3>
+            <h3>Yêu cầu xóa (${delRequests.filter(r => r.status === 'CHO_BGD_DONG_Y').length} chờ duyệt)</h3>
           </div>
         </div>
         <div class="table-scroll">
@@ -1899,13 +1911,12 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
-      <div class="section-card">
+      <section class="section-card np-approval np-approval-payroll">
         <div class="section-header">
           <div>
-            <span class="kicker">PHÊ DUYỆT TÀI CHÍNH</span>
-            <h3>Duyệt Ứng Lương &amp; Bảng Lương (${formatDateRangeLabel()})</h3>
+            <h3>Tạm ứng &amp; bảng lương</h3><p class="np-approval-period">${formatDateRangeLabel()}</p>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
             ${state.payrollMonthStatus === 'BGD_DA_DUYET'
@@ -1964,7 +1975,7 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     `;
   }
 
@@ -2075,7 +2086,7 @@
                 const scaledD = getScaledDaysWorked(w.daysMonthApproved);
                 return `
                   <tr>
-                    <td><img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${w.id}')" /></td>
+                    <td><img src="${thumb}" class="photo-thumb" loading="lazy" decoding="async" onclick="window.NPApp.openPhotoModal('${w.id}')" /></td>
                     <td><strong>${w.code}</strong></td>
                     <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.roleName}</span></td>
                     <td><strong>${w.leaderName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.teamName}</span></td>
@@ -2426,7 +2437,7 @@
                 return `
                   <tr>
                     <td>
-                      <img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${w.id}')" />
+                      <img src="${thumb}" class="photo-thumb" loading="lazy" decoding="async" onclick="window.NPApp.openPhotoModal('${w.id}')" />
                     </td>
                     <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.code} · ${w.roleName}</span></td>
                     <td><strong>${w.leaderName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.teamName}</span></td>
@@ -2708,7 +2719,7 @@
                 return `
                   <tr>
                     <td>
-                      <img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${w.id}')" />
+                      <img src="${thumb}" class="photo-thumb" loading="lazy" decoding="async" onclick="window.NPApp.openPhotoModal('${w.id}')" />
                     </td>
                     <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.code}</span></td>
                     <td>${w.roleName}</td>
@@ -4319,7 +4330,7 @@
               return `
                 <tr>
                   <td>${idx + 1}</td>
-                  <td><img src="${thumb}" class="photo-thumb" style="width:42px; height:32px;" onclick="window.NPApp.openPhotoModal('${w.id}')" /></td>
+                  <td><img src="${thumb}" class="photo-thumb" loading="lazy" decoding="async" style="width:42px; height:32px;" onclick="window.NPApp.openPhotoModal('${w.id}')" /></td>
                   <td><strong><code>${w.code}</code></strong><br/><span style="font-size:9.5px; color:var(--ds-primary);">PIN: <code>${wPin}</code></span></td>
                   <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.roleName}</span></td>
                   <td>${w.checkInTime ? `<code>${w.checkInTime}</code>` : `<span class="badge badge-danger">Vắng</span>`}</td>
