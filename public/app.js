@@ -124,7 +124,31 @@
     }
   }
 
+  function isAdminAccount() {
+    const acc = getCurrentAccount();
+    return !!(acc && acc.perms && acc.perms.adminUsers);
+  }
+
+  function updateAdminVisibility() {
+    const isAdmin = isAdminAccount();
+    document.querySelectorAll('.admin-only-el').forEach(el => {
+      el.style.display = isAdmin ? '' : 'none';
+    });
+    const curAcc = getCurrentAccount();
+    const sideInfo = document.getElementById('sidebarCurrentAccountInfo');
+    if (sideInfo && curAcc) {
+      sideInfo.textContent = `${curAcc.fullName} (${curAcc.username} · ${curAcc.positionTitle})`;
+    }
+    if (!isAdmin && currentTab === 'phan-quyen') {
+      currentTab = 'quan-ly';
+    }
+  }
+
   function selectTab(tabName) {
+    if (tabName === 'phan-quyen' && !isAdminAccount()) {
+      alert('Chỉ tài khoản Admin / Ban Giám Đốc mới có quyền truy cập trang Quản trị Tài khoản!');
+      return;
+    }
     currentTab = tabName;
     document.querySelectorAll('#sidebarMenu .sidebar-item[data-tab]').forEach(btn => {
       btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
@@ -1139,45 +1163,6 @@
           </table>
         </div>
       </div>
-
-      <div class="section-card">
-        <h3>
-          <div>
-            <span class="kicker">CHUYỂN NHANH 5 CẤP MẶC ĐỊNH</span>
-            <span>Ma trận 5 Cấp Phân quyền Chuẩn</span>
-          </div>
-          <button class="btn ${requirePinOnRoleSwitch ? 'btn-primary' : 'btn-soft'} btn-sm" onclick="window.NPApp.togglePinLockMode()">
-            ${requirePinOnRoleSwitch ? '🔒 Đang BẬT hỏi mã PIN khi chuyển cấp' : '🔓 Đang TẮT hỏi PIN (Chế độ Test nhanh)'}
-          </button>
-        </h3>
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Cấp</th>
-                <th>Vai trò &amp; Người phụ trách</th>
-                <th>Mã PIN</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${state.roles.map(r => `
-                <tr>
-                  <td><strong>Cấp ${r.level}</strong></td>
-                  <td><strong style="color:var(--ds-primary);">${r.title}</strong><br/><small>${r.personName}</small></td>
-                  <td><code>${r.pin}</code></td>
-                  <td style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <button class="btn ${currentRoleId === r.id ? 'btn-primary' : 'btn-navy'} btn-sm" onclick="window.NPApp.switchRole('${r.id}')">
-                      ${currentRoleId === r.id ? 'Đang sử dụng' : 'Chọn vai trò'}
-                    </button>
-                    <button class="btn btn-soft btn-sm" onclick="window.NPApp.openChangePinModal('${r.id}')">🔑 Đổi PIN</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
     `;
   }
 
@@ -2033,6 +2018,7 @@
       const scopeTag = acc.projectId === 'ALL' ? 'Toàn công ty' : `${acc.projectId}${acc.teamId !== 'ALL' ? ' · ' + acc.teamId : ''}`;
       bannerTitle.textContent = `Tài khoản: ${acc.username} (${acc.positionTitle}) — ${acc.fullName} [${scopeTag}]`;
     }
+    updateAdminVisibility();
     toggleSidebar(false);
     renderMorningReport830();
     renderMain();
@@ -2040,26 +2026,13 @@
 
   function openFullLoginScreen() {
     toggleSidebar(false);
-    const accounts = state.accounts || [];
-    const curAcc = getCurrentAccount();
-    if (curAcc) {
-      const uEl = document.getElementById('fullLoginUser');
-      const pEl = document.getElementById('fullLoginPin');
-      if (uEl) uEl.value = curAcc.username;
-      if (pEl) pEl.value = curAcc.pin;
-    }
+    const uEl = document.getElementById('fullLoginUser');
+    const pEl = document.getElementById('fullLoginPin');
+    if (uEl) uEl.value = '';
+    if (pEl) pEl.value = '';
     const errEl = document.getElementById('fullLoginErr');
     if (errEl) errEl.style.display = 'none';
 
-    const grid = document.getElementById('fullLoginQuickGrid');
-    if (grid) {
-      grid.innerHTML = accounts.slice(0, 8).map(a => `
-        <button type="button" class="quick-acc-chip" onclick="window.NPApp.quickSelectLoginAccount('${a.id}')">
-          <div><strong>${a.username}</strong> (PIN: <code>${a.pin}</code>)</div>
-          <div style="opacity:0.85;">${a.positionTitle}</div>
-        </button>
-      `).join('');
-    }
     const overlay = document.getElementById('fullLoginOverlay');
     if (overlay) overlay.classList.add('open');
   }
@@ -2412,11 +2385,13 @@
     });
 
     const roleSelect = document.getElementById('roleSelect');
-    roleSelect.innerHTML = state.roles.map(r =>
-      `<option value="${r.id}">${r.title} — ${r.personName}</option>`
-    ).join('');
-    roleSelect.value = currentRoleId;
-    roleSelect.addEventListener('change', e => switchRole(e.target.value));
+    if (roleSelect) {
+      roleSelect.innerHTML = state.roles.map(r =>
+        `<option value="${r.id}">${r.title} — ${r.personName}</option>`
+      ).join('');
+      roleSelect.value = currentRoleId;
+      roleSelect.addEventListener('change', e => switchRole(e.target.value));
+    }
 
     document.getElementById('btnOpenCamera').addEventListener('click', () => openCameraQuick('VAO', null));
 
@@ -2431,6 +2406,7 @@
       renderMain();
     };
 
+    updateAdminVisibility();
     updateTopBadges();
     renderMorningReport830();
     renderMain();
