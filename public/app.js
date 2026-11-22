@@ -26,6 +26,9 @@
   let filterStatus = 'ALL';
   let searchQuery = '';
 
+  // Trạng thái đóng/mở Cây Nhân sự (Click vào Đội trưởng sẽ xổ ra toàn bộ nhân sự dưới quyền Đội trưởng đó)
+  let expandedTeams = { D1: true };
+
   let liveStream = null;
   let cameraFacingMode = 'user';
   let deferredInstallPrompt = null;
@@ -1327,6 +1330,136 @@
         </div>
       </div>
 
+      <!-- CÂY PHÂN CẤP QUẢN LÝ: TỔNG GIÁM ĐỐC -> 3 QUẢN LÝ CÔNG TRÌNH -> 6 ĐỘI TRƯỞNG -> CLICK RA TOÀN BỘ CÔNG NHÂN DƯỚI QUYỀN -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">SƠ ĐỒ CÂY NHÂN SỰ TƯƠNG TÁC (CLICK VÀO ĐỘI TRƯỞNG ĐỂ XEM TOÀN BỘ NHÂN SỰ DƯỚI QUYỀN)</span>
+            <h3>Cây Nhân Sự Toàn Công Ty: Tổng Giám Đốc → 3 Quản Lý Công Trình → 6 Đội Trưởng → 108 Công Nhân</h3>
+            <div class="section-desc">💡 Bấm trực tiếp vào bất kỳ <strong>Đội trưởng</strong> nào bên dưới để xổ ra danh sách toàn bộ nhân sự dưới quyền Đội trưởng đó (kèm ảnh GPS, Mã NV, Mật khẩu/PIN, giờ vào/ra, công tích lũy và nút xóa/sửa).</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">📂 Mở tất cả 6 Đội (108 người)</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(false)">📁 Thu gọn các Đội</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">🔐 Quản lý Tài khoản &amp; Mật khẩu</button>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          ${state.projects.map(p => {
+            const pTeams = state.teams.filter(t => t.projectId === p.id);
+            const pWorkers = state.workers.filter(w => w.projectId === p.id);
+            const pPresent = pWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+            const pApproved = pWorkers.filter(w => w.approvalStatus === 'DA_DUYET').length;
+            const mgrPin = getAccountPinByUsernameOrCode(p.managerUsername);
+
+            return `
+              <div class="hierarchy-card">
+                <span class="kicker">${p.code} · BÁN KÍNH GPS ${p.radiusM}M</span>
+                <h4>${p.name}</h4>
+                <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">📍 ${p.address}</div>
+
+                <div style="margin-top:8px; padding:8px 10px; background:var(--ds-primary); color:#FFFFFF; border-radius:var(--ds-radius-sm); cursor:pointer;" onclick="window.NPApp.toggleProjectTeams('${p.id}')" title="Bấm để mở/đóng tất cả các Đội thuộc ${p.manager}">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:10px; color:var(--ds-accent); font-weight:700;">CẤP 3 · QUẢN LÝ CÔNG TRÌNH PHỤ TRÁCH</span>
+                    <span class="badge badge-orange">Bấm xem ${pWorkers.length} người ▾</span>
+                  </div>
+                  <div style="font-size:12.5px; font-weight:700; margin-top:2px;">👷 ${p.manager}</div>
+                  <div style="font-size:10.5px; opacity:0.92; margin-top:2px;">TK: <code>${p.managerUsername}</code> · PIN hiện tại: <code>${mgrPin}</code></div>
+                  <div style="font-size:10.5px; opacity:0.9; margin-top:2px;">Quân số có mặt: <strong>${pPresent}/${pWorkers.length}</strong> · Đã duyệt: <strong>${pApproved}/${pWorkers.length}</strong></div>
+                </div>
+
+                <div style="margin-top:8px;">
+                  <div style="font-size:10.5px; font-weight:700; color:var(--ds-primary); margin-bottom:5px;">
+                    👇 CLICK VÀO ĐỘI TRƯỞNG ĐỂ XEM TOÀN BỘ NHÂN SỰ DƯỚI QUYỀN:
+                  </div>
+                  ${pTeams.map(tm => {
+                    const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
+                    const tmPresent = tmWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+                    const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
+                    const isOpen = !!expandedTeams[tm.id];
+                    return `
+                      <div style="border:1.5px solid ${isOpen ? 'var(--ds-accent)' : 'var(--ds-line)'}; border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:7px; overflow:hidden;">
+                        <div style="padding:8px 10px; cursor:pointer; background:${isOpen ? 'var(--ds-bg-soft)' : '#FFFFFF'}; transition:background 0.15s;" onclick="window.NPApp.toggleTeamHierarchy('${tm.id}')">
+                          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                            <strong style="font-size:11.5px; color:var(--ds-primary);">
+                              ${isOpen ? '📂' : '📁'} ${tm.name}
+                            </strong>
+                            <span class="badge ${isOpen ? 'badge-orange' : 'badge-success'}">
+                              ${tmPresent}/${tmWorkers.length} người ${isOpen ? '▴' : '▾'}
+                            </span>
+                          </div>
+                          <div style="font-size:11px; color:var(--ds-text); margin-top:3px;">
+                            Đội trưởng: <strong style="color:var(--ds-primary); text-decoration:underline;">${tm.leader}</strong>
+                            (TK: <code>${tm.leaderUsername}</code> · PIN: <code>${dtPin}</code>)
+                          </div>
+                          <div style="font-size:10px; color:var(--ds-link); font-weight:600; margin-top:3px;">
+                            ${isOpen ? '▴ Đang mở danh sách ' + tmWorkers.length + ' nhân sự dưới quyền (Bấm để thu gọn)' : '▾ Bấm vào đây để xem toàn bộ ' + tmWorkers.length + ' nhân sự dưới quyền ' + tm.leader}
+                          </div>
+                        </div>
+
+                        ${isOpen ? `
+                          <div style="border-top:1px solid var(--ds-line); padding:6px 8px; background:#FFFFFF;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; flex-wrap:wrap; gap:4px;">
+                              <span style="font-size:10px; font-weight:700; color:var(--ds-primary);">
+                                DANH SÁCH ${tmWorkers.length} NHÂN SỰ DƯỚI QUYỀN ${tm.leader.toUpperCase()}:
+                              </span>
+                              <button class="btn btn-primary btn-sm" onclick="window.NPApp.openTeamMembersDetailModal('${tm.id}')">
+                                🔍 Phóng to bảng ${tmWorkers.length} nhân sự
+                              </button>
+                            </div>
+                            <div style="max-height:285px; overflow-y:auto; border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm);">
+                              <table class="data-table" style="font-size:10px;">
+                                <thead>
+                                  <tr>
+                                    <th>#</th>
+                                    <th>Mã NV &amp; PIN</th>
+                                    <th>Họ tên &amp; Vai trò</th>
+                                    <th>Vào/Ra</th>
+                                    <th>Công</th>
+                                    <th>Xóa</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  ${tmWorkers.map((w, idx) => {
+                                    const wPin = getAccountPinByUsernameOrCode(w.code);
+                                    const sDays = getScaledDaysWorked(w.daysMonthApproved);
+                                    return `
+                                      <tr>
+                                        <td>${idx + 1}</td>
+                                        <td><strong><code>${w.code}</code></strong><br/><span style="font-size:9px; color:var(--ds-primary);">PIN: <code>${wPin}</code></span></td>
+                                        <td>
+                                          <strong style="cursor:pointer; color:var(--ds-primary);" onclick="window.NPApp.openPhotoModal('${w.id}')" title="Bấm xem ảnh GPS chấm công">${w.name}</strong>
+                                          <div style="font-size:9px; color:var(--ds-text-muted);">${w.roleName}</div>
+                                        </td>
+                                        <td>
+                                          ${w.checkInTime && w.checkInTime !== '--:--:--'
+                                            ? `<span style="color:var(--ds-success); font-weight:700;">${w.checkInTime.slice(0, 5)}</span>`
+                                            : `<span style="color:var(--ds-danger);">Vắng</span>`
+                                          }
+                                        </td>
+                                        <td><strong>${sDays}c</strong></td>
+                                        <td>
+                                          <button class="btn btn-danger btn-sm" style="min-height:20px; padding:1px 6px; font-size:9px;" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')" title="Xóa nhân sự này">🗑️</button>
+                                        </td>
+                                      </tr>
+                                    `;
+                                  }).join('')}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        ` : ''}
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
       <!-- KHỐI GIÁM ĐỐC TRỰC TIẾP THẤY CHẤM CÔNG CỦA KẾ TOÁN & 3 QUẢN LÝ CÔNG TRÌNH -->
       <div class="section-card">
         <div class="section-header">
@@ -1372,63 +1505,6 @@
               }).join('')}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- CÂY PHÂN CẤP QUẢN LÝ: TỔNG GIÁM ĐỐC -> 3 QUẢN LÝ CÔNG TRÌNH -> 6 ĐỘI TRƯỞNG -> 108 CÔNG NHÂN -->
-      <div class="section-card">
-        <div class="section-header">
-          <div>
-            <span class="kicker">SƠ ĐỒ CÂY QUẢN LÝ &amp; PHÂN VIỆC TOÀN CÔNG TY</span>
-            <h3>Tổng Giám Đốc Giám Sát 3 Quản Lý Công Trình → 6 Đội Trưởng → 108 Công Nhân</h3>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-approvals')">✍️ Duyệt Ứng lương &amp; Bảng lương</button>
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">🔐 Quản lý Tài khoản &amp; Mật khẩu các Cấp</button>
-          </div>
-        </div>
-
-        <div class="grid-3">
-          ${state.projects.map(p => {
-            const pTeams = state.teams.filter(t => t.projectId === p.id);
-            const pWorkers = state.workers.filter(w => w.projectId === p.id);
-            const pPresent = pWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
-            const pApproved = pWorkers.filter(w => w.approvalStatus === 'DA_DUYET').length;
-            const mgrPin = getAccountPinByUsernameOrCode(p.managerUsername);
-
-            return `
-              <div class="hierarchy-card">
-                <span class="kicker">${p.code} · BÁN KÍNH GPS ${p.radiusM}M</span>
-                <h4>${p.name}</h4>
-                <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">📍 ${p.address}</div>
-
-                <div style="margin-top:8px; padding:8px; background:var(--ds-primary); color:#FFFFFF; border-radius:var(--ds-radius-sm);">
-                  <div style="font-size:10px; color:var(--ds-accent); font-weight:700;">CẤP 3 · QUẢN LÝ CÔNG TRÌNH PHỤ TRÁCH</div>
-                  <div style="font-size:12.5px; font-weight:700; margin-top:2px;">👷 ${p.manager}</div>
-                  <div style="font-size:10.5px; opacity:0.92; margin-top:2px;">TK: <code>${p.managerUsername}</code> · PIN hiện tại: <code>${mgrPin}</code></div>
-                  <div style="font-size:10.5px; opacity:0.9; margin-top:2px;">Quân số có mặt: <strong>${pPresent}/${pWorkers.length}</strong> · Đã duyệt: <strong>${pApproved}/${pWorkers.length}</strong></div>
-                </div>
-
-                <div style="margin-top:8px;">
-                  <div style="font-size:10.5px; font-weight:700; color:var(--ds-primary); margin-bottom:4px;">CÁC ĐỘI TRƯỞNG DƯỚI QUYỀN ${p.manager.toUpperCase()}:</div>
-                  ${pTeams.map(tm => {
-                    const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
-                    const tmPresent = tmWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
-                    const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
-                    return `
-                      <div style="padding:7px 8px; border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:6px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                          <strong style="font-size:11.5px; color:var(--ds-primary);">${tm.name}</strong>
-                          <span class="badge badge-success">${tmPresent}/${tmWorkers.length} công nhân</span>
-                        </div>
-                        <div style="font-size:11px; color:var(--ds-text); margin-top:2px;">Đội trưởng: <strong>${tm.leader}</strong> (TK: <code>${tm.leaderUsername}</code> · PIN: <code>${dtPin}</code>)</div>
-                      </div>
-                    `;
-                  }).join('')}
-                </div>
-              </div>
-            `;
-          }).join('')}
         </div>
       </div>
     `;
@@ -1913,8 +1989,13 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">ĐỐI CHIẾU CÂY NHÂN SỰ &amp; MẬT KHẨU ĐỒNG BỘ TỪ CẤP DƯỚI</span>
-            <h3>Danh Bạ Phân Quyền: Nhân Viên Nào Thuộc Quản Lý Công Trình &amp; Đội Trưởng Nào</h3>
+            <span class="kicker">ĐỐI CHIẾU CÂY NHÂN SỰ TƯƠNG TÁC &amp; MẬT KHẨU ĐỒNG BỘ TỪ CẤP DƯỚI</span>
+            <h3>Cây Nhân Sự: Click Vào Đội Trưởng Để Xem Toàn Bộ Nhân Viên Dưới Quyền</h3>
+            <div class="section-desc">💡 Bấm vào từng Đội trưởng bên dưới để xổ ra danh sách toàn bộ công nhân thuộc Đội trưởng đó quản lý.</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">📂 Mở tất cả 6 Đội</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(false)">📁 Thu gọn</button>
           </div>
         </div>
         <div class="grid-3">
@@ -1930,10 +2011,36 @@
                 ${pTeams.map(tm => {
                   const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
                   const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
+                  const isOpen = !!expandedTeams[tm.id];
                   return `
-                    <div style="padding:8px; border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:6px;">
-                      <div style="font-weight:700; color:var(--ds-primary); font-size:11.5px;">${tm.name} — ${tm.leader}</div>
-                      <div style="font-size:10.5px; color:var(--ds-text-muted); margin:2px 0 4px;">TK Đội trưởng: <code>${tm.leaderUsername}</code> · PIN đồng bộ: <code>${dtPin}</code> · Quân số: ${tmWorkers.length} người</div>
+                    <div style="border:1.5px solid ${isOpen ? 'var(--ds-accent)' : 'var(--ds-line)'}; border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:6px; overflow:hidden;">
+                      <div style="padding:8px; cursor:pointer; background:${isOpen ? 'var(--ds-bg-soft)' : '#FFFFFF'};" onclick="window.NPApp.toggleTeamHierarchy('${tm.id}')">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                          <div style="font-weight:700; color:var(--ds-primary); font-size:11.5px;">${isOpen ? '📂' : '📁'} ${tm.name} — ${tm.leader}</div>
+                          <span class="badge ${isOpen ? 'badge-orange' : 'badge-navy'}">${tmWorkers.length} người ${isOpen ? '▴' : '▾'}</span>
+                        </div>
+                        <div style="font-size:10.5px; color:var(--ds-text-muted); margin:2px 0;">TK Đội trưởng: <code>${tm.leaderUsername}</code> · PIN đồng bộ: <code>${dtPin}</code></div>
+                        <div style="font-size:10px; color:var(--ds-link); font-weight:600;">${isOpen ? '▴ Thu gọn danh sách' : '▾ Click để xem ' + tmWorkers.length + ' nhân sự dưới quyền'}</div>
+                      </div>
+                      ${isOpen ? `
+                        <div style="border-top:1px solid var(--ds-line); padding:6px; max-height:240px; overflow-y:auto;">
+                          <table class="data-table" style="font-size:10px;">
+                            <thead>
+                              <tr><th>#</th><th>Mã NV &amp; PIN</th><th>Họ và Tên</th><th>Công</th></tr>
+                            </thead>
+                            <tbody>
+                              ${tmWorkers.map((w, idx) => `
+                                <tr>
+                                  <td>${idx + 1}</td>
+                                  <td><code>${w.code}</code><br/>PIN: <code>${getAccountPinByUsernameOrCode(w.code)}</code></td>
+                                  <td><strong>${w.name}</strong><br/><span style="font-size:9px; color:var(--ds-text-muted);">${w.roleName}</span></td>
+                                  <td><strong>${getScaledDaysWorked(w.daysMonthApproved)}c</strong></td>
+                                </tr>
+                              `).join('')}
+                            </tbody>
+                          </table>
+                        </div>
+                      ` : ''}
                     </div>
                   `;
                 }).join('')}
@@ -4827,6 +4934,81 @@
     }
   }
 
+  // ================= ĐÓNG / MỞ CÂY NHÂN SỰ KHI CLICK VÀO ĐỘI TRƯỞNG =================
+  function toggleTeamHierarchy(teamId) {
+    expandedTeams[teamId] = !expandedTeams[teamId];
+    renderMain();
+  }
+
+  function toggleProjectTeams(projectId) {
+    const pTeams = state.teams.filter(t => t.projectId === projectId);
+    const anyClosed = pTeams.some(t => !expandedTeams[t.id]);
+    pTeams.forEach(t => {
+      expandedTeams[t.id] = anyClosed;
+    });
+    renderMain();
+  }
+
+  function expandAllHierarchyTeams(openAll) {
+    state.teams.forEach(t => {
+      expandedTeams[t.id] = !!openAll;
+    });
+    renderMain();
+  }
+
+  function openTeamMembersDetailModal(teamId) {
+    const tm = getTeam(teamId);
+    const prj = getProject(tm.projectId);
+    const tmWorkers = state.workers.filter(w => w.teamId === tm.id);
+    const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
+
+    document.getElementById('adjustModalTitle').textContent = `🌳 Cây Nhân Sự: ${tm.name} — Đội trưởng ${tm.leader} (${tmWorkers.length} người)`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-left:3px solid var(--ds-primary); padding:8px 10px; border-radius:var(--ds-radius-sm); font-size:11px; margin-bottom:8px;">
+        <div><strong>Quản lý Công trình cấp trên:</strong> ${tm.managerName} (${prj.name})</div>
+        <div style="margin-top:2px;"><strong>Đội trưởng trực tiếp:</strong> ${tm.leader} (Tài khoản: <code>${tm.leaderUsername}</code> · Mật khẩu/PIN: <code>${dtPin}</code> · SĐT: ${tm.phone})</div>
+      </div>
+      <div style="max-height:55vh; overflow-y:auto;" class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Ảnh GPS</th>
+              <th>Mã NV &amp; PIN</th>
+              <th>Họ và Tên Công nhân</th>
+              <th>Giờ Vào - Ra</th>
+              <th>Công kỳ</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tmWorkers.map((w, idx) => {
+              const thumb = getWorkerStampedPhoto(w);
+              const wPin = getAccountPinByUsernameOrCode(w.code);
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td><img src="${thumb}" class="photo-thumb" style="width:42px; height:32px;" onclick="window.NPApp.openPhotoModal('${w.id}')" /></td>
+                  <td><strong><code>${w.code}</code></strong><br/><span style="font-size:9.5px; color:var(--ds-primary);">PIN: <code>${wPin}</code></span></td>
+                  <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.roleName}</span></td>
+                  <td>${w.checkInTime ? `<code>${w.checkInTime}</code>` : `<span class="badge badge-danger">Vắng</span>`}</td>
+                  <td><strong>${getScaledDaysWorked(w.daysMonthApproved)} công</strong></td>
+                  <td>
+                    <button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Đóng</button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
   function init() {
     initTheme();
     if ('serviceWorker' in navigator) {
@@ -4880,6 +5062,10 @@
     toggleTheme,
     toggleSidebar,
     selectTab,
+    toggleTeamHierarchy,
+    toggleProjectTeams,
+    expandAllHierarchyTeams,
+    openTeamMembersDetailModal,
     openDateRangeModal,
     changeCalendarMonthYear,
     setStartEndDayManual,
