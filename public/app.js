@@ -11,6 +11,7 @@
   let currentRoleId = 'BGD';
   let currentTab = 'bgd-overview';
   let teamAttendanceMode = 'today';
+  let payrollPage = 0;
 
   // Bộ lọc khoảng thời gian (Từ ngày ... đến ngày ..., chọn Tháng, chọn Năm)
   let dateRange = {
@@ -579,7 +580,9 @@
     const backdrop = document.getElementById('sidebarBackdrop');
     if (!sidebar || !backdrop) return;
     const isOpen = typeof forceOpen === 'boolean' ? forceOpen : !sidebar.classList.contains('open');
-    document.querySelector('.btn-menu-toggle')?.setAttribute('aria-expanded', String(isOpen));
+    for (const trigger of document.querySelectorAll('.btn-menu-toggle, [data-np-open-features]')) {
+      trigger.setAttribute('aria-expanded', String(isOpen));
+    }
     if (isOpen) {
       sidebar.classList.add('open');
       backdrop.classList.add('open');
@@ -683,6 +686,7 @@
     isAuthenticated = true;
     currentAccountId = acc.id;
     currentRoleId = acc.roleId;
+    payrollPage = 0;
 
     if (acc.roleId === 'QLCT' && acc.projectId !== 'ALL') {
       filterProject = acc.projectId;
@@ -737,13 +741,15 @@
   function getBadgeCounts() {
     const acc = getCurrentAccount();
     const pendingDelCount = (state.deleteRequests || []).filter(r => r.status === 'CHO_BGD_DONG_Y').length;
-    const bgdPending = state.advances.filter(a => a.status === 'CHO_BGD_DUYET').length + (state.payrollMonthStatus === 'CHO_BGD_DUYET' ? 1 : 0) + pendingDelCount;
+    const advances = state.advances.filter(a => a.status === 'CHO_BGD_DUYET').length;
+    const payroll = state.payrollMonthStatus === 'CHO_BGD_DUYET' ? 1 : 0;
+    const bgdPending = advances + payroll + pendingDelCount;
     const ktPending = state.advances.filter(a => a.status === 'CHO_KT_KIEM_TRA').length;
     let qlctPending = 0;
     if (acc && acc.roleId === 'QLCT') {
       qlctPending = getScopedWorkersForCurrentAccount().filter(w => w.approvalStatus !== 'DA_DUYET' || w.forgotCheckoutFlag).length;
     }
-    return { bgdPending, ktPending, qlctPending, pendingDelCount };
+    return { bgdPending, ktPending, qlctPending, pendingDelCount, advances, payroll };
   }
 
   function renderRoleNavigationAndHeader() {
@@ -752,7 +758,8 @@
     document.body.dataset.npRole = acc.roleId;
     document.body.dataset.npTab = currentTab;
     if (isPreview) {
-      window.NPWorkspace.navigation(acc, currentTab, formatDateRangeShortLabel(), getBadgeCounts(), state.workspace?.profiles?.[acc.id]);
+      const notices = window.NPWorkspace.notifications(acc, state, getBadgeCounts());
+      window.NPWorkspace.navigation(acc, currentTab, formatDateRangeShortLabel(), notices, state.workspace?.profiles?.[acc.id]);
       return;
     }
     const cfg = ROLE_CONFIG[acc.roleId] || ROLE_CONFIG.BGD;
@@ -1296,6 +1303,7 @@
         const renderModule = () => {
           if (!isCurrent()) return;
           main.innerHTML = workspace.moduleNamed(key).render(tab, demoContext(acc));
+          if (key === 'director' && !document.getElementById('npNotificationsPopup')?.open) renderRoleNavigationAndHeader();
         };
         if (workspace.moduleNamed(key) && workspace.isReady(key)) {
           try { renderModule(); } catch (error) { renderError(error); }
@@ -2058,7 +2066,11 @@
       return true;
     });
 
-    const visible = filtered.slice(0, 40);
+    const pageSize = isPreview ? 20 : 40;
+    const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const page = Math.min(payrollPage, pageCount - 1);
+    const offset = page * pageSize;
+    const visible = filtered.slice(offset, offset + pageSize);
     return `
       <div class="section-card v2-table-section">
         <div class="section-header v2-table-header">
@@ -2079,7 +2091,10 @@
           </div>
         </div>
 
-        <div class="v2-table-meta">Hiển thị ${visible.length} / ${filtered.length} nhân sự theo bộ lọc</div>
+        <div class="np-payroll-pagination">
+          <span>${visible.length ? offset + 1 : 0}–${offset + visible.length} / ${filtered.length} nhân sự</span>
+          ${isPreview && pageCount > 1 ? `<nav aria-label="Trang bảng lương"><button class="btn btn-soft btn-sm" type="button" onclick="window.NPApp.changePayrollPage(-1)" ${page === 0 ? 'disabled' : ''}>Trước</button><span>${page + 1} / ${pageCount}</span><button class="btn btn-soft btn-sm" type="button" onclick="window.NPApp.changePayrollPage(1)" ${page + 1 === pageCount ? 'disabled' : ''}>Sau</button></nav>` : ''}
+        </div>
         <div class="table-scroll" tabindex="0" role="region" aria-label="Bảng lương theo kỳ">
           <table class="data-table">
             <thead>
@@ -5189,7 +5204,8 @@
       data: state.workspace ||= {},
       rangeLabel: formatDateRangeLabel(),
       rangeControl: renderDateRangeButtonHtml(),
-      notifications: window.NPWorkspace.notifications(account.roleId, getBadgeCounts()),
+      scaledDays: getScaledDaysWorked,
+      refresh: renderMain,
       attendanceMode: teamAttendanceMode,
       setAttendanceMode: mode => { teamAttendanceMode = mode; },
       period: { ...dateRange },
@@ -5207,7 +5223,7 @@
     try {
       module.handle(target.dataset.npAction, formValues, demoContext(account));
     } catch (error) {
-      const section = target.closest('form,section') || target.parentElement;
+      const section = target.closest('form,.np-approval-item,section') || target.parentElement;
       let feedback = section.querySelector('.np-workspace-error');
       if (!feedback) {
         feedback = document.createElement('p');
@@ -5232,12 +5248,33 @@
     if (isPreview) {
       document.body.dataset.npPreview = 'true';
       document.getElementById('npLoginDemo').hidden = false;
+      const main = document.getElementById('appMain');
+      new MutationObserver(() => window.NPWorkspace.decorateMobileTables(main)).observe(main, { childList: true });
       document.addEventListener('submit', event => {
         if (!event.target.matches('form[data-np-module][data-np-action]')) return;
         event.preventDefault();
         runWorkspaceAction(event.target, new FormData(event.target));
       });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && document.getElementById('leftSidebar').classList.contains('open')) {
+          toggleSidebar(false);
+          document.querySelector('[data-np-open-features]')?.focus();
+        }
+      });
       document.addEventListener('click', event => {
+        const features = event.target.closest('[data-np-open-features]');
+        if (features) {
+          toggleSidebar(true);
+          document.querySelector('.btn-sidebar-close')?.focus({ preventScroll: true });
+          return;
+        }
+        const notification = event.target.closest('[data-np-notifications-toggle]');
+        if (notification) {
+          window.NPWorkspace.toggleNotifications();
+          return;
+        }
+        const popup = document.getElementById('npNotificationsPopup');
+        if (popup?.open && !popup.contains(event.target)) popup.open = false;
         const link = event.target.closest('[data-np-target]');
         if (link) {
           event.preventDefault();
@@ -5366,7 +5403,12 @@
     setSearch(val) { searchQuery = val; renderMain(); },
     setFilterProject(val) { filterProject = val; renderMain(); },
     setFilterTeam(val) { filterTeam = val; renderMain(); },
-    setFilterManager(val) { filterManager = val; renderMain(); },
+    setFilterManager(val) { filterManager = val; payrollPage = 0; renderMain(); },
+    changePayrollPage(step) {
+      if (currentTab !== 'kt-payroll' || ![-1, 1].includes(step)) return;
+      payrollPage = Math.max(0, payrollPage + step);
+      renderMain();
+    },
     setFilterStatus(val) { filterStatus = val; renderMain(); }
   };
 

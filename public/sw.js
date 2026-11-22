@@ -1,4 +1,4 @@
-const CACHE_NAME = 'np-one-hr-v6';
+const CACHE_NAME = 'np-one-hr-v7';
 const ASSETS = [
   '/',
   '/index.html',
@@ -13,7 +13,7 @@ const ASSETS = [
   '/v2-workspace.css',
   '/manifest.json',
   '/assets/np-app-icon.png',
-  '/assets/np-mark.png',
+  '/assets/np-shield.webp',
   '/assets/np-construction.webp'
 ];
 

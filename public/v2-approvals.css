@@ -1,0 +1,132 @@
+.np-approval {
+  display: grid;
+  gap: 12px;
+  max-width: 1060px;
+  margin-inline: auto;
+  color: #132947;
+}
+
+.np-approval h2, .np-approval h3, .np-approval p { margin: 0; }
+.np-approval h2 { font-size: 18px; color: #102d54; }
+
+.np-approval-payroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 22px;
+  background: linear-gradient(112deg, #fff 45%, #f1f8ff);
+}
+
+.np-approval-payroll-heading, .np-approval-payroll-actions, .np-approval-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.np-approval-payroll-heading h2 { margin-bottom: 3px; }
+.np-approval-payroll-total { display: grid; gap: 3px; }
+.np-approval-payroll-total small, .np-approval-empty { color: #4c6680; }
+.np-approval-payroll-total strong { font-size: 21px; line-height: 1.15; }
+.np-approval-payroll-actions { margin-left: auto; }
+.np-approval .btn { min-height: 38px; border-radius: 8px; font-size: 12px; }
+.np-approval-links .btn { justify-content: center; }
+.np-approval-links svg, .np-approval-symbol svg { width: 17px; height: 17px; }
+
+.np-approval-requests { display: grid; gap: 12px; }
+.np-approval-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.np-approval-filters button {
+  min-height: 38px;
+  background: #f1f6fc;
+  color: #365671;
+  border: 1px solid #dce7f0;
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font: 650 11px var(--ds-font-sans);
+}
+
+.np-approval-filters button[aria-pressed="true"] {
+  background: #fff0dc;
+  border-color: #ffc688;
+  color: #784407;
+}
+
+.np-approval-filters b { margin-left: 2px; }
+.np-approval-list { display: grid; gap: 7px; }
+.np-approval-list > h3 { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.np-approval-list > h3 small { border-radius: 5px; padding: 2px 6px; background: #edf4fc; color: #3b6182; }
+.np-approval-empty { padding: 8px 0; font-size: 12px; }
+
+.np-approval-item { border: 1px solid #dce6f0; border-radius: 9px; padding: 10px; }
+
+.np-approval-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.np-approval-symbol {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #e7f2ff;
+  color: #176cb3;
+}
+
+.np-approval-person h3 { font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+.np-approval-person p { color: #536d85; font-size: 11px; margin-top: 2px; overflow-wrap: anywhere; }
+.np-approval-result { display: grid; justify-items: end; gap: 3px; }
+
+.np-approval-status {
+  display: inline-block;
+  width: fit-content;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 10px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #714100;
+  background: #fff1da;
+}
+
+.np-approval-status[data-tone="checking"] { background: #eaf3fc; color: #185c93; }
+.np-approval-status[data-tone="done"] { background: #e5f7ed; color: #096a44; }
+.np-approval-status[data-tone="rejected"] { background: #f9eae9; color: #922f38; }
+.np-approval-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; margin-top: 8px; }
+.np-approval-controls:has(details[open]) { grid-template-columns: 1fr; }
+
+.np-approval-controls summary {
+  width: fit-content;
+  display: list-item;
+  padding: 9px 2px;
+  color: #1c5688;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.np-approval-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 8px; background: #f6f9fd; border-radius: 6px; }
+.np-approval-fields dt { font-size: 10px; color: #546e87; }
+.np-approval-fields dd { margin: 2px 0 0; font-size: 12px; overflow-wrap: anywhere; }
+.np-approval-actions { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+
+@media (max-width: 620px) {
+  .np-approval-payroll { gap: 10px; }
+  .np-approval-payroll-total { margin-left: auto; text-align: right; }
+  .np-approval-payroll-total strong { font-size: clamp(15px, 5vw, 20px); }
+  .np-approval-payroll-actions { justify-content: space-between; margin-left: 0; width: 100%; }
+  .np-approval-links { display: grid; grid-template-columns: 1fr 1fr; }
+  .np-approval .btn, .np-approval-filters button { min-height: 42px; }
+  .np-approval-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 345px) {
+  .np-approval-controls { grid-template-columns: 1fr; }
+  .np-approval-row { grid-template-columns: 27px minmax(0, 1fr) auto; gap: 5px; }
+  .np-approval-row .np-approval-symbol { width: 27px; height: 27px; }
+}
