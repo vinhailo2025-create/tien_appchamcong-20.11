@@ -51,71 +51,71 @@
   // Trừ Tổng Giám đốc (BGD), tất cả các cấp (KT, QLCT, DT1, CN) đều có Chấm công (Check-in/Check-out chung 1 menu), Bảng kê công cá nhân & Xin ứng lương!
   const ROLE_CONFIG = {
     BGD: {
-      badge: 'CẤP 1 · TỔNG GIÁM ĐỐC / ADMIN',
+      badge: 'TỔNG GIÁM ĐỐC',
       shortTitle: 'Tổng Giám Đốc',
       hasPersonalCheckin: false,
       defaultTab: 'bgd-overview',
       tabs: [
-        { id: 'bgd-overview', icon: '🏠', label: 'Tổng quan Giám đốc & Cây Quản lý', shortLabel: 'Tổng quan' },
-        { id: 'bgd-hr-pro', icon: '👥', label: 'Quản lý Nhân sự (108 người)', shortLabel: 'Nhân sự' },
-        { id: 'bgd-excel-pro', icon: '📊', label: 'Chấm công Excel Pro (Khóa kỳ)', shortLabel: 'Excel Pro' },
-        { id: 'bgd-finance', icon: '💼', label: 'Thanh toán & Công nợ Đội / Đối tác', shortLabel: 'Tài chính' },
-        { id: 'bgd-staff-check', icon: '👔', label: 'Check Chấm công Kế toán · QLCT · Đội trưởng', shortLabel: 'Check Cán bộ' },
-        { id: 'bgd-approvals', icon: '✍️', label: 'Phê duyệt Ứng lương / Xóa NS & Bảng lương', shortLabel: 'Phê duyệt', badgeKey: 'bgdPending' },
-        { id: 'bgd-audit', icon: '🛡️', label: 'Giám sát Công & Lịch sử Đổi MK / Sửa công', shortLabel: 'Giám sát' },
-        { id: 'phan-quyen', icon: '⚙️', label: 'Hệ thống & Phân quyền Tài khoản', shortLabel: 'Hệ thống' }
+        { id: 'bgd-overview', icon: '🏠', label: 'Tổng quan', shortLabel: 'Tổng quan' },
+        { id: 'bgd-hr-pro', icon: '👥', label: 'Nhân sự', shortLabel: 'Nhân sự' },
+        { id: 'bgd-excel-pro', icon: '📊', label: 'Chấm công Excel Pro', shortLabel: 'Excel Pro' },
+        { id: 'bgd-finance', icon: '💼', label: 'Thanh toán & Công nợ', shortLabel: 'Tài chính' },
+        { id: 'bgd-staff-check', icon: '👔', label: 'Chấm công Cán bộ', shortLabel: 'Cán bộ' },
+        { id: 'bgd-approvals', icon: '✍️', label: 'Phê duyệt', shortLabel: 'Phê duyệt', badgeKey: 'bgdPending' },
+        { id: 'bgd-audit', icon: '🛡️', label: 'Nhật ký hệ thống', shortLabel: 'Nhật ký' },
+        { id: 'phan-quyen', icon: '⚙️', label: 'Tài khoản & Phân quyền', shortLabel: 'Hệ thống' }
       ]
     },
     KT: {
-      badge: 'CẤP 2 · HÀNH CHÍNH – KẾ TOÁN',
-      shortTitle: 'Hành chính – Kế toán',
+      badge: 'KẾ TOÁN',
+      shortTitle: 'Kế toán',
       hasPersonalCheckin: true,
       defaultTab: 'kt-excel-pro',
       tabs: [
-        { id: 'kt-excel-pro', icon: '📊', label: 'Bảng công Excel Pro (Nhập/Xuất/Khóa kỳ)', shortLabel: 'Excel Pro' },
-        { id: 'kt-finance', icon: '💼', label: 'Thanh toán & Công nợ Đội / Đối tác', shortLabel: 'Thanh toán' },
-        { id: 'kt-my-statement', icon: '🪪', label: 'Chấm công & Bảng kê Công / Ứng lương của Kế toán', shortLabel: 'Bảng kê KT' },
-        { id: 'kt-attendance', icon: '📋', label: 'Check Chấm công toàn Công ty (Theo QLCT & Đội)', shortLabel: 'Check Công' },
-        { id: 'kt-advances', icon: '💳', label: 'Kiểm tra & Đối chiếu Ứng lương các Cấp', shortLabel: 'Duyệt Ứng', badgeKey: 'ktPending' },
-        { id: 'kt-payroll', icon: '💰', label: 'Bảng tính Lương & Xuất Excel (.CSV)', shortLabel: 'Tính lương' },
-        { id: 'kt-directory', icon: '🌳', label: 'Cây Nhân sự & Mật khẩu Cấp dưới', shortLabel: 'Cây Nhân sự' }
+        { id: 'kt-excel-pro', icon: '📊', label: 'Bảng công Excel Pro', shortLabel: 'Excel Pro' },
+        { id: 'kt-finance', icon: '💼', label: 'Thanh toán & Công nợ', shortLabel: 'Thanh toán' },
+        { id: 'kt-my-statement', icon: '🪪', label: 'Bảng kê của tôi', shortLabel: 'Bảng kê' },
+        { id: 'kt-attendance', icon: '📋', label: 'Bảng công Công ty', shortLabel: 'Bảng công' },
+        { id: 'kt-advances', icon: '💳', label: 'Duyệt Ứng lương', shortLabel: 'Ứng lương', badgeKey: 'ktPending' },
+        { id: 'kt-payroll', icon: '💰', label: 'Bảng tính Lương', shortLabel: 'Tính lương' },
+        { id: 'kt-directory', icon: '🌳', label: 'Cây Nhân sự', shortLabel: 'Cây NS' }
       ]
     },
     QLCT: {
-      badge: 'CẤP 3 · QUẢN LÝ CÔNG TRÌNH',
-      shortTitle: 'Quản lý Công trình',
+      badge: 'QUẢN LÝ CÔNG TRÌNH',
+      shortTitle: 'Quản lý CT',
       hasPersonalCheckin: true,
       defaultTab: 'qlct-approve',
       tabs: [
-        { id: 'qlct-approve', icon: '✅', label: 'Check & Duyệt Chấm công Công trình mình', shortLabel: 'Check & Duyệt', badgeKey: 'qlctPending' },
-        { id: 'qlct-my-statement', icon: '🪪', label: 'Chấm công & Bảng kê / Ứng lương của Quản lý CT', shortLabel: 'Công của tôi' },
-        { id: 'qlct-tasks', icon: '📌', label: 'Phân việc & Giao khoán cho Đội trưởng', shortLabel: 'Phân việc' },
-        { id: 'qlct-staff', icon: '👷', label: 'Đội trưởng & Nhân viên dưới quyền (Kèm MK)', shortLabel: 'Nhân sự tôi' },
-        { id: 'qlct-summary', icon: '📊', label: 'Tổng hợp Công theo Khoảng Ngày / Tháng', shortLabel: 'Tổng hợp' }
+        { id: 'qlct-approve', icon: '✅', label: 'Duyệt Chấm công', shortLabel: 'Duyệt công', badgeKey: 'qlctPending' },
+        { id: 'qlct-my-statement', icon: '🪪', label: 'Bảng kê của tôi', shortLabel: 'Công tôi' },
+        { id: 'qlct-tasks', icon: '📌', label: 'Phân việc Đội', shortLabel: 'Phân việc' },
+        { id: 'qlct-staff', icon: '👷', label: 'Nhân sự dưới quyền', shortLabel: 'Nhân sự' },
+        { id: 'qlct-summary', icon: '📊', label: 'Tổng hợp Công', shortLabel: 'Tổng hợp' }
       ]
     },
     DT1: {
-      badge: 'CẤP 4 · ĐỘI TRƯỞNG THI CÔNG',
+      badge: 'ĐỘI TRƯỞNG',
       shortTitle: 'Đội trưởng',
       hasPersonalCheckin: true,
       defaultTab: 'dt-checkin',
       tabs: [
-        { id: 'dt-checkin', icon: '📸', label: 'Check & Điểm danh Camera GPS Đội của tôi', shortLabel: 'Check Đội' },
-        { id: 'dt-my-statement', icon: '🪪', label: 'Chấm công & Bảng kê / Ứng lương của Đội trưởng', shortLabel: 'Công của tôi' },
-        { id: 'dt-tasks', icon: '🛠️', label: 'Nhận việc từ QLCT & Giao việc / Tăng ca Đội', shortLabel: 'Giao việc Đội' },
-        { id: 'dt-members', icon: '👥', label: 'Danh sách Công nhân Đội tôi (Kèm MK/PIN)', shortLabel: 'Đội của tôi' }
+        { id: 'dt-checkin', icon: '📸', label: 'Chấm công Đội', shortLabel: 'Chấm công' },
+        { id: 'dt-my-statement', icon: '🪪', label: 'Bảng kê của tôi', shortLabel: 'Công tôi' },
+        { id: 'dt-tasks', icon: '🛠️', label: 'Công việc & Tăng ca', shortLabel: 'Giao việc' },
+        { id: 'dt-members', icon: '👥', label: 'Nhân sự Đội', shortLabel: 'Đội tôi' }
       ]
     },
     CN: {
-      badge: 'CẤP 5 · CÔNG NHÂN / NHÂN VIÊN',
+      badge: 'CÔNG NHÂN',
       shortTitle: 'Công nhân',
       hasPersonalCheckin: true,
       defaultTab: 'cn-home',
       tabs: [
-        { id: 'cn-home', icon: '🪪', label: 'Tổng kết Công & Lương của tôi + Chấm công', shortLabel: 'Công của tôi' },
-        { id: 'cn-history', icon: '📅', label: 'Check Lịch sử Ngày công & Tăng ca của tôi', shortLabel: 'Check Công' },
-        { id: 'cn-requests', icon: '💳', label: 'Xin Ứng lương & Xin Nghỉ phép', shortLabel: 'Ứng lương' },
-        { id: 'cn-payslip', icon: '💵', label: 'Phiếu Lương Cá Nhân của tôi', shortLabel: 'Phiếu lương' }
+        { id: 'cn-home', icon: '🪪', label: 'Tổng kết & Chấm công', shortLabel: 'Công tôi' },
+        { id: 'cn-history', icon: '📅', label: 'Lịch sử Ngày công', shortLabel: 'Lịch sử' },
+        { id: 'cn-requests', icon: '💳', label: 'Ứng lương & Nghỉ phép', shortLabel: 'Ứng / Nghỉ' },
+        { id: 'cn-payslip', icon: '💵', label: 'Phiếu lương', shortLabel: 'Phiếu lương' }
       ]
     }
   };
@@ -344,11 +344,8 @@
     const totalSelectedDays = Math.max(1, dateRange.endDay - dateRange.startDay + 1);
 
     body.innerHTML = `
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:8px 10px; margin-bottom:8px; font-size:11px;">
-        Đang chọn: <strong style="color:var(--ds-primary);">Từ ngày ${String(dateRange.startDay).padStart(2, '0')}/${String(dateRange.month).padStart(2, '0')}/${dateRange.year} đến ngày ${String(dateRange.endDay).padStart(2, '0')}/${String(dateRange.month).padStart(2, '0')}/${dateRange.year}</strong> (${totalSelectedDays} ngày)
-        <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">
-          💡 Bấm vào 1 ngày trên bảng lịch để chọn <strong>Từ ngày</strong>, bấm vào ngày thứ 2 để chọn <strong>Đến ngày</strong>.
-        </div>
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:6px 10px; margin-bottom:8px; font-size:11px;">
+        Kỳ đang chọn: <strong style="color:var(--ds-primary);">${String(dateRange.startDay).padStart(2, '0')}/${String(dateRange.month).padStart(2, '0')}/${dateRange.year} → ${String(dateRange.endDay).padStart(2, '0')}/${String(dateRange.month).padStart(2, '0')}/${dateRange.year}</strong> (${totalSelectedDays} ngày)
       </div>
 
       <!-- CHỌN THÁNG & CHỌN NĂM -->
@@ -472,9 +469,8 @@
 
     document.getElementById('adjustModalTitle').textContent = `🔑 Đổi Mật Khẩu / Mã PIN — ${acc.fullName}`;
     document.getElementById('adjustModalBody').innerHTML = `
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-left:3px solid var(--ds-accent); padding:8px 10px; border-radius:var(--ds-radius-sm); font-size:11px; margin-bottom:10px;">
-        <div>Tài khoản đang đăng nhập: <strong><code>${acc.username}</code></strong> (${acc.positionTitle})</div>
-        <div style="margin-top:3px;">🔄 <strong>Đồng bộ tự động lên cấp trên:</strong> Ngay khi bạn đổi mật khẩu, mật khẩu mới sẽ tự động cập nhật lên bảng quản lý của <strong>${syncChainText}</strong>.</div>
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:6px 10px; border-radius:var(--ds-radius-sm); font-size:11px; margin-bottom:8px;">
+        Tài khoản: <strong><code>${acc.username}</code></strong> (${acc.positionTitle})
       </div>
       <div class="form-group">
         <label>Mật khẩu / Mã PIN hiện tại <span class="req">*</span></label>
@@ -842,8 +838,6 @@
     const container = document.getElementById('roleHeroSection');
     if (!acc || !container) return;
 
-    const ktRecord = (state.staffAttendance || []).find(s => s.roleId === 'KT') || (state.staffAttendance || [])[0];
-
     if (acc.roleId === 'BGD') {
       const total = state.workers.length;
       const present = state.workers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
@@ -852,13 +846,12 @@
       container.innerHTML = `
         <div class="compact-role-strip">
           <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-            <span class="badge badge-navy">CẤP 1 · TỔNG GIÁM ĐỐC</span>
+            <span class="badge badge-navy">TỔNG GIÁM ĐỐC</span>
             <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName}</strong>
-            <span style="font-size:10.5px; color:var(--ds-text-muted);">· Giám đốc không chấm công · Trực tiếp thấy Kế toán (${ktRecord ? ktRecord.name : 'KTT'} vào ca <code>${ktRecord ? ktRecord.checkInTime : '07:45'}</code>), 3 Quản lý CT, 6 Đội trưởng &amp; 108 Công nhân</span>
           </div>
           <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
             ${renderDateRangeButtonHtml()}
-            <span class="badge badge-success">Cán bộ &amp; KT: ${staffPresent}/${(state.staffAttendance || []).length}</span>
+            <span class="badge badge-success">Cán bộ: ${staffPresent}/${(state.staffAttendance || []).length}</span>
             <span class="badge badge-success">Công nhân: ${present}/${total}</span>
           </div>
         </div>
@@ -873,15 +866,14 @@
       <div class="compact-role-strip">
         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
           <span class="badge badge-navy">${ROLE_CONFIG[acc.roleId]?.badge || acc.positionTitle}</span>
-          <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName} (<code>${acc.username}</code>)</strong>
+          <strong style="font-size:12px; color:var(--ds-primary);">${acc.fullName}</strong>
           <span style="font-size:10.5px; color:var(--ds-text-muted);">
-            · Vào: <code>${myRec.checkInTime || '--:--'}</code> / Ra: <code>${myRec.checkOutTime || 'Đang làm'}</code>
-            · Tổng: <strong>${scaledDays} công</strong>
+            · Vào: <code>${myRec.checkInTime || '--:--'}</code> · <strong>${scaledDays} công</strong>
           </span>
         </div>
         <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
           ${renderDateRangeButtonHtml()}
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${myRec.id}')">📸 Chấm công (Vào/Ra)</button>
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${myRec.id}')">📸 Chấm công</button>
           <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 Ứng lương</button>
           <button class="btn btn-soft btn-sm" onclick="window.NPApp.openChangeMyPasswordModal()">🔑 Đổi MK</button>
         </div>
@@ -1096,39 +1088,39 @@
       <div class="personal-summary-hero">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
           <div>
-            <span class="kicker" style="color:var(--ds-accent); margin-bottom:2px;">${roleBadgeText} · KỲ LỌC: ${formatDateRangeLabel()}</span>
-            <h3>Bảng Kê Chấm Công &amp; Thu Nhập Cá Nhân — ${person.name} (${person.code})</h3>
+            <span class="kicker" style="color:var(--ds-accent); margin-bottom:2px;">KỲ: ${formatDateRangeLabel()}</span>
+            <h3>${person.name} (${person.code})</h3>
             <div style="font-size:11px; opacity:0.92; margin-top:2px;">
-              Vị trí: <strong>${person.roleName}</strong> · Bộ phận: <strong>${person.teamName}</strong> · Cấp trên duyệt công: <strong>${person.managerName}</strong>
+              <strong>${person.roleName}</strong> · <strong>${person.teamName}</strong> · Duyệt: <strong>${person.managerName}</strong>
             </div>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${person.id}')">📸 Chấm công (Check-in / Check-out)</button>
-            <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 Xin Ứng lương</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${person.id}')">📸 Chấm công</button>
+            <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 Ứng lương</button>
           </div>
         </div>
 
         <div class="personal-stat-grid">
           <div class="personal-stat-box">
-            <div class="ps-label">CÔNG ĐÃ LÀM (${formatDateRangeLabel()})</div>
-            <div class="ps-val">${scaledDays} <span style="font-size:11px; font-weight:500;">ngày công</span></div>
-            <div style="font-size:10px; opacity:0.85; margin-top:2px;">Đơn giá: ${formatVND(person.dailyWage)}/ngày</div>
+            <div class="ps-label">CÔNG ĐÃ LÀM</div>
+            <div class="ps-val">${scaledDays} <span style="font-size:11px; font-weight:500;">công</span></div>
+            <div style="font-size:10px; opacity:0.85; margin-top:2px;">${formatVND(person.dailyWage)}/ngày</div>
           </div>
           <div class="personal-stat-box">
-            <div class="ps-label">GIỜ TĂNG CA &amp; CHỦ NHẬT</div>
+            <div class="ps-label">TĂNG CA &amp; CN</div>
             <div class="ps-val">${scaledOt}h OT <span style="font-size:11px; font-weight:500;">· ${person.sundayDaysMonth || 0} CN</span></div>
-            <div style="font-size:10px; opacity:0.85; margin-top:2px;">Tiền OT + CN: ${formatVND(otPay + sunPay)}</div>
+            <div style="font-size:10px; opacity:0.85; margin-top:2px;">${formatVND(otPay + sunPay)}</div>
           </div>
           <div class="personal-stat-box">
-            <div class="ps-label">LƯƠNG LŨY KẾ TRONG KỲ</div>
+            <div class="ps-label">LƯƠNG LŨY KẾ</div>
             <div class="ps-val">${formatVND(grossSalary)}</div>
-            <div style="font-size:10px; opacity:0.85; margin-top:2px;">Đã tạm ứng: -${formatVND(approvedAdvAmount)}</div>
+            <div style="font-size:10px; opacity:0.85; margin-top:2px;">Đã ứng: -${formatVND(approvedAdvAmount)}</div>
           </div>
           <div class="personal-stat-box" style="background:rgba(247,147,30,0.22); border-color:var(--ds-accent);">
-            <div class="ps-label">THỰC LĨNH CÒN LẠI CỦA TÔI</div>
+            <div class="ps-label">THỰC LĨNH CÒN LẠI</div>
             <div class="ps-val" style="color:#FFFFFF;">${formatVND(remainingSalary)}</div>
-            <div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">Người duyệt: ${person.managerName}</div>
+            <div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">Duyệt: ${person.managerName}</div>
           </div>
         </div>
       </div>
@@ -1136,53 +1128,47 @@
       <!-- BẰNG CHỨNG CHẤM CÔNG HÔM NAY & ĐƠN ỨNG LƯƠNG CÁ NHÂN -->
       <div class="grid-2" style="margin-bottom:10px;">
         <div class="section-card" style="margin-bottom:0;">
-          <span class="kicker">CHẤM CÔNG CAMERA GPS HÔM NAY (GIÁM ĐỐC &amp; CẤP TRÊN TRỰC TIẾP THẤY)</span>
-          <h3>Trạng Thái Check-in / Check-out Hôm Nay Của ${person.name}</h3>
+          <span class="kicker">HÔM NAY</span>
+          <h3>Chấm Công Hôm Nay</h3>
           <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
-            <img src="${thumb}" style="width:112px; height:86px; object-fit:cover; border-radius:var(--ds-radius-sm); border:1px solid var(--ds-line); cursor:pointer;" onclick="window.NPApp.openPhotoModal('${person.id}')" />
+            <img src="${thumb}" style="width:104px; height:80px; object-fit:cover; border-radius:var(--ds-radius-sm); border:1px solid var(--ds-line); cursor:pointer;" onclick="window.NPApp.openPhotoModal('${person.id}')" />
             <div style="font-size:11px; line-height:1.45;">
-              <div>Trạng thái: ${renderAttendanceBadge(person.attendanceStatus)} · ${renderApprovalBadge(person.approvalStatus)}</div>
-              <div style="margin-top:3px;">Giờ Check-in: <strong><code>${person.checkInTime || 'Chưa vào'}</code></strong> · Giờ Check-out: <strong><code>${person.checkOutTime || 'Đang làm việc'}</code></strong></div>
-              <div style="margin-top:3px;">Nhiệm vụ: <strong>${person.assignedTaskToday}</strong></div>
-              <div style="margin-top:3px; color:var(--ds-text-muted);">GPS: <code>${person.lat}, ${person.lng}</code> (±${person.acc || 8}m tại ${prj.name})</div>
+              <div>${renderAttendanceBadge(person.attendanceStatus)} · ${renderApprovalBadge(person.approvalStatus)}</div>
+              <div style="margin-top:3px;">Vào: <strong><code>${person.checkInTime || '--:--'}</code></strong> · Ra: <strong><code>${person.checkOutTime || 'Đang làm'}</code></strong></div>
+              <div style="margin-top:3px;">Việc: <strong>${person.assignedTaskToday}</strong></div>
             </div>
-          </div>
-          <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${person.id}')">📸 Mở Menu Check-in / Check-out</button>
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 Xin Ứng lương cá nhân</button>
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openChangeMyPasswordModal()">🔑 Đổi Mật khẩu / PIN</button>
           </div>
         </div>
 
         <div class="section-card" style="margin-bottom:0;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <div>
-              <span class="kicker">ĐƠN XIN ỨNG LƯƠNG CỦA ${person.name.toUpperCase()}</span>
-              <h3>Lịch Sử Tạm Ứng Lương Của Tôi</h3>
+              <span class="kicker">TẠM ỨNG</span>
+              <h3>Đơn Ứng Lương</h3>
             </div>
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">+ Tạo đơn ứng lương</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">+ Ứng lương</button>
           </div>
           <div class="table-scroll">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Mã đơn</th>
+                  <th>Mã</th>
                   <th>Ngày</th>
-                  <th>Số tiền ứng</th>
+                  <th>Số tiền</th>
                   <th>Lý do</th>
                   <th>Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
                 ${myAdvances.length === 0 ? `
-                  <tr><td colspan="5" style="text-align:center; padding:12px; color:var(--ds-text-muted);">Chưa có đơn ứng lương nào. Bấm "+ Tạo đơn ứng lương" để gửi yêu cầu.</td></tr>
+                  <tr><td colspan="5" style="text-align:center; padding:10px; color:var(--ds-text-muted);">Chưa có đơn ứng lương.</td></tr>
                 ` : myAdvances.map(adv => `
                   <tr>
                     <td><strong>${adv.id}</strong></td>
                     <td>${adv.date}</td>
                     <td><strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong></td>
                     <td>${adv.reason}</td>
-                    <td>${adv.status === 'BGD_DA_DUYET' ? `<span class="badge badge-success">✓ Đã duyệt chi</span>` : `<span class="badge badge-orange">⏳ Chờ duyệt</span>`}</td>
+                    <td>${adv.status === 'BGD_DA_DUYET' ? `<span class="badge badge-success">✓ Đã duyệt</span>` : `<span class="badge badge-orange">⏳ Chờ duyệt</span>`}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -1195,8 +1181,8 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">BẢNG KÊ CHI TIẾT TỪNG NGÀY CÔNG CỦA ${person.name.toUpperCase()}</span>
-            <h3>Sổ Bảng Kê Ngày Công &amp; Thu Nhập Cá Nhân (${formatDateRangeLabel()})</h3>
+            <span class="kicker">CHI TIẾT NGÀY CÔNG</span>
+            <h3>Bảng Kê Ngày Công (${formatDateRangeLabel()})</h3>
           </div>
           ${renderDateRangeButtonHtml()}
         </div>
@@ -1460,14 +1446,13 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">SƠ ĐỒ CÂY NHÂN SỰ TƯƠNG TÁC (CLICK VÀO ĐỘI TRƯỞNG ĐỂ XEM TOÀN BỘ NHÂN SỰ DƯỚI QUYỀN)</span>
-            <h3>Cây Nhân Sự Toàn Công Ty: Tổng Giám Đốc → 3 Quản Lý Công Trình → 6 Đội Trưởng → 108 Công Nhân</h3>
-            <div class="section-desc">💡 Bấm trực tiếp vào bất kỳ <strong>Đội trưởng</strong> nào bên dưới để xổ ra danh sách toàn bộ nhân sự dưới quyền Đội trưởng đó (kèm ảnh GPS, Mã NV, Mật khẩu/PIN, giờ vào/ra, công tích lũy và nút xóa/sửa).</div>
+            <span class="kicker">SƠ ĐỒ TỔ CHỨC</span>
+            <h3>Cây Nhân Sự Toàn Công Ty</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">📂 Mở tất cả 6 Đội (108 người)</button>
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(false)">📁 Thu gọn các Đội</button>
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">🔐 Quản lý Tài khoản &amp; Mật khẩu</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">📂 Mở tất cả</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(false)">📁 Thu gọn</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">🔐 Tài khoản</button>
           </div>
         </div>
 
@@ -1481,57 +1466,47 @@
 
             return `
               <div class="hierarchy-card">
-                <span class="kicker">${p.code} · BÁN KÍNH GPS ${p.radiusM}M</span>
+                <span class="kicker">${p.code}</span>
                 <h4>${p.name}</h4>
-                <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">📍 ${p.address}</div>
 
-                <div style="margin-top:8px; padding:8px 10px; background:var(--ds-primary); color:#FFFFFF; border-radius:var(--ds-radius-sm); cursor:pointer;" onclick="window.NPApp.toggleProjectTeams('${p.id}')" title="Bấm để mở/đóng tất cả các Đội thuộc ${p.manager}">
+                <div style="margin-top:6px; padding:7px 9px; background:var(--ds-primary); color:#FFFFFF; border-radius:var(--ds-radius-sm); cursor:pointer;" onclick="window.NPApp.toggleProjectTeams('${p.id}')">
                   <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:10px; color:var(--ds-accent); font-weight:700;">CẤP 3 · QUẢN LÝ CÔNG TRÌNH PHỤ TRÁCH</span>
-                    <span class="badge badge-orange">Bấm xem ${pWorkers.length} người ▾</span>
+                    <span style="font-size:10px; color:var(--ds-accent); font-weight:700;">QUẢN LÝ CÔNG TRÌNH</span>
+                    <span class="badge badge-orange">${pPresent}/${pWorkers.length} có mặt ▾</span>
                   </div>
-                  <div style="font-size:12.5px; font-weight:700; margin-top:2px;">👷 ${p.manager}</div>
-                  <div style="font-size:10.5px; opacity:0.92; margin-top:2px;">TK: <code>${p.managerUsername}</code> · PIN hiện tại: <code>${mgrPin}</code></div>
-                  <div style="font-size:10.5px; opacity:0.9; margin-top:2px;">Quân số có mặt: <strong>${pPresent}/${pWorkers.length}</strong> · Đã duyệt: <strong>${pApproved}/${pWorkers.length}</strong></div>
+                  <div style="font-size:12px; font-weight:700; margin-top:2px;">👷 ${p.manager} (<code>${p.managerUsername}</code> · PIN: <code>${mgrPin}</code>)</div>
                 </div>
 
-                <div style="margin-top:8px;">
-                  <div style="font-size:10.5px; font-weight:700; color:var(--ds-primary); margin-bottom:5px;">
-                    👇 CLICK VÀO ĐỘI TRƯỞNG ĐỂ XEM TOÀN BỘ NHÂN SỰ DƯỚI QUYỀN:
-                  </div>
+                <div style="margin-top:6px;">
                   ${pTeams.map(tm => {
                     const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
                     const tmPresent = tmWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
                     const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
                     const isOpen = !!expandedTeams[tm.id];
                     return `
-                      <div style="border:1.5px solid ${isOpen ? 'var(--ds-accent)' : 'var(--ds-line)'}; border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:7px; overflow:hidden;">
-                        <div style="padding:8px 10px; cursor:pointer; background:${isOpen ? 'var(--ds-bg-soft)' : '#FFFFFF'}; transition:background 0.15s;" onclick="window.NPApp.toggleTeamHierarchy('${tm.id}')">
+                      <div style="border:1.5px solid ${isOpen ? 'var(--ds-accent)' : 'var(--ds-line)'}; border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:6px; overflow:hidden;">
+                        <div style="padding:7px 9px; cursor:pointer; background:${isOpen ? 'var(--ds-bg-soft)' : '#FFFFFF'};" onclick="window.NPApp.toggleTeamHierarchy('${tm.id}')">
                           <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
                             <strong style="font-size:11.5px; color:var(--ds-primary);">
                               ${isOpen ? '📂' : '📁'} ${tm.name}
                             </strong>
                             <span class="badge ${isOpen ? 'badge-orange' : 'badge-success'}">
-                              ${tmPresent}/${tmWorkers.length} người ${isOpen ? '▴' : '▾'}
+                              ${tmPresent}/${tmWorkers.length} ${isOpen ? '▴' : '▾'}
                             </span>
                           </div>
-                          <div style="font-size:11px; color:var(--ds-text); margin-top:3px;">
-                            Đội trưởng: <strong style="color:var(--ds-primary); text-decoration:underline;">${tm.leader}</strong>
-                            (TK: <code>${tm.leaderUsername}</code> · PIN: <code>${dtPin}</code>)
-                          </div>
-                          <div style="font-size:10px; color:var(--ds-link); font-weight:600; margin-top:3px;">
-                            ${isOpen ? '▴ Đang mở danh sách ' + tmWorkers.length + ' nhân sự dưới quyền (Bấm để thu gọn)' : '▾ Bấm vào đây để xem toàn bộ ' + tmWorkers.length + ' nhân sự dưới quyền ' + tm.leader}
+                          <div style="font-size:10.5px; color:var(--ds-text); margin-top:2px;">
+                            <strong>${tm.leader}</strong> (<code>${tm.leaderUsername}</code> · PIN: <code>${dtPin}</code>)
                           </div>
                         </div>
 
                         ${isOpen ? `
-                          <div style="border-top:1px solid var(--ds-line); padding:6px 8px; background:#FFFFFF;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; flex-wrap:wrap; gap:4px;">
+                          <div style="border-top:1px solid var(--ds-line); padding:5px 7px; background:#FFFFFF;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                               <span style="font-size:10px; font-weight:700; color:var(--ds-primary);">
-                                DANH SÁCH ${tmWorkers.length} NHÂN SỰ DƯỚI QUYỀN ${tm.leader.toUpperCase()}:
+                                ${tmWorkers.length} nhân sự:
                               </span>
                               <button class="btn btn-primary btn-sm" onclick="window.NPApp.openTeamMembersDetailModal('${tm.id}')">
-                                🔍 Phóng to bảng ${tmWorkers.length} nhân sự
+                                🔍 Mở rộng
                               </button>
                             </div>
                             <div style="max-height:285px; overflow-y:auto; border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm);">
@@ -1590,13 +1565,12 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">GIÁM ĐỐC KIỂM TRA CHẤM CÔNG CỦA KẾ TOÁN &amp; BAN CHỈ HUY</span>
-            <h3>Kế Toán Chấm Công → Tổng Giám Đốc Trực Tiếp Thấy &amp; Phê Duyệt</h3>
-            <div class="section-desc">Trừ Tổng Giám đốc, mọi vị trí từ Kế toán, Quản lý Công trình, Đội trưởng đến Công nhân đều bắt buộc chấm công Camera GPS và có bảng kê riêng.</div>
+            <span class="kicker">CHẤM CÔNG CÁN BỘ</span>
+            <h3>Kế Toán &amp; Quản Lý Công Trình</h3>
           </div>
           <div style="display:flex; gap:6px;">
             ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('bgd-staff-check')">👔 Xem toàn bộ Cán bộ &amp; Kế toán chấm công</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('bgd-staff-check')">👔 Xem tất cả</button>
           </div>
         </div>
         <div class="table-scroll">
@@ -1661,8 +1635,8 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">MÀN HÌNH 2 · QUẢN LÝ NHÂN SỰ &amp; ĐIỀU PHỐI (NP ONE V2.0)</span>
-            <h3>Quản Lý Nhân Sự Toàn Công Ty (${total} Hồ Sơ · Mã Nhân Sự Bất Biến)</h3>
+            <span class="kicker">NHÂN SỰ</span>
+            <h3>Quản Lý Nhân Sự (${total})</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm nhân sự</button>
@@ -1764,15 +1738,14 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">MÀN HÌNH 3 · CHẤM CÔNG EXCEL PRO (KỲ 01–15 &amp; 16–CUỐI THÁNG)</span>
-            <h3>Bảng Công Kỳ (${formatDateRangeLabel()}) — Chấm Công Excel Pro</h3>
-            <div class="section-desc">Hỗ trợ nhập/dán từ Excel, kiểm tra ô lỗi, đối chiếu theo Đội &amp; Công trình và Khóa kỳ công (sau khi khóa chỉ tạo phiếu điều chỉnh có duyệt).</div>
+            <span class="kicker">CHẤM CÔNG EXCEL PRO</span>
+            <h3>Bảng Công Kỳ (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             ${renderDateRangeButtonHtml()}
-            <button class="btn btn-soft btn-sm" onclick="alert('Tính năng Nhập/Dán từ Excel (.CSV/.XLSX): Sẵn sàng nhận dữ liệu bảng công!')">📥 Nhập Excel</button>
+            <button class="btn btn-soft btn-sm" onclick="alert('Sẵn sàng nhận dữ liệu bảng công Excel!')">📥 Nhập Excel</button>
             <button class="btn btn-soft btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📤 Xuất Excel</button>
-            <button class="btn btn-primary btn-sm" onclick="alert('Đã Khóa kỳ công ${formatDateRangeLabel()}! Sau khi khóa, mọi sửa đổi sẽ tạo Phiếu điều chỉnh lưu Audit Log.')">🔒 Khóa kỳ</button>
+            <button class="btn btn-primary btn-sm" onclick="alert('Đã Khóa kỳ công ${formatDateRangeLabel()}!')">🔒 Khóa kỳ</button>
           </div>
         </div>
 
@@ -1851,12 +1824,12 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">MÀN HÌNH 4 · THANH TOÁN &amp; CÔNG NỢ ĐỘI / ĐỐI TÁC (NP ONE V2.0)</span>
+            <span class="kicker">TÀI CHÍNH</span>
             <h3>Thanh Toán &amp; Công Nợ (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">📥 Xuất Đối soát Thanh toán (.CSV)</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">📥 Xuất Excel</button>
           </div>
         </div>
 
@@ -1932,9 +1905,8 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">GIÁM ĐỐC KIỂM TRA CHẤM CÔNG CÁC CẤP QUẢN LÝ &amp; KẾ TOÁN</span>
-            <h3>Bảng Check Chấm Công Của Kế Toán · 3 Quản Lý Công Trình · 6 Đội Trưởng (${formatDateRangeLabel()})</h3>
-            <div class="section-desc">Kế toán chấm công Giám đốc thấy ngay tại đây. Giám đốc có thể xem ảnh Camera GPS, sửa giờ hoặc duyệt bảng công cho Kế toán và Quản lý Công trình.</div>
+            <span class="kicker">CHẤM CÔNG CÁN BỘ</span>
+            <h3>Kế Toán · Quản Lý CT · Đội Trưởng (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px;">
             ${renderDateRangeButtonHtml()}
@@ -1946,14 +1918,14 @@
             <thead>
               <tr>
                 <th>Ảnh GPS</th>
-                <th>Mã &amp; Họ tên</th>
-                <th>Vị trí / Cấp bậc</th>
-                <th>Tài khoản &amp; PIN hiện tại</th>
-                <th>Giờ Check-in / Check-out</th>
-                <th>Công trong kỳ (${formatDateRangeLabel()})</th>
-                <th>Lương lũy kế kỳ</th>
+                <th>Họ tên</th>
+                <th>Vị trí</th>
+                <th>Tài khoản &amp; PIN</th>
+                <th>Giờ Vào / Ra</th>
+                <th>Công kỳ</th>
+                <th>Lương lũy kế</th>
                 <th>Trạng thái</th>
-                <th>Thao tác Giám đốc</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -1967,15 +1939,15 @@
                     <td><img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${stf.id}')" /></td>
                     <td><strong>${stf.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${stf.code} · ${stf.teamName}</span></td>
                     <td><span class="badge ${stf.roleId === 'KT' ? 'badge-orange' : 'badge-navy'}">${stf.roleName}</span></td>
-                    <td>TK: <code>${stf.username}</code><br/>PIN: <strong style="color:var(--ds-primary);"><code>${curPin}</code></strong></td>
-                    <td>Vào: <code>${stf.checkInTime}</code><br/>Ra: <code>${stf.checkOutTime || 'Đang làm'}</code></td>
-                    <td><strong>${scaledDays} công</strong> (+${stf.otHoursMonthApproved}h OT)</td>
+                    <td><code>${stf.username}</code> · PIN: <strong style="color:var(--ds-primary);"><code>${curPin}</code></strong></td>
+                    <td><code>${stf.checkInTime}</code> - <code>${stf.checkOutTime || 'Đang làm'}</code></td>
+                    <td><strong>${scaledDays} công</strong> (+${stf.otHoursMonthApproved}h)</td>
                     <td><strong style="color:var(--ds-primary);">${formatVND(gross)}</strong></td>
                     <td>${renderApprovalBadge(stf.approvalStatus)}</td>
                     <td>
                       <div style="display:flex; gap:4px;">
                         <button class="btn btn-primary btn-sm" onclick="window.NPApp.approveSingleWorker('${stf.id}')">✓ Duyệt</button>
-                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAdjustModal('${stf.id}')">✏️ Sửa giờ</button>
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAdjustModal('${stf.id}')">✏️</button>
                       </div>
                     </td>
                   </tr>
@@ -1997,13 +1969,12 @@
     const delRequests = state.deleteRequests || [];
 
     return `
-      <!-- PHÊ DUYỆT YÊU CẦU XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC ĐƯỢC SỰ ĐỒNG Ý CỦA TỔNG GIÁM ĐỐC) -->
+      <!-- PHÊ DUYỆT YÊU CẦU XÓA TÀI KHOẢN / NHÂN SỰ -->
       <div class="section-card" style="border-color:var(--ds-danger);">
         <div class="section-header">
           <div>
-            <span class="kicker" style="color:var(--ds-danger);">KIỂM SOÁT AN TOÀN DỮ LIỆU · PHÊ DUYỆT XÓA TÀI KHOẢN &amp; NHÂN SỰ</span>
-            <h3>Yêu Cầu Xóa Tài Khoản / Nhân Sự Chờ Tổng Giám Đốc Đồng Ý (${delRequests.filter(r => r.status === 'CHO_BGD_DONG_Y').length} yêu cầu chờ)</h3>
-            <div class="section-desc">Nguyên tắc bảo mật: Không ai được tự ý xóa mất nhân sự hoặc tài khoản nếu chưa xác nhận lý do và được Tổng Giám đốc phê duyệt đồng ý.</div>
+            <span class="kicker" style="color:var(--ds-danger);">PHÊ DUYỆT XÓA</span>
+            <h3>Yêu Cầu Xóa Tài Khoản / Nhân Sự (${delRequests.filter(r => r.status === 'CHO_BGD_DONG_Y').length} chờ duyệt)</h3>
           </div>
         </div>
         <div class="table-scroll">
@@ -2011,19 +1982,19 @@
             <thead>
               <tr>
                 <th>Mã YC</th>
-                <th>Thời gian gửi</th>
-                <th>Loại xóa</th>
-                <th>Tài khoản / Nhân sự cần xóa</th>
+                <th>Thời gian</th>
+                <th>Loại</th>
+                <th>Đối tượng xóa</th>
                 <th>Chức vụ / Đội</th>
-                <th>Người đề xuất xóa</th>
-                <th>Lý do xóa đã xác nhận</th>
+                <th>Người đề xuất</th>
+                <th>Lý do</th>
                 <th>Trạng thái</th>
-                <th>Quyết định của Giám đốc</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               ${delRequests.length === 0 ? `
-                <tr><td colspan="9" style="text-align:center; padding:14px; color:var(--ds-text-muted);">Hiện không có yêu cầu xóa tài khoản hoặc nhân sự nào.</td></tr>
+                <tr><td colspan="9" style="text-align:center; padding:14px; color:var(--ds-text-muted);">Không có yêu cầu xóa nào.</td></tr>
               ` : delRequests.map(req => `
                 <tr>
                   <td><strong>${req.id}</strong></td>
@@ -2035,16 +2006,16 @@
                   <td>${req.reason}</td>
                   <td>
                     ${req.status === 'CHO_BGD_DONG_Y'
-                      ? `<span class="badge badge-warning">⏳ Chờ Giám đốc đồng ý</span>`
+                      ? `<span class="badge badge-warning">⏳ Chờ GĐ duyệt</span>`
                       : req.status === 'DA_XOA'
-                        ? `<span class="badge badge-danger">✓ GĐ đã đồng ý &amp; Đã xóa</span>`
-                        : `<span class="badge badge-neutral">✕ GĐ từ chối xóa</span>`
+                        ? `<span class="badge badge-danger">✓ Đã xóa</span>`
+                        : `<span class="badge badge-neutral">✕ Từ chối</span>`
                     }
                   </td>
                   <td>
                     ${req.status === 'CHO_BGD_DONG_Y' ? `
                       <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                        <button class="btn btn-danger btn-sm" onclick="window.NPApp.directorApproveDeleteRequest('${req.id}')">✓ Đồng ý Xóa</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.NPApp.directorApproveDeleteRequest('${req.id}')">✓ Đồng ý</button>
                         <button class="btn btn-soft btn-sm" onclick="window.NPApp.directorRejectDeleteRequest('${req.id}')">✕ Từ chối</button>
                       </div>
                     ` : `<span style="font-size:10px; color:var(--ds-text-muted);">Đã xử lý</span>`}
@@ -2059,15 +2030,14 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">THẨM QUYỀN PHÊ DUYỆT ỨNG LƯƠNG CHO MỌI CẤP (KẾ TOÁN · QLCT · ĐỘI TRƯỞNG · CÔNG NHÂN)</span>
-            <h3>Phê Duyệt Đơn Xin Ứng Lương &amp; Bảng Lương (${formatDateRangeLabel()})</h3>
-            <div class="section-desc">Mọi cấp từ Kế toán, Quản lý Công trình, Đội trưởng đến Công nhân khi gửi đơn ứng lương đều được trình lên đây để Tổng Giám đốc phê duyệt.</div>
+            <span class="kicker">PHÊ DUYỆT TÀI CHÍNH</span>
+            <h3>Duyệt Ứng Lương &amp; Bảng Lương (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
             ${renderDateRangeButtonHtml()}
             ${state.payrollMonthStatus === 'BGD_DA_DUYET'
-              ? `<span class="badge badge-success">✓ TỔNG GIÁM ĐỐC ĐÃ PHÊ DUYỆT BẢNG LƯƠNG</span>`
-              : `<button class="btn btn-primary btn-sm" onclick="window.NPApp.approveMonthlyPayroll()">✍️ Ký Duyệt Bảng Lương (${formatVND(totalGross - totalAdv)})</button>`
+              ? `<span class="badge badge-success">✓ ĐÃ DUYỆT BẢNG LƯƠNG</span>`
+              : `<button class="btn btn-primary btn-sm" onclick="window.NPApp.approveMonthlyPayroll()">✍️ Duyệt Bảng Lương (${formatVND(totalGross - totalAdv)})</button>`
             }
           </div>
         </div>
@@ -2077,15 +2047,15 @@
             <thead>
               <tr>
                 <th>Mã đơn</th>
-                <th>Người xin ứng &amp; Cấp bậc</th>
-                <th>Bộ phận / Đội</th>
-                <th>Quản lý trực tiếp</th>
-                <th>Công đã duyệt</th>
+                <th>Người xin ứng</th>
+                <th>Bộ phận</th>
+                <th>Quản lý</th>
+                <th>Công</th>
                 <th>Lương lũy kế</th>
-                <th>Số tiền xin ứng</th>
-                <th>Kế toán kiểm tra</th>
+                <th>Số tiền ứng</th>
+                <th>Kế toán</th>
                 <th>Trạng thái</th>
-                <th>Thẩm quyền GĐ</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -2094,25 +2064,25 @@
                                (state.staffAttendance || []).find(s => s.code === adv.workerCode || s.username === adv.workerCode) ||
                                state.workers[0];
                 let stBadge = '';
-                if (adv.status === 'BGD_DA_DUYET') stBadge = `<span class="badge badge-success">✓ GĐ Đã duyệt chi</span>`;
-                else if (adv.status === 'CHO_BGD_DUYET') stBadge = `<span class="badge badge-orange">⏳ Chờ GĐ phê duyệt</span>`;
-                else stBadge = `<span class="badge badge-warning">Chờ Kế toán kiểm tra</span>`;
+                if (adv.status === 'BGD_DA_DUYET') stBadge = `<span class="badge badge-success">✓ Đã duyệt</span>`;
+                else if (adv.status === 'CHO_BGD_DUYET') stBadge = `<span class="badge badge-orange">⏳ Chờ GĐ</span>`;
+                else stBadge = `<span class="badge badge-warning">Chờ KT</span>`;
 
                 return `
                   <tr>
                     <td><strong>${adv.id}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${adv.date}</span></td>
-                    <td><strong>${adv.workerName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${adv.workerCode} · ${person.roleName || 'Nhân sự'}</span></td>
+                    <td><strong>${adv.workerName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${adv.workerCode}</span></td>
                     <td>${adv.teamName || person.teamName}</td>
                     <td><strong style="color:var(--ds-primary);">${person.managerName || 'GĐ. Nguyễn Phát'}</strong></td>
-                    <td><strong>${adv.daysWorkedSoFar || getScaledDaysWorked(person.daysMonthApproved)} công</strong></td>
+                    <td><strong>${adv.daysWorkedSoFar || getScaledDaysWorked(person.daysMonthApproved)}c</strong></td>
                     <td><strong>${formatVND(adv.accruedSalary || adv.accruedSalaryAtRequest || (getScaledDaysWorked(person.daysMonthApproved) * person.dailyWage))}</strong></td>
                     <td><strong style="color:var(--ds-primary); font-size:12.5px;">${formatVND(adv.amount)}</strong><br/><span style="font-size:10px;">${adv.reason}</span></td>
                     <td>${adv.checkedByKt ? `<span class="badge badge-navy">✓ ${adv.checkedByKt}</span>` : `<span class="badge badge-neutral">Chưa KT</span>`}</td>
                     <td>${stBadge}</td>
                     <td>
                       ${adv.status !== 'BGD_DA_DUYET'
-                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'BGD')">✍️ Duyệt chi</button>`
-                        : `<span style="font-size:10.5px; color:var(--ds-success); font-weight:700;">Đã ký duyệt</span>`
+                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'BGD')">✍️ Duyệt</button>`
+                        : `<span style="font-size:10.5px; color:var(--ds-success); font-weight:700;">Đã duyệt</span>`
                       }
                     </td>
                   </tr>
@@ -2130,9 +2100,8 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">NHẬT KÝ KIỂM TOÁN BẤT BIẾN (AUDIT LOG &amp; LỊCH SỬ ĐỔI MẬT KHẨU CÁC CẤP)</span>
-            <h3>Lịch Sử Sửa Giờ Công &amp; Tự Động Đồng Bộ Mật Khẩu Từ Cấp Dưới Lên Cấp Trên</h3>
-            <div class="section-desc">Mọi thao tác sửa giờ công hoặc đổi mật khẩu của bất kỳ tài khoản nào đều được lưu vết và cập nhật tức thời lên cấp trên.</div>
+            <span class="kicker">NHẬT KÝ HỆ THỐNG</span>
+            <h3>Lịch Sử Sửa Giờ Công &amp; Đổi Mật Khẩu</h3>
           </div>
         </div>
         <div class="table-scroll">
@@ -2141,11 +2110,11 @@
               <tr>
                 <th>Mã Log</th>
                 <th>Thời gian</th>
-                <th>Nhân sự / Tài khoản</th>
+                <th>Nhân sự</th>
                 <th>Người thực hiện</th>
-                <th>Hạng mục thay đổi</th>
-                <th>Giá trị cũ → Mới</th>
-                <th>Chi tiết đồng bộ</th>
+                <th>Hạng mục</th>
+                <th>Cũ → Mới</th>
+                <th>Chi tiết</th>
               </tr>
             </thead>
             <tbody>
@@ -2192,24 +2161,23 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">MỤC CHECK CHẤM CÔNG DÀNH CHO KẾ TOÁN (${formatDateRangeLabel()})</span>
-            <h3>Bảng Check Chấm Công Theo Từng Quản Lý Công Trình &amp; Đội Trưởng</h3>
-            <div class="section-desc">Kế toán chọn khoảng ngày (Từ ngày → Đến ngày), lọc theo từng Quản lý Công trình / Đội trưởng để kiểm tra ảnh GPS và ngày công đã duyệt.</div>
+            <span class="kicker">BẢNG CÔNG TOÀN CÔNG TY</span>
+            <h3>Chấm Công Theo Quản Lý &amp; Đội (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📥 Xuất Excel Bảng Công (.CSV)</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📥 Xuất Excel (.CSV)</button>
           </div>
         </div>
 
         <div class="filter-bar" style="margin-bottom:10px;">
-          <input type="text" placeholder="🔍 Tìm tên công nhân, mã NV, tên Quản lý..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
+          <input type="text" placeholder="🔍 Tìm tên, mã NV, quản lý..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
           <select onchange="window.NPApp.setFilterManager(this.value)">
-            <option value="ALL" ${filterManager === 'ALL' ? 'selected' : ''}>Tất cả Quản lý Công trình (3 QLCT)</option>
-            ${managers.map(m => `<option value="${m.username}" ${filterManager === m.username ? 'selected' : ''}>Quản lý: ${m.name} (${m.project})</option>`).join('')}
+            <option value="ALL" ${filterManager === 'ALL' ? 'selected' : ''}>Tất cả Quản lý CT</option>
+            ${managers.map(m => `<option value="${m.username}" ${filterManager === m.username ? 'selected' : ''}>${m.name} (${m.project})</option>`).join('')}
           </select>
           <select onchange="window.NPApp.setFilterTeam(this.value)">
-            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Tất cả 6 Đội thi công</option>
+            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Tất cả Đội</option>
             ${state.teams.map(t => `<option value="${t.id}" ${filterTeam === t.id ? 'selected' : ''}>${t.name} — ${t.leader}</option>`).join('')}
           </select>
         </div>
@@ -2220,13 +2188,13 @@
               <tr>
                 <th>Ảnh GPS</th>
                 <th>Mã NV</th>
-                <th>Họ và Tên Công nhân</th>
-                <th>Thuộc Đội trưởng</th>
-                <th>Thuộc Quản lý CT</th>
-                <th>Hôm nay (Vào - Ra)</th>
-                <th>Công kỳ (${formatDateRangeLabel()})</th>
-                <th>Giờ OT</th>
-                <th>Trạng thái QLCT Duyệt</th>
+                <th>Họ và Tên</th>
+                <th>Đội trưởng</th>
+                <th>Quản lý CT</th>
+                <th>Giờ Vào - Ra</th>
+                <th>Công kỳ</th>
+                <th>OT</th>
+                <th>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
@@ -2239,7 +2207,7 @@
                     <td><strong>${w.code}</strong></td>
                     <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.roleName}</span></td>
                     <td><strong>${w.leaderName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.teamName}</span></td>
-                    <td><span class="badge badge-navy">👷 ${w.managerName}</span></td>
+                    <td><span class="badge badge-navy">${w.managerName}</span></td>
                     <td>${w.checkInTime ? `<code>${w.checkInTime}</code> - <code>${w.checkOutTime || 'Đang làm'}</code>` : `<span class="badge badge-danger">Vắng</span>`}</td>
                     <td><strong style="color:var(--ds-primary); font-size:12.5px;">${scaledD} công</strong></td>
                     <td><strong>${w.otHoursMonthApproved}h</strong></td>
@@ -2259,11 +2227,10 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">BƯỚC 1: KẾ TOÁN KIỂM TRA ĐƠN ỨNG LƯƠNG CỦA MỌI CẤP</span>
-            <h3>Kiểm Tra &amp; Đối Chiếu Đơn Xin Ứng Lương (Công Nhân · Đội Trưởng · Quản Lý CT · Kế Toán)</h3>
-            <div class="section-desc">Cấp nào cũng có thể gửi đơn ứng lương. Kế toán kiểm tra công tích lũy hoặc bấm "+ Tạo đơn ứng lương của tôi" để ứng lương cho chính mình.</div>
+            <span class="kicker">QUẢN LÝ TẠM ỨNG</span>
+            <h3>Đơn Xin Ứng Lương</h3>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 + Tạo đơn Xin Ứng lương của Kế toán</button>
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 + Ứng lương</button>
         </div>
         <div class="table-scroll">
           <table class="data-table">
@@ -2271,14 +2238,14 @@
               <tr>
                 <th>Mã đơn</th>
                 <th>Người xin ứng</th>
-                <th>Bộ phận / Đội</th>
-                <th>Cấp quản lý duyệt công</th>
-                <th>Công đã làm</th>
+                <th>Bộ phận</th>
+                <th>Quản lý</th>
+                <th>Công</th>
                 <th>Lương lũy kế</th>
-                <th>Số tiền xin ứng</th>
-                <th>Tỷ lệ ứng</th>
+                <th>Số tiền ứng</th>
+                <th>Tỷ lệ</th>
                 <th>Trạng thái</th>
-                <th>Kế toán thao tác</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -2295,22 +2262,22 @@
                     <td><strong>${adv.workerName}</strong> (${adv.workerCode})</td>
                     <td>${adv.teamName || w.teamName}</td>
                     <td><strong style="color:var(--ds-primary);">${w.managerName}</strong></td>
-                    <td><strong>${daysW} công</strong></td>
+                    <td><strong>${daysW}c</strong></td>
                     <td><strong>${formatVND(accSal)}</strong></td>
                     <td><strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong><br/><span style="font-size:10px;">${adv.reason}</span></td>
                     <td><span class="badge ${ratio <= 70 ? 'badge-success' : 'badge-warning'}">${ratio}%</span></td>
                     <td>
                       ${adv.status === 'CHO_KT_KIEM_TRA'
-                        ? `<span class="badge badge-orange">⏳ Chờ KT kiểm tra</span>`
+                        ? `<span class="badge badge-orange">⏳ Chờ KT</span>`
                         : adv.status === 'CHO_BGD_DUYET'
-                          ? `<span class="badge badge-navy">Đã trình Giám đốc</span>`
-                          : `<span class="badge badge-success">✓ Giám đốc đã duyệt</span>`
+                          ? `<span class="badge badge-navy">Trình GĐ</span>`
+                          : `<span class="badge badge-success">✓ Đã duyệt</span>`
                       }
                     </td>
                     <td>
                       ${adv.status === 'CHO_KT_KIEM_TRA'
-                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'KT')">✓ Xác nhận &amp; Trình GĐ</button>`
-                        : `<span style="font-size:10.5px; color:var(--ds-success); font-weight:600;">✓ Đã đối chiếu</span>`
+                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'KT')">✓ Trình GĐ</button>`
+                        : `<span style="font-size:10.5px; color:var(--ds-success); font-weight:600;">✓ Đã duyệt</span>`
                       }
                     </td>
                   </tr>
@@ -2333,18 +2300,18 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">TỰ ĐỘNG TÍNH LƯƠNG THEO KHOẢNG NGÀY ĐÃ CHỌN (${formatDateRangeLabel()})</span>
-            <h3>Bảng Tính Lương Phân Theo Quản Lý Công Trình</h3>
+            <span class="kicker">BẢNG LƯƠNG (${formatDateRangeLabel()})</span>
+            <h3>Tổng Hợp Tính Lương</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             ${renderDateRangeButtonHtml()}
             <select onchange="window.NPApp.setFilterManager(this.value)" style="padding:4px 8px; border-radius:999px; border:1px solid var(--ds-line); font-size:11px;">
-              <option value="ALL" ${filterManager === 'ALL' ? 'selected' : ''}>Tất cả 3 Quản lý Công trình</option>
-              <option value="qlct_ct1" ${filterManager === 'qlct_ct1' ? 'selected' : ''}>Quản lý CT1: KS. Trần Minh Hoàng</option>
-              <option value="qlct_ct2" ${filterManager === 'qlct_ct2' ? 'selected' : ''}>Quản lý CT2: KS. Phạm Quốc Bảo</option>
-              <option value="qlct_ct3" ${filterManager === 'qlct_ct3' ? 'selected' : ''}>Quản lý CT3: KS. Đặng Văn Hùng</option>
+              <option value="ALL" ${filterManager === 'ALL' ? 'selected' : ''}>Tất cả Quản lý CT</option>
+              <option value="qlct_ct1" ${filterManager === 'qlct_ct1' ? 'selected' : ''}>CT1: KS. Trần Minh Hoàng</option>
+              <option value="qlct_ct2" ${filterManager === 'qlct_ct2' ? 'selected' : ''}>CT2: KS. Phạm Quốc Bảo</option>
+              <option value="qlct_ct3" ${filterManager === 'qlct_ct3' ? 'selected' : ''}>CT3: KS. Đặng Văn Hùng</option>
             </select>
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">📥 Xuất Excel Bảng Lương (.CSV)</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">📥 Xuất Excel (.CSV)</button>
           </div>
         </div>
 
@@ -2354,14 +2321,14 @@
               <tr>
                 <th>Mã NV</th>
                 <th>Họ và Tên</th>
-                <th>Quản lý CT &amp; Đội trưởng</th>
-                <th>Đơn giá ngày</th>
-                <th>Công kỳ (${formatDateRangeLabel()})</th>
+                <th>Quản lý &amp; Đội</th>
+                <th>Đơn giá</th>
+                <th>Công kỳ</th>
                 <th>Lương chính</th>
-                <th>Lương OT (1.5)</th>
-                <th>Trừ tạm ứng</th>
+                <th>Lương OT</th>
+                <th>Tạm ứng</th>
                 <th>Thực lĩnh</th>
-                <th>Phiếu lương</th>
+                <th>Phiếu</th>
               </tr>
             </thead>
             <tbody>
@@ -2404,12 +2371,11 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">ĐỐI CHIẾU CÂY NHÂN SỰ TƯƠNG TÁC &amp; MẬT KHẨU ĐỒNG BỘ TỪ CẤP DƯỚI</span>
-            <h3>Cây Nhân Sự: Click Vào Đội Trưởng Để Xem Toàn Bộ Nhân Viên Dưới Quyền</h3>
-            <div class="section-desc">💡 Bấm vào từng Đội trưởng bên dưới để xổ ra danh sách toàn bộ công nhân thuộc Đội trưởng đó quản lý.</div>
+            <span class="kicker">SƠ ĐỒ TỔ CHỨC</span>
+            <h3>Cây Nhân Sự Công Trình &amp; Tổ Đội</h3>
           </div>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">📂 Mở tất cả 6 Đội</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">📂 Mở tất cả</button>
             <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(false)">📁 Thu gọn</button>
           </div>
         </div>
@@ -2420,9 +2386,9 @@
             const mgrPin = getAccountPinByUsernameOrCode(p.managerUsername);
             return `
               <div class="hierarchy-card">
-                <span class="kicker">QUẢN LÝ CÔNG TRÌNH ${p.id}</span>
-                <h4>👷 ${p.manager} (TK: <code>${p.managerUsername}</code> · PIN: <code>${mgrPin}</code>)</h4>
-                <div style="font-size:11px; color:var(--ds-text-muted); margin-bottom:8px;">Công trình: ${p.name} · Tổng số: <strong>${pWorkers.length} nhân sự</strong></div>
+                <span class="kicker">${p.id} · ${pWorkers.length} NHÂN SỰ</span>
+                <h4>👷 ${p.manager} (<code>${p.managerUsername}</code> · PIN: <code>${mgrPin}</code>)</h4>
+                <div style="font-size:11px; color:var(--ds-text-muted); margin-bottom:8px;">${p.name}</div>
                 ${pTeams.map(tm => {
                   const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
                   const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
@@ -2432,23 +2398,22 @@
                       <div style="padding:8px; cursor:pointer; background:${isOpen ? 'var(--ds-bg-soft)' : '#FFFFFF'};" onclick="window.NPApp.toggleTeamHierarchy('${tm.id}')">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                           <div style="font-weight:700; color:var(--ds-primary); font-size:11.5px;">${isOpen ? '📂' : '📁'} ${tm.name} — ${tm.leader}</div>
-                          <span class="badge ${isOpen ? 'badge-orange' : 'badge-navy'}">${tmWorkers.length} người ${isOpen ? '▴' : '▾'}</span>
+                          <span class="badge ${isOpen ? 'badge-orange' : 'badge-navy'}">${tmWorkers.length} ${isOpen ? '▴' : '▾'}</span>
                         </div>
-                        <div style="font-size:10.5px; color:var(--ds-text-muted); margin:2px 0;">TK Đội trưởng: <code>${tm.leaderUsername}</code> · PIN đồng bộ: <code>${dtPin}</code></div>
-                        <div style="font-size:10px; color:var(--ds-link); font-weight:600;">${isOpen ? '▴ Thu gọn danh sách' : '▾ Click để xem ' + tmWorkers.length + ' nhân sự dưới quyền'}</div>
+                        <div style="font-size:10.5px; color:var(--ds-text-muted); margin:2px 0;">TK: <code>${tm.leaderUsername}</code> · PIN: <code>${dtPin}</code></div>
                       </div>
                       ${isOpen ? `
                         <div style="border-top:1px solid var(--ds-line); padding:6px; max-height:240px; overflow-y:auto;">
                           <table class="data-table" style="font-size:10px;">
                             <thead>
-                              <tr><th>#</th><th>Mã NV &amp; PIN</th><th>Họ và Tên</th><th>Công</th></tr>
+                              <tr><th>#</th><th>Mã &amp; PIN</th><th>Họ tên</th><th>Công</th></tr>
                             </thead>
                             <tbody>
                               ${tmWorkers.map((w, idx) => `
                                 <tr>
                                   <td>${idx + 1}</td>
-                                  <td><code>${w.code}</code><br/>PIN: <code>${getAccountPinByUsernameOrCode(w.code)}</code></td>
-                                  <td><strong>${w.name}</strong><br/><span style="font-size:9px; color:var(--ds-text-muted);">${w.roleName}</span></td>
+                                  <td><code>${w.code}</code> · <code>${getAccountPinByUsernameOrCode(w.code)}</code></td>
+                                  <td><strong>${w.name}</strong></td>
                                   <td><strong>${getScaledDaysWorked(w.daysMonthApproved)}c</strong></td>
                                 </tr>
                               `).join('')}
@@ -2494,29 +2459,29 @@
       <div class="kpi-grid-4">
         <div class="kpi-card">
           <div>
-            <span class="kpi-label">QUÂN SỐ ${prj.id} HÔM NAY</span>
-            <div class="kpi-value">${present}<span class="unit">/${myWorkers.length} người</span></div>
+            <span class="kpi-label">QUÂN SỐ ${prj.id}</span>
+            <div class="kpi-value">${present}<span class="unit">/${myWorkers.length}</span></div>
           </div>
-          <div class="kpi-sub">Thuộc ${myTeams.length} Đội dưới quyền ${acc.fullName}</div>
+          <div class="kpi-sub">${myTeams.length} Đội thi công</div>
         </div>
         <div class="kpi-card">
           <div>
-            <span class="kpi-label">CHỜ TÔI DUYỆT CÔNG</span>
+            <span class="kpi-label">CHỜ DUYỆT CÔNG</span>
             <div class="kpi-value" style="color:var(--ds-accent);">${unapproved}<span class="unit">ca</span></div>
           </div>
-          <div class="kpi-sub">Đội trưởng đã điểm danh và gửi lên</div>
+          <div class="kpi-sub">Đội trưởng đã gửi</div>
         </div>
         <div class="kpi-card">
           <div>
-            <span class="kpi-label">KỲ LỌC NGÀY ĐANG XEM</span>
+            <span class="kpi-label">KỲ LỌC NGÀY</span>
             <div class="kpi-value" style="font-size:13.5px;">${formatDateRangeLabel()}</div>
           </div>
-          <div class="kpi-sub">Bấm nút Lịch để chọn Từ ngày → Đến ngày</div>
+          <div class="kpi-sub">${prj.name}</div>
         </div>
         <div class="kpi-card">
           <div>
-            <span class="kpi-label">ĐỘI TRƯỞNG DƯỚI QUYỀN</span>
-            <div class="kpi-value">${myTeams.length}<span class="unit">Đội trưởng</span></div>
+            <span class="kpi-label">ĐỘI TRƯỞNG</span>
+            <div class="kpi-value">${myTeams.length}<span class="unit">đội</span></div>
           </div>
           <div class="kpi-sub">${myTeams.map(t => t.leader).join(' · ')}</div>
         </div>
@@ -2526,19 +2491,19 @@
         <div class="section-card" style="border-color:var(--ds-accent); background:var(--ds-warning-bg);">
           <div class="section-header" style="border-bottom-color:rgba(154,91,0,0.2);">
             <div>
-              <span class="kicker">CẢNH BÁO TỰ ĐỘNG SAU 17:30 TẠI ${prj.id}</span>
-              <h3>Có ${forgotList.length} Công Nhân Chưa Check-out Lúc 17:30 Cần Quản Lý Xác Nhận</h3>
+              <span class="kicker">CẢNH BÁO QUÊN CHECK-OUT</span>
+              <h3>${forgotList.length} Công Nhân Chưa Check-out Lúc 17:30</h3>
             </div>
           </div>
           <div style="display:grid; gap:6px;">
             ${forgotList.map(w => `
               <div style="display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; padding:8px 10px; border-radius:var(--ds-radius-sm); border:1px solid var(--ds-line); flex-wrap:wrap; gap:6px;">
                 <div style="min-width:0; word-break:break-word;">
-                  <strong>${w.name} (${w.code})</strong> · ${w.teamName} (Đội trưởng: ${w.leaderName}) · Vào ca: <code>${w.checkInTime}</code>
+                  <strong>${w.name} (${w.code})</strong> · ${w.teamName} · Vào: <code>${w.checkInTime}</code>
                 </div>
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                  <button class="btn btn-soft btn-sm" onclick="window.NPApp.confirmForgotCheckout('${w.id}', 0)">Chốt đủ 8h hành chính (0h OT)</button>
-                  <button class="btn btn-primary btn-sm" onclick="window.NPApp.confirmForgotCheckout('${w.id}', 2)">Xác nhận có Tăng ca (+2h OT)</button>
+                  <button class="btn btn-soft btn-sm" onclick="window.NPApp.confirmForgotCheckout('${w.id}', 0)">Chốt 8h (0h OT)</button>
+                  <button class="btn btn-primary btn-sm" onclick="window.NPApp.confirmForgotCheckout('${w.id}', 2)">Tăng ca (+2h OT)</button>
                 </div>
               </div>
             `).join('')}
@@ -2549,24 +2514,24 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">MỤC CHECK CHẤM CÔNG &amp; DUYỆT CÔNG TẠI ${prj.name.toUpperCase()} (${formatDateRangeLabel()})</span>
-            <h3>Check Ảnh GPS &amp; Duyệt Công Cho Các Đội Dưới Quyền (${myWorkers.length} Nhân Sự)</h3>
+            <span class="kicker">DUYỆT CHẤM CÔNG · ${prj.name.toUpperCase()}</span>
+            <h3>Bảng Duyệt Công (${myWorkers.length} Nhân Sự)</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.approveAllVisible()">✅ Duyệt tất cả công hợp lệ của ${prj.id}</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.approveAllVisible()">✅ Duyệt tất cả</button>
           </div>
         </div>
 
         <div class="filter-bar" style="margin-bottom:10px;">
-          <input type="text" placeholder="🔍 Tìm công nhân thuộc công trình của tôi..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
+          <input type="text" placeholder="🔍 Tìm công nhân..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
           <select onchange="window.NPApp.setFilterTeam(this.value)">
-            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Tất cả Đội thuộc ${prj.id}</option>
+            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Tất cả Đội (${prj.id})</option>
             ${myTeams.map(t => `<option value="${t.id}" ${filterTeam === t.id ? 'selected' : ''}>${t.name} — ${t.leader}</option>`).join('')}
           </select>
           <select onchange="window.NPApp.setFilterStatus(this.value)">
-            <option value="ALL" ${filterStatus === 'ALL' ? 'selected' : ''}>Tất cả trạng thái duyệt</option>
-            <option value="UNAPPROVED" ${filterStatus === 'UNAPPROVED' ? 'selected' : ''}>Chỉ hiện ca Chờ tôi duyệt (${unapproved})</option>
+            <option value="ALL" ${filterStatus === 'ALL' ? 'selected' : ''}>Tất cả trạng thái</option>
+            <option value="UNAPPROVED" ${filterStatus === 'UNAPPROVED' ? 'selected' : ''}>Chờ duyệt (${unapproved})</option>
           </select>
         </div>
 
@@ -2575,13 +2540,13 @@
             <thead>
               <tr>
                 <th>Ảnh GPS</th>
-                <th>Mã NV &amp; Họ tên</th>
-                <th>Đội trưởng phụ trách</th>
-                <th>Việc được giao hôm nay</th>
+                <th>Họ tên</th>
+                <th>Đội trưởng</th>
+                <th>Công việc</th>
                 <th>Giờ Vào - Ra</th>
-                <th>Công kỳ (${formatDateRangeLabel()})</th>
+                <th>Công kỳ</th>
                 <th>Trạng thái</th>
-                <th>Thao tác của Quản lý CT</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -2591,15 +2556,15 @@
                 return `
                   <tr>
                     <td>
-                      <img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${w.id}')" title="Xem ảnh GPS phóng to" />
+                      <img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${w.id}')" />
                     </td>
                     <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.code} · ${w.roleName}</span></td>
                     <td><strong>${w.leaderName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.teamName}</span></td>
-                    <td><span style="font-size:11px;">${w.assignedTaskToday || 'Thi công theo phân công đội'}</span></td>
+                    <td><span style="font-size:11px;">${w.assignedTaskToday || 'Thi công theo đội'}</span></td>
                     <td>
-                      ${w.checkInTime ? `Vào: <code>${w.checkInTime}</code><br/>Ra: <code>${w.checkOutTime || 'Đang làm'}</code>` : `<span class="badge badge-danger">Vắng mặt</span>`}
+                      ${w.checkInTime ? `<code>${w.checkInTime}</code> - <code>${w.checkOutTime || 'Đang làm'}</code>` : `<span class="badge badge-danger">Vắng</span>`}
                     </td>
-                    <td><strong>${scaledD} công</strong><br/><span style="font-size:10px; color:var(--ds-accent);">OT hôm nay: +${w.hoursOtActual || 0}h</span></td>
+                    <td><strong>${scaledD} công</strong><br/><span style="font-size:10px; color:var(--ds-accent);">OT: +${w.hoursOtActual || 0}h</span></td>
                     <td>${renderApprovalBadge(w.approvalStatus)}</td>
                     <td>
                       <div style="display:flex; gap:4px; flex-wrap:wrap;">
@@ -2607,7 +2572,7 @@
                           ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.approveSingleWorker('${w.id}')">✓ Duyệt</button>`
                           : `<span class="badge badge-neutral">Đã khóa</span>`
                         }
-                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAdjustModal('${w.id}')">✏️ Sửa giờ</button>
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAdjustModal('${w.id}')">✏️</button>
                       </div>
                     </td>
                   </tr>
@@ -2630,11 +2595,11 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">PHÂN VIỆC &amp; GIAO KHOÁN HẠNG MỤC TẠI ${prj.id}</span>
-            <h3>Giao Nhiệm Vụ Ngày &amp; Hạn Mức Tăng Ca Cho Các Đội Trưởng Dưới Quyền</h3>
+            <span class="kicker">PHÂN VIỆC · ${prj.id}</span>
+            <h3>Giao Nhiệm Vụ Cho Đội Trưởng</h3>
           </div>
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAssignTaskModal()">
-            + Giao nhiệm vụ mới cho Đội trưởng
+            + Giao nhiệm vụ
           </button>
         </div>
 
@@ -2646,11 +2611,11 @@
             return `
               <div class="hierarchy-card">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span class="kicker">${tm.id} · QUÂN SỐ ${tmWorkers.length} CÔNG NHÂN</span>
-                  <span class="badge badge-navy">Đội trưởng: ${tm.leader}</span>
+                  <span class="kicker">${tm.id} · ${tmWorkers.length} NGƯỜI</span>
+                  <span class="badge badge-navy">${tm.leader}</span>
                 </div>
                 <h4>${tm.name}</h4>
-                <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">SĐT: ${tm.phone} · TK: <code>${tm.leaderUsername}</code> · PIN hiện tại: <code>${dtPin}</code></div>
+                <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">SĐT: ${tm.phone} · TK: <code>${tm.leaderUsername}</code> · PIN: <code>${dtPin}</code></div>
 
                 <div style="margin-top:8px;">
                   ${tmTasks.map(tsk => `
@@ -2660,7 +2625,7 @@
                         <span class="badge badge-success">${tsk.progressPercent}%</span>
                       </div>
                       <div style="font-size:10.5px; color:var(--ds-text-muted); margin-top:4px;">
-                        Yêu cầu: <strong>${tsk.requiredWorkers} công nhân</strong> · Hạn mức OT cho phép: <strong>+${tsk.allowOvertimeHours}h</strong> · Ngày: ${tsk.date}
+                        Quân số: <strong>${tsk.requiredWorkers} người</strong> · OT: <strong>+${tsk.allowOvertimeHours}h</strong> · ${tsk.date}
                       </div>
                     </div>
                   `).join('')}
@@ -2681,11 +2646,11 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">QUẢN LÝ NHÂN SỰ &amp; MẬT KHẨU CẤP DƯỚI THUỘC QUYỀN ${acc.fullName.toUpperCase()}</span>
-            <h3>Danh Sách Đội Trưởng &amp; ${myWorkers.length} Công Nhân Dưới Quyền (Xóa Nhân Sự Cần Giám Đốc Đồng Ý)</h3>
+            <span class="kicker">NHÂN SỰ CÔNG TRÌNH</span>
+            <h3>Danh Sách Nhân Sự Dưới Quyền (${myWorkers.length})</h3>
           </div>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm Nhân viên / Công nhân dưới quyền tôi</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm nhân sự</button>
           </div>
         </div>
 
@@ -2693,14 +2658,14 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Mã NV (Tài khoản)</th>
-                <th>Mật khẩu / PIN (Đồng bộ)</th>
+                <th>Mã NV</th>
+                <th>PIN</th>
                 <th>Họ và Tên</th>
-                <th>Chức danh / Tổ đội</th>
-                <th>Đội trưởng trực tiếp</th>
-                <th>Đơn giá lương ngày</th>
-                <th>Công kỳ (${formatDateRangeLabel()})</th>
-                <th>Xóa Nhân sự (Trình GĐ)</th>
+                <th>Tổ đội</th>
+                <th>Đội trưởng</th>
+                <th>Lương ngày</th>
+                <th>Công kỳ</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -2715,12 +2680,12 @@
                     <td><strong>${w.name}</strong></td>
                     <td>${w.roleName} · <strong>${w.teamName}</strong></td>
                     <td>${w.leaderName}</td>
-                    <td><strong>${formatVND(w.dailyWage)}</strong>/ngày</td>
-                    <td><strong>${scaledD} công</strong> (+${w.otHoursMonthApproved}h OT)</td>
+                    <td><strong>${formatVND(w.dailyWage)}</strong></td>
+                    <td><strong>${scaledD} công</strong> (+${w.otHoursMonthApproved}h)</td>
                     <td>
                       ${pendingDel
-                        ? `<span class="badge badge-warning">⏳ Chờ Giám đốc đồng ý xóa</span>`
-                        : `<button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa nhân sự</button>`
+                        ? `<span class="badge badge-warning">⏳ Chờ GĐ</span>`
+                        : `<button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa</button>`
                       }
                     </td>
                   </tr>
@@ -2742,8 +2707,8 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">BẢNG TỔNG HỢP CÔNG THEO KHOẢNG NGÀY (${formatDateRangeLabel()}) TẠI ${prj.id}</span>
-            <h3>Tổng Kết Ngày Công Từng Nhân Sự Thuộc ${prj.name}</h3>
+            <span class="kicker">TỔNG KẾT CÔNG · ${prj.id}</span>
+            <h3>Tổng Kết Ngày Công (${formatDateRangeLabel()})</h3>
           </div>
           ${renderDateRangeButtonHtml()}
         </div>
@@ -2753,16 +2718,16 @@
               <tr>
                 <th>Mã NV</th>
                 <th>Họ và Tên</th>
-                <th>Đội thi công</th>
-                <th>Thứ 2</th>
-                <th>Thứ 3</th>
-                <th>Thứ 4</th>
-                <th>Thứ 5</th>
-                <th>Thứ 6</th>
-                <th>Thứ 7</th>
+                <th>Đội</th>
+                <th>T2</th>
+                <th>T3</th>
+                <th>T4</th>
+                <th>T5</th>
+                <th>T6</th>
+                <th>T7</th>
                 <th>CN</th>
-                <th>Tổng Công Kỳ</th>
-                <th>Tổng OT Kỳ</th>
+                <th>Tổng Công</th>
+                <th>Tổng OT</th>
               </tr>
             </thead>
             <tbody>
@@ -2795,12 +2760,11 @@
     const otCount = teamWorkers.filter(w => (w.hoursOtRegistered || 0) > 0).length;
 
     return `
-      <!-- LƯỚI 6 Ô CHỨC NĂNG ĐỘI TRƯỞNG MOBILE THEO ĐÚNG MẪU V2.0 (MÀN HÌNH 5) -->
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">MÀN HÌNH 5 · ỨNG DỤNG ĐỘI TRƯỞNG (NP ONE V2.0)</span>
-            <h3>Xin chào, ${acc.fullName} — ${tm.name} (${tm.projectId})</h3>
+            <span class="kicker">ĐỘI TRƯỞNG · ${tm.projectId}</span>
+            <h3>${acc.fullName} — ${tm.name}</h3>
           </div>
           ${renderDateRangeButtonHtml()}
         </div>
@@ -2812,23 +2776,23 @@
           </div>
           <div class="dt-quick-tile" onclick="window.NPApp.selectTab('dt-members')">
             <div class="tile-ico">👥</div>
-            <span>Nhân sự đội (${teamWorkers.length})</span>
+            <span>Nhân sự (${teamWorkers.length})</span>
           </div>
           <div class="dt-quick-tile" onclick="window.NPApp.selectTab('dt-tasks')">
             <div class="tile-ico">📋</div>
-            <span>Báo cáo hiện trường</span>
+            <span>Hiện trường</span>
           </div>
           <div class="dt-quick-tile" onclick="window.NPApp.openPersonalAdvanceModal()">
             <div class="tile-ico">💳</div>
-            <span>Đề nghị tạm ứng</span>
+            <span>Tạm ứng</span>
           </div>
           <div class="dt-quick-tile" onclick="window.NPApp.selectTab('dt-tasks')">
             <div class="tile-ico">📦</div>
-            <span>Khối lượng &amp; Việc</span>
+            <span>Khối lượng</span>
           </div>
           <div class="dt-quick-tile" onclick="window.NPApp.selectTab('dt-my-statement')">
             <div class="tile-ico">☑️</div>
-            <span>Đối chiếu kỳ</span>
+            <span>Đối chiếu</span>
           </div>
         </div>
 
@@ -2851,11 +2815,11 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">CHẤM CÔNG ĐỘI · ${tm.name.toUpperCase()}</span>
-            <h3>Check &amp; Điểm Danh (Check-in / Check-out Chung 1 Menu) Cho ${teamWorkers.length} Công Nhân Đội Tôi</h3>
+            <span class="kicker">CHẤM CÔNG ĐỘI</span>
+            <h3>Danh Sách ${teamWorkers.length} Công Nhân</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu(null)">✓ Cập nhật chấm công Camera GPS</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu(null)">📸 Chấm công GPS</button>
           </div>
         </div>
 
@@ -2864,13 +2828,13 @@
             <thead>
               <tr>
                 <th>Ảnh GPS</th>
-                <th>Mã NV &amp; Họ tên</th>
-                <th>Vai trò trong đội</th>
-                <th>Việc được Đội trưởng giao</th>
-                <th>Giờ Vào - Ra hôm nay</th>
-                <th>Công kỳ (${formatDateRangeLabel()})</th>
-                <th>Trạng thái QLCT Duyệt</th>
-                <th>Chấm công (Vào/Ra)</th>
+                <th>Họ tên</th>
+                <th>Vai trò</th>
+                <th>Công việc</th>
+                <th>Giờ Vào - Ra</th>
+                <th>Công kỳ</th>
+                <th>Trạng thái</th>
+                <th>Chấm công</th>
               </tr>
             </thead>
             <tbody>
@@ -2885,12 +2849,12 @@
                     <td>${w.roleName}</td>
                     <td><strong>${w.assignedTaskToday || tm.dailyTargetTask}</strong></td>
                     <td>
-                      ${w.checkInTime ? `Vào: <code>${w.checkInTime}</code><br/>Ra: <code>${w.checkOutTime || 'Đang làm'}</code>` : `<span class="badge badge-danger">Chưa điểm danh</span>`}
+                      ${w.checkInTime ? `<code>${w.checkInTime}</code> - <code>${w.checkOutTime || 'Đang làm'}</code>` : `<span class="badge badge-danger">Chưa điểm danh</span>`}
                     </td>
                     <td><strong>${getScaledDaysWorked(w.daysMonthApproved)} công</strong></td>
                     <td>${renderApprovalBadge(w.approvalStatus)}</td>
                     <td>
-                      <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${w.id}')">📸 Chấm công (Vào/Ra)</button>
+                      <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${w.id}')">📸 Chấm công</button>
                     </td>
                   </tr>
                 `;
@@ -2912,22 +2876,22 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">NHIỆM VỤ NHẬN TỪ QUẢN LÝ CÔNG TRÌNH (${tm.managerName.toUpperCase()})</span>
-            <h3>Hạng Mục Thi Công Hôm Nay Của ${tm.name}</h3>
+            <span class="kicker">NHIỆM VỤ ĐỘI</span>
+            <h3>Hạng Mục Thi Công — ${tm.name}</h3>
           </div>
         </div>
         ${teamTasks.map(tsk => `
           <div style="padding:10px 12px; background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-left:4px solid var(--ds-accent); border-radius:var(--ds-radius-md); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <div>
-              <div style="font-size:10px; font-weight:700; color:var(--ds-primary);">NGƯỜI GIAO VIỆC: ${tsk.assignedBy.toUpperCase()} · NGÀY ${tsk.date}</div>
+              <div style="font-size:10px; font-weight:700; color:var(--ds-primary);">${tsk.assignedBy.toUpperCase()} · ${tsk.date}</div>
               <div style="font-size:13.5px; font-weight:700; color:var(--ds-primary); margin-top:2px;">📌 ${tsk.title}</div>
               <div style="font-size:11px; color:var(--ds-text-muted); margin-top:2px;">
-                Yêu cầu quân số: <strong>${tsk.requiredWorkers} người</strong> · Hạn mức tăng ca cho phép: <strong>+${tsk.allowOvertimeHours}h OT</strong>
+                Quân số: <strong>${tsk.requiredWorkers} người</strong> · OT tối đa: <strong>+${tsk.allowOvertimeHours}h</strong>
               </div>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
-              <span class="badge badge-success">Tiến độ: ${tsk.progressPercent}%</span>
-              <button class="btn btn-primary btn-sm" onclick="window.NPApp.updateTeamTaskProgress('${tsk.id}')">📈 Cập nhật tiến độ báo QLCT</button>
+              <span class="badge badge-success">${tsk.progressPercent}%</span>
+              <button class="btn btn-primary btn-sm" onclick="window.NPApp.updateTeamTaskProgress('${tsk.id}')">📈 Cập nhật tiến độ</button>
             </div>
           </div>
         `).join('')}
@@ -2936,8 +2900,8 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">PHÂN CÔNG CHI TIẾT &amp; ĐĂNG KÝ TĂNG CA TRONG ĐỘI</span>
-            <h3>Giao Việc Cụ Thể &amp; Báo Tăng Ca Cho Từng Công Nhân Thuộc ${tm.name}</h3>
+            <span class="kicker">PHÂN CÔNG &amp; TĂNG CA</span>
+            <h3>Giao Việc &amp; Báo Tăng Ca</h3>
           </div>
         </div>
         <div class="table-scroll">
@@ -2945,12 +2909,12 @@
             <thead>
               <tr>
                 <th>Mã NV</th>
-                <th>Họ và Tên Công nhân</th>
-                <th>Công việc cụ thể hôm nay</th>
+                <th>Họ và Tên</th>
+                <th>Công việc</th>
                 <th>Giờ HC</th>
-                <th>Giờ OT đăng ký</th>
-                <th>Công tích lũy (${formatDateRangeLabel()})</th>
-                <th>Thao tác Đội trưởng</th>
+                <th>OT</th>
+                <th>Công tích lũy</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -2960,12 +2924,12 @@
                   <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.roleName}</span></td>
                   <td><strong>${w.assignedTaskToday || tm.dailyTargetTask}</strong></td>
                   <td>${w.hoursRegular || 8}h</td>
-                  <td>${w.hoursOtRegistered > 0 ? `<span class="badge badge-orange">+${w.hoursOtRegistered}h OT</span>` : `<span class="badge badge-neutral">0h</span>`}</td>
-                  <td><strong>${getScaledDaysWorked(w.daysMonthApproved)} công</strong> (+${w.otHoursMonthApproved}h OT)</td>
+                  <td>${w.hoursOtRegistered > 0 ? `<span class="badge badge-orange">+${w.hoursOtRegistered}h</span>` : `<span class="badge badge-neutral">0h</span>`}</td>
+                  <td><strong>${getScaledDaysWorked(w.daysMonthApproved)} công</strong> (+${w.otHoursMonthApproved}h)</td>
                   <td>
                     <div style="display:flex; gap:4px;">
                       <button class="btn btn-soft btn-sm" onclick="window.NPApp.openWorkerTaskModal('${w.id}')">🛠️ Giao việc</button>
-                      <button class="btn btn-primary btn-sm" onclick="window.NPApp.openOtModal('${w.id}')">⏱️ Báo Tăng ca</button>
+                      <button class="btn btn-primary btn-sm" onclick="window.NPApp.openOtModal('${w.id}')">⏱️ Tăng ca</button>
                     </div>
                   </td>
                 </tr>
@@ -2986,24 +2950,24 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">DANH SÁCH NHÂN SỰ &amp; MẬT KHẨU ĐỒNG BỘ CỦA ${tm.name.toUpperCase()}</span>
-            <h3>Quản Lý ${teamWorkers.length} Công Nhân Trong Đội Của Tôi (Xóa Nhân Sự Phải Được Giám Đốc Đồng Ý)</h3>
+            <span class="kicker">NHÂN SỰ ĐỘI · ${tm.name.toUpperCase()}</span>
+            <h3>Danh Sách ${teamWorkers.length} Công Nhân</h3>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm Công nhân mới vào ${tm.name}</button>
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm công nhân</button>
         </div>
 
         <div class="table-scroll">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Mã NV (Tài khoản ĐN)</th>
-                <th>Mật khẩu / PIN hiện tại</th>
-                <th>Họ và Tên Công nhân</th>
+                <th>Mã NV</th>
+                <th>PIN</th>
+                <th>Họ và Tên</th>
                 <th>Vai trò</th>
-                <th>Số điện thoại</th>
-                <th>Thuộc Quản lý CT</th>
-                <th>Công kỳ (${formatDateRangeLabel()})</th>
-                <th>Xóa Nhân sự (Trình GĐ)</th>
+                <th>SĐT</th>
+                <th>Quản lý CT</th>
+                <th>Công kỳ</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -3018,11 +2982,11 @@
                     <td>${w.roleName}</td>
                     <td>${w.phone}</td>
                     <td><span class="badge badge-navy">${w.managerName}</span></td>
-                    <td><strong style="color:var(--ds-primary);">${getScaledDaysWorked(w.daysMonthApproved)} công</strong> (+${w.otHoursMonthApproved}h OT)</td>
+                    <td><strong style="color:var(--ds-primary);">${getScaledDaysWorked(w.daysMonthApproved)} công</strong> (+${w.otHoursMonthApproved}h)</td>
                     <td>
                       ${pendingDel
-                        ? `<span class="badge badge-warning">⏳ Chờ Giám đốc đồng ý xóa</span>`
-                        : `<button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa nhân sự</button>`
+                        ? `<span class="badge badge-warning">⏳ Chờ GĐ</span>`
+                        : `<button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa</button>`
                       }
                     </td>
                   </tr>
@@ -3035,9 +2999,6 @@
     `;
   }
 
-  // =================================================================================================
-  // V. GIAO DIỆN CẤP 5: CÔNG NHÂN / NHÂN VIÊN (CHỈ THẤY MÌNH TÔI + CHECK LỊCH SỬ CÔNG THEO KHOẢNG NGÀY)
-  // =================================================================================================
   function renderCnPersonalHistory() {
     const w = getMyOwnAttendanceRecord();
     const daysList = [];
@@ -3046,7 +3007,7 @@
       const ot = (d % 3 === 0) ? 2 : 0;
       daysList.push({
         date: `${String(d).padStart(2, '0')}/${String(dateRange.month).padStart(2, '0')}/${dateRange.year}`,
-        dayLabel: isSun ? 'Chủ nhật (Hệ số 2.0)' : 'Ngày thường (Hệ số 1.0)',
+        dayLabel: isSun ? 'Chủ nhật (x2.0)' : 'Ngày thường (x1.0)',
         inTime: '06:58:12',
         outTime: ot > 0 ? '19:30:05' : '17:30:00',
         workDay: 1.0,
@@ -3060,12 +3021,12 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">MỤC CHECK CHẤM CÔNG CÁ NHÂN CỦA ${w.name.toUpperCase()} (${w.code})</span>
-            <h3>Check Chi Tiết Từng Ngày Công &amp; Giờ Tăng Ca (${formatDateRangeLabel()})</h3>
+            <span class="kicker">NHẬT KÝ CHẤM CÔNG · ${w.code}</span>
+            <h3>Chi Tiết Ngày Công (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px;">
             ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${w.id}')">📸 Chấm công (Vào/Ra)</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${w.id}')">📸 Chấm công</button>
           </div>
         </div>
         <div class="table-scroll">
@@ -3073,12 +3034,12 @@
             <thead>
               <tr>
                 <th>Ngày</th>
-                <th>Loại ngày công</th>
-                <th>Công việc thực hiện</th>
-                <th>Giờ Vào - Giờ Ra</th>
+                <th>Loại công</th>
+                <th>Công việc</th>
+                <th>Vào - Ra</th>
                 <th>Số công</th>
-                <th>Giờ OT</th>
-                <th>Người duyệt công (QLCT)</th>
+                <th>OT</th>
+                <th>Người duyệt</th>
                 <th>Trạng thái</th>
               </tr>
             </thead>
@@ -3090,7 +3051,7 @@
                   <td>${item.task}</td>
                   <td><code>${item.inTime}</code> → <code>${item.outTime}</code></td>
                   <td><strong style="color:var(--ds-primary);">${item.workDay} công</strong></td>
-                  <td>${item.otHours > 0 ? `<span class="badge badge-orange">+${item.otHours}h OT</span>` : '0h'}</td>
+                  <td>${item.otHours > 0 ? `<span class="badge badge-orange">+${item.otHours}h</span>` : '0h'}</td>
                   <td><strong>${item.approvedBy}</strong></td>
                   <td><span class="badge badge-success">✓ Đã duyệt</span></td>
                 </tr>
@@ -3105,19 +3066,17 @@
   function renderCnPersonalRequests() {
     const w = getMyOwnAttendanceRecord();
     const myAdvances = state.advances.filter(a => a.workerCode === w.code);
-    const accrued = getScaledDaysWorked(w.daysMonthApproved) * w.dailyWage;
 
     return `
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">ĐƠN TỪ CÁ NHÂN CỦA ${w.name.toUpperCase()} (${w.code})</span>
-            <h3>Gửi Đơn Xin Ứng Lương &amp; Xin Nghỉ Phép Của Tôi</h3>
-            <div class="section-desc">Lương lũy kế hiện có: <strong>${formatVND(accrued)}</strong> · Hạn mức được phép ứng tối đa (70%): <strong>${formatVND(Math.round(accrued * 0.7))}</strong>.</div>
+            <span class="kicker">ĐƠN TỪ CÁ NHÂN · ${w.code}</span>
+            <h3>Ứng Lương &amp; Nghỉ Phép</h3>
           </div>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">+ Tạo đơn Xin Ứng lương</button>
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPersonalLeaveModal()">+ Tạo đơn Xin Nghỉ phép</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">+ Ứng lương</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPersonalLeaveModal()">+ Nghỉ phép</button>
           </div>
         </div>
 
@@ -3126,18 +3085,18 @@
             <thead>
               <tr>
                 <th>Mã đơn</th>
-                <th>Ngày gửi</th>
-                <th>Công đã làm</th>
+                <th>Ngày</th>
+                <th>Công</th>
                 <th>Lương lũy kế</th>
-                <th>Số tiền tôi xin ứng</th>
+                <th>Số tiền ứng</th>
                 <th>Lý do</th>
-                <th>Kế toán kiểm tra</th>
-                <th>Tổng Giám đốc duyệt</th>
+                <th>Kế toán</th>
+                <th>Giám đốc</th>
               </tr>
             </thead>
             <tbody>
               ${myAdvances.length === 0 ? `
-                <tr><td colspan="8" style="text-align:center; padding:16px; color:var(--ds-text-muted);">Bạn chưa có đơn xin ứng lương nào. Bấm "+ Tạo đơn Xin Ứng lương" để gửi yêu cầu.</td></tr>
+                <tr><td colspan="8" style="text-align:center; padding:16px; color:var(--ds-text-muted);">Chưa có đơn ứng lương.</td></tr>
               ` : myAdvances.map(adv => `
                 <tr>
                   <td><strong>${adv.id}</strong></td>
@@ -3146,8 +3105,8 @@
                   <td>${formatVND(adv.accruedSalary)}</td>
                   <td><strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong></td>
                   <td>${adv.reason}</td>
-                  <td>${adv.checkedByKt ? `<span class="badge badge-success">✓ ${adv.checkedByKt}</span>` : `<span class="badge badge-warning">Đang chờ KT</span>`}</td>
-                  <td>${adv.status === 'BGD_DA_DUYET' ? `<span class="badge badge-success">✓ Đã duyệt chi</span>` : `<span class="badge badge-orange">Chờ GĐ duyệt</span>`}</td>
+                  <td>${adv.checkedByKt ? `<span class="badge badge-success">✓ ${adv.checkedByKt}</span>` : `<span class="badge badge-warning">Chờ KT</span>`}</td>
+                  <td>${adv.status === 'BGD_DA_DUYET' ? `<span class="badge badge-success">✓ Đã duyệt</span>` : `<span class="badge badge-orange">Chờ GĐ</span>`}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -3174,44 +3133,43 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">PHIẾU LƯƠNG CÁ NHÂN (${formatDateRangeLabel()})</span>
-            <h3>Chi Tiết Thu Nhập Của ${w.name} (${w.code})</h3>
-            <div class="section-desc">Đội: ${w.teamName} · Đội trưởng: ${w.leaderName} · Quản lý Công trình duyệt công: ${w.managerName}</div>
+            <span class="kicker">PHIẾU LƯƠNG (${formatDateRangeLabel()})</span>
+            <h3>${w.name} (${w.code})</h3>
           </div>
           <div style="display:flex; gap:6px;">
             ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ In / Lưu PDF Phiếu lương</button>
+            <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ In / PDF</button>
           </div>
         </div>
 
         <table class="data-table">
           <tbody>
             <tr>
-              <td>1. Đơn giá ngày công thỏa thuận</td>
-              <td style="text-align:right; font-weight:700;">${formatVND(w.dailyWage)} / ngày (8 giờ)</td>
+              <td>1. Đơn giá ngày công</td>
+              <td style="text-align:right; font-weight:700;">${formatVND(w.dailyWage)} / ngày</td>
             </tr>
             <tr>
-              <td>2. Lương ngày công hành chính đã được QLCT (${w.managerName}) duyệt (${scaledD} công)</td>
+              <td>2. Lương công hành chính (${scaledD} công)</td>
               <td style="text-align:right; font-weight:700;">${formatVND(basePay)}</td>
             </tr>
             <tr>
-              <td>3. Lương tăng ca OT đã duyệt (${w.otHoursMonthApproved} giờ × hệ số 1.5)</td>
+              <td>3. Lương tăng ca OT (${w.otHoursMonthApproved}h × 1.5)</td>
               <td style="text-align:right; font-weight:700;">${formatVND(otPay)}</td>
             </tr>
             <tr>
-              <td>4. Lương làm Chủ nhật (${w.sundayDaysMonth} công × hệ số 2.0)</td>
+              <td>4. Lương Chủ nhật (${w.sundayDaysMonth} công × 2.0)</td>
               <td style="text-align:right; font-weight:700;">${formatVND(sunPay)}</td>
             </tr>
             <tr style="background:var(--ds-bg-soft);">
-              <td><strong>TỔNG THU NHẬP LŨY KẾ (A)</strong></td>
+              <td><strong>TỔNG THU NHẬP (A)</strong></td>
               <td style="text-align:right; font-weight:700; font-size:13px;">${formatVND(gross)}</td>
             </tr>
             <tr>
-              <td style="color:var(--ds-danger);">5. Trừ tiền đã tạm ứng (B)</td>
+              <td style="color:var(--ds-danger);">5. Trừ tạm ứng (B)</td>
               <td style="text-align:right; color:var(--ds-danger); font-weight:700;">-${formatVND(approvedAdvance)}</td>
             </tr>
             <tr style="background:var(--ds-bg-soft);">
-              <td><strong style="color:var(--ds-primary); font-size:13px;">THỰC LĨNH CÒN LẠI (A - B)</strong></td>
+              <td><strong style="color:var(--ds-primary); font-size:13px;">THỰC LĨNH (A - B)</strong></td>
               <td style="text-align:right; color:var(--ds-primary); font-family:var(--ds-font-serif); font-size:16px; font-weight:700;">${formatVND(net)}</td>
             </tr>
           </tbody>
@@ -3220,21 +3178,17 @@
     `;
   }
 
-  // =================================================================================================
-  // VI. TRANG ADMIN QUẢN TRỊ & TẠO TÀI KHOẢN THEO VỊ TRÍ (HIỂN THỊ MẬT KHẨU ĐỒNG BỘ TỪ MỌI CẤP)
-  // =================================================================================================
   function renderAdminAccountsTab() {
     if (!isAdminAccount()) return '';
     return `
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">TRUNG TÂM QUẢN TRỊ TÀI KHOẢN &amp; ĐỒNG BỘ MẬT KHẨU 5 CẤP (CHỈ ADMIN THẤY)</span>
-            <h3>Danh Sách Tài Khoản Theo Từng Vị Trí (Xóa Tài Khoản &amp; Nhân Sự Phải Xác Nhận &amp; Được Giám Đốc Đồng Ý)</h3>
-            <div class="section-desc">Khi bất kỳ nhân sự nào ở cấp dưới đổi mật khẩu, cột Mã PIN/Mật khẩu bên dưới tự động cập nhật. Mọi thao tác xóa đều phải qua bước xác nhận của Tổng Giám đốc.</div>
+            <span class="kicker">QUẢN TRỊ TÀI KHOẢN</span>
+            <h3>Danh Sách Tài Khoản Hệ Thống</h3>
           </div>
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAccountFormModal(null)">
-            + Tạo Tài khoản Mới cho Vị trí
+            + Tạo Tài khoản
           </button>
         </div>
 
@@ -3242,13 +3196,13 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Tên đăng nhập</th>
-                <th>Mật khẩu / PIN (Đồng bộ)</th>
-                <th>Họ tên Nhân sự</th>
-                <th>Vị trí / Cấp bậc</th>
-                <th>Phạm vi Công trình / Đội</th>
-                <th>Thuộc Quản lý / Người tạo</th>
-                <th>Thao tác Admin &amp; Xóa Tài khoản</th>
+                <th>Tài khoản</th>
+                <th>Mật khẩu / PIN</th>
+                <th>Họ tên</th>
+                <th>Vị trí</th>
+                <th>Phạm vi</th>
+                <th>Quản lý</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -3260,7 +3214,7 @@
                     <td><strong><code>${acc.username}</code></strong></td>
                     <td>
                       <strong style="color:var(--ds-primary);"><code>${acc.pin}</code></strong>
-                      ${acc.passwordUpdatedAt ? `<div style="font-size:9px; color:var(--ds-success);">Đã đổi: ${acc.passwordUpdatedAt}</div>` : ''}
+                      ${acc.passwordUpdatedAt ? `<div style="font-size:9px; color:var(--ds-success);">${acc.passwordUpdatedAt}</div>` : ''}
                     </td>
                     <td><strong>${acc.fullName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${acc.positionTitle}</span></td>
                     <td><span class="badge badge-navy">${cfg.badge}</span></td>
@@ -3269,12 +3223,12 @@
                     <td>
                       <div style="display:flex; gap:4px; flex-wrap:wrap;">
                         ${isCur
-                          ? `<span class="badge badge-success">Đang sử dụng</span>`
-                          : `<button class="btn btn-primary btn-sm" onclick="window.NPApp.loginAsAccount('${acc.id}')">🚀 Vào giao diện này</button>`
+                          ? `<span class="badge badge-success">Đang dùng</span>`
+                          : `<button class="btn btn-primary btn-sm" onclick="window.NPApp.loginAsAccount('${acc.id}')">🚀 Vào</button>`
                         }
-                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAccountFormModal('${acc.id}')">✏️ Sửa / Đổi MK</button>
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAccountFormModal('${acc.id}')">✏️ Sửa</button>
                         ${acc.username !== 'admin'
-                          ? `<button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('ACCOUNT', '${acc.id}')">🗑️ Xóa TK</button>`
+                          ? `<button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('ACCOUNT', '${acc.id}')">🗑️ Xóa</button>`
                           : ''
                         }
                       </div>
@@ -3287,12 +3241,11 @@
         </div>
       </div>
 
-      <!-- DANH SÁCH XÓA NHÂN SỰ TRỰC TIẾP DÀNH CHO TỔNG GIÁM ĐỐC -->
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">QUẢN LÝ &amp; XÓA HỒ SƠ NHÂN SỰ TOÀN CÔNG TY (${state.workers.length} CÔNG NHÂN)</span>
-            <h3>Danh Sách Nhân Sự Toàn Công Ty (Bấm Xóa Để Xác Nhận &amp; Xóa Khỏi Hệ Thống)</h3>
+            <span class="kicker">HỒ SƠ NHÂN SỰ (${state.workers.length})</span>
+            <h3>Danh Sách Nhân Sự Toàn Công Ty</h3>
           </div>
         </div>
         <div class="table-scroll">
@@ -3300,12 +3253,12 @@
             <thead>
               <tr>
                 <th>Mã NV</th>
-                <th>Mật khẩu / PIN</th>
-                <th>Họ và Tên Nhân sự</th>
-                <th>Đội thi công</th>
+                <th>PIN</th>
+                <th>Họ và Tên</th>
+                <th>Đội</th>
                 <th>Đội trưởng</th>
-                <th>Quản lý Công trình</th>
-                <th>Thao tác Xóa Nhân sự</th>
+                <th>Quản lý CT</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -3318,7 +3271,7 @@
                   <td>${w.leaderName}</td>
                   <td><span class="badge badge-navy">${w.managerName}</span></td>
                   <td>
-                    <button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa nhân sự</button>
+                    <button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa</button>
                   </td>
                 </tr>
               `).join('')}
@@ -3660,46 +3613,38 @@
     const isDirector = (acc.roleId === 'BGD');
     const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
 
-    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
+    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'}`;
     document.getElementById('adjustModalBody').innerHTML = `
-      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
-        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
-      </div>
-
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
-        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
-        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
-        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:8px 10px; margin-bottom:8px; font-size:11.5px;">
+        <div>Xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (<code>${targetCode}</code> · ${targetRole})</div>
       </div>
 
       <div class="form-group">
-        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
-        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
+        <label>Lý do xóa <span class="req">*</span></label>
+        <input type="text" id="delReasonInput" value="Nghỉ việc / Kết thúc hợp đồng" placeholder="Nhập lý do xóa..." />
       </div>
 
-      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
+      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:7px 9px; border-radius:var(--ds-radius-sm);">
         <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
           <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
-          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
+          <span>Xác nhận xóa <strong>${targetName} (${targetCode})</strong></span>
         </label>
       </div>
 
       <div class="form-group">
-        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
+        <label>Mã PIN Tổng Giám Đốc (${directorAccount.fullName}):</label>
         ${isDirector ? `
-          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
-          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
+          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập PIN Giám đốc..." />
         ` : `
-          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
-          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
+          <input type="password" id="delDirectorPinInput" placeholder="Để trống để trình Giám đốc duyệt (hoặc nhập PIN Giám đốc)" />
         `}
-        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
+        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích xác nhận và nhập lý do!</div>
       </div>
 
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
         <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
-          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
+          ${isDirector ? '🗑️ Đồng ý & Xóa ngay' : '📤 Trình Giám đốc duyệt'}
         </button>
       </div>
     `;
@@ -3896,46 +3841,43 @@
     const nextNum = state.workers.length + 1;
     const suggestedCode = `NV.SME-${nextNum}`;
 
-    document.getElementById('adjustModalTitle').textContent = `Thêm Nhân Sự Mới Dưới Quyền Quản Lý (${acc ? acc.fullName : ''})`;
+    document.getElementById('adjustModalTitle').textContent = `Thêm Nhân Sự Mới`;
     document.getElementById('adjustModalBody').innerHTML = `
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm); font-size:11px; margin-bottom:8px;">
-        Người tạo hồ sơ: <strong style="color:var(--ds-primary);">${acc ? acc.fullName : 'Admin'}</strong>. Nhân sự này được cấp tài khoản đăng nhập ngay và khi họ đổi mật khẩu sẽ tự cập nhật lên bảng của bạn.
-      </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <div class="form-group">
-          <label>Mã Nhân viên (Tên đăng nhập) <span class="req">*</span></label>
+          <label>Mã NV (Tài khoản) <span class="req">*</span></label>
           <input type="text" id="newWCode" value="${suggestedCode}" />
         </div>
         <div class="form-group">
-          <label>Mật khẩu / Mã PIN khởi tạo <span class="req">*</span></label>
+          <label>Mật khẩu / PIN <span class="req">*</span></label>
           <input type="text" id="newWPin" value="0000" />
         </div>
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <div class="form-group">
-          <label>Họ và Tên Công nhân <span class="req">*</span></label>
+          <label>Họ và Tên <span class="req">*</span></label>
           <input type="text" id="newWName" placeholder="VD: NGUYỄN VĂN HẢI" />
         </div>
         <div class="form-group">
-          <label>Thuộc Đội thi công <span class="req">*</span></label>
+          <label>Đội thi công <span class="req">*</span></label>
           <select id="newWTeam">
-            ${allowedTeams.map(t => `<option value="${t.id}">${t.name} (QLCT: ${t.managerName})</option>`).join('')}
+            ${allowedTeams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
           </select>
         </div>
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <div class="form-group">
-          <label>Đơn giá lương ngày (VNĐ) <span class="req">*</span></label>
+          <label>Đơn giá ngày (VNĐ) <span class="req">*</span></label>
           <input type="number" id="newWWage" value="480000" step="10000" />
         </div>
         <div class="form-group">
-          <label>Công việc giao trong ngày</label>
-          <input type="text" id="newWTask" placeholder="VD: Thi công lắp dựng cốt thép" />
+          <label>Công việc</label>
+          <input type="text" id="newWTask" placeholder="VD: Lắp dựng cốt thép" />
         </div>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitAddWorker()">+ Lưu &amp; Cấp tài khoản Công nhân</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitAddWorker()">+ Lưu</button>
       </div>
     `;
     document.getElementById('adjustModal').classList.add('open');
@@ -4023,224 +3965,7 @@
     renderMain();
   }
 
-  // ================= XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC XÁC NHẬN & ĐƯỢC TỔNG GIÁM ĐỐC ĐỒNG Ý) =================
-  function openDeleteConfirmModal(targetType, targetId) {
-    const acc = getCurrentAccount();
-    if (!acc) return;
-
-    let targetCode = '';
-    let targetName = '';
-    let targetRole = '';
-
-    if (targetType === 'ACCOUNT') {
-      const targetAcc = state.accounts.find(a => a.id === targetId);
-      if (!targetAcc) return;
-      if (targetAcc.username === 'admin') {
-        alert('Không thể xóa tài khoản Tổng Giám Đốc (admin)!');
-        return;
-      }
-      targetCode = targetAcc.username;
-      targetName = targetAcc.fullName;
-      targetRole = targetAcc.positionTitle;
-    } else {
-      const targetWorker = findAnyPersonById(targetId);
-      if (!targetWorker) return;
-      targetCode = targetWorker.code;
-      targetName = targetWorker.name;
-      targetRole = `${targetWorker.roleName} · ${targetWorker.teamName}`;
-    }
-
-    const isDirector = (acc.roleId === 'BGD');
-    const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
-
-    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
-        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
-      </div>
-
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
-        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
-        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
-        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
-      </div>
-
-      <div class="form-group">
-        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
-        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
-      </div>
-
-      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
-          <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
-          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
-        </label>
-      </div>
-
-      <div class="form-group">
-        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
-        ${isDirector ? `
-          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
-          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
-        ` : `
-          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
-          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
-        `}
-        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
-      </div>
-
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
-        <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
-          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
-        </button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
-  }
-
-  function executeHardDelete(targetType, targetId, targetCode, targetName, reason, actorLabel) {
-    // Xóa trong danh sách tài khoản
-    state.accounts = state.accounts.filter(a =>
-      a.id !== targetId &&
-      a.username.toLowerCase() !== String(targetCode).toLowerCase() &&
-      (!a.workerCode || a.workerCode.toLowerCase() !== String(targetCode).toLowerCase())
-    );
-    // Xóa trong danh sách công nhân
-    state.workers = state.workers.filter(w =>
-      w.id !== targetId &&
-      w.code.toLowerCase() !== String(targetCode).toLowerCase()
-    );
-    // Xóa trong danh sách cán bộ chấm công
-    if (state.staffAttendance) {
-      state.staffAttendance = state.staffAttendance.filter(s =>
-        s.id !== targetId &&
-        s.code.toLowerCase() !== String(targetCode).toLowerCase() &&
-        s.username.toLowerCase() !== String(targetCode).toLowerCase()
-      );
-    }
-
-    state.auditLogs.unshift({
-      id: 'LOG-DEL-' + (state.auditLogs.length + 1),
-      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
-      workerCode: targetCode,
-      workerName: targetName,
-      actorName: actorLabel,
-      actorRole: 'Đã được Tổng Giám đốc đồng ý xóa',
-      field: targetType === 'ACCOUNT' ? 'Xóa Tài khoản & Hồ sơ' : 'Xóa Hồ sơ Nhân sự & Tài khoản',
-      oldVal: `Đang hoạt động (${targetName})`,
-      newVal: 'ĐÃ XÓA VĨNH VIỄN (GĐ ĐỒNG Ý)',
-      reason
-    });
-  }
-
-  function submitDeleteOrRequest(targetType, targetId) {
-    const acc = getCurrentAccount();
-    if (!acc) return;
-
-    const checked = document.getElementById('delConfirmCheckbox')?.checked;
-    const reason = (document.getElementById('delReasonInput')?.value || '').trim();
-    const enteredDirectorPin = (document.getElementById('delDirectorPinInput')?.value || '').trim();
-    const errEl = document.getElementById('delErrMsg');
-
-    if (!checked || !reason) {
-      if (errEl) {
-        errEl.textContent = 'Bắt buộc phải tích chọn ô Xác nhận xóa và nhập Lý do xóa!';
-        errEl.style.display = 'block';
-      }
-      return;
-    }
-
-    let targetCode = '';
-    let targetName = '';
-    let targetRole = '';
-    if (targetType === 'ACCOUNT') {
-      const tAcc = state.accounts.find(a => a.id === targetId);
-      if (!tAcc) return;
-      targetCode = tAcc.username;
-      targetName = tAcc.fullName;
-      targetRole = tAcc.positionTitle;
-    } else {
-      const tW = findAnyPersonById(targetId);
-      if (!tW) return;
-      targetCode = tW.code;
-      targetName = tW.name;
-      targetRole = `${tW.roleName} · ${tW.teamName}`;
-    }
-
-    const directorAcc = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
-
-    // Trường hợp 1: Đang là Tổng Giám đốc hoặc đã nhập đúng PIN đồng ý trực tiếp của Tổng Giám đốc
-    if (acc.roleId === 'BGD' || (enteredDirectorPin && enteredDirectorPin === directorAcc.pin)) {
-      executeHardDelete(targetType, targetId, targetCode, targetName, reason, `${acc.fullName} (Được ${directorAcc.fullName} đồng ý)`);
-      saveState();
-      closeModal('adjustModal');
-      renderRoleNavigationAndHeader();
-      renderMain();
-      alert(`Đã xác nhận đồng ý của Tổng Giám đốc và xóa hoàn tất "${targetName} (${targetCode})" khỏi hệ thống!`);
-      return;
-    }
-
-    if (enteredDirectorPin && enteredDirectorPin !== directorAcc.pin) {
-      if (errEl) {
-        errEl.textContent = 'Mã PIN Tổng Giám đốc không đúng! Hãy để trống ô PIN để gửi Yêu cầu trình Giám đốc phê duyệt.';
-        errEl.style.display = 'block';
-      }
-      return;
-    }
-
-    // Trường hợp 2: Cấp dưới (Quản lý CT / Đội trưởng / Kế toán) gửi yêu cầu xóa trình lên Tổng Giám đốc đồng ý
-    state.deleteRequests = state.deleteRequests || [];
-    state.deleteRequests.unshift({
-      id: 'DEL-0' + (state.deleteRequests.length + 1),
-      targetType,
-      targetId,
-      targetCode,
-      targetName,
-      targetRole,
-      requestedBy: acc.fullName,
-      requestedRole: acc.positionTitle,
-      reason,
-      createdAt: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
-      status: 'CHO_BGD_DONG_Y'
-    });
-
-    saveState();
-    closeModal('adjustModal');
-    renderRoleNavigationAndHeader();
-    renderMain();
-    alert(`Đã xác nhận và gửi yêu cầu xóa "${targetName} (${targetCode})" lên Tổng Giám đốc (${directorAcc.fullName}). Nhân sự/Tài khoản sẽ được xóa ngay khi Giám đốc bấm Đồng ý!`);
-  }
-
-  function directorApproveDeleteRequest(reqId) {
-    const acc = getCurrentAccount();
-    if (!acc || acc.roleId !== 'BGD') {
-      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền đồng ý phê duyệt xóa tài khoản / nhân sự!');
-      return;
-    }
-    const req = (state.deleteRequests || []).find(r => r.id === reqId);
-    if (!req) return;
-
-    executeHardDelete(req.targetType, req.targetId, req.targetCode, req.targetName, req.reason, `${req.requestedBy} (Tổng Giám đốc ${acc.fullName} đồng ý xóa)`);
-    req.status = 'DA_XOA';
-    saveState();
-    renderRoleNavigationAndHeader();
-    renderMain();
-    alert(`Tổng Giám đốc đã đồng ý! Đã xóa "${req.targetName} (${req.targetCode})" khỏi hệ thống.`);
-  }
-
-  function directorRejectDeleteRequest(reqId) {
-    const acc = getCurrentAccount();
-    if (!acc || acc.roleId !== 'BGD') return;
-    const req = (state.deleteRequests || []).find(r => r.id === reqId);
-    if (!req) return;
-    req.status = 'TU_CHOI';
-    saveState();
-    renderRoleNavigationAndHeader();
-    renderMain();
-  }
-
-  // MỌI CẤP ĐỀU CÓ THỂ GỬI ĐƠN XIN ỨNG LƯƠNG (KẾ TOÁN, QUẢN LÝ CÔNG TRÌNH, ĐỘI TRƯỞNG, CÔNG NHÂN)
+  // MỌI CẤP ĐỀU CÓ THỂ GỬI ĐƠN XIN ỨNG LƯƠNG
   function openPersonalAdvanceModal() {
     const acc = getCurrentAccount();
     const myRec = getMyOwnAttendanceRecord();
@@ -4248,24 +3973,23 @@
     const accrued = scaledDays * myRec.dailyWage;
     const maxAdv = Math.round(accrued * 0.7);
 
-    document.getElementById('adjustModalTitle').textContent = `💳 Đơn Xin Ứng Lương — ${myRec.name} (${acc ? acc.positionTitle : myRec.roleName})`;
+    document.getElementById('adjustModalTitle').textContent = `💳 Đơn Ứng Lương — ${myRec.name}`;
     document.getElementById('adjustModalBody').innerHTML = `
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:10px; border-radius:var(--ds-radius-sm); font-size:11.5px; margin-bottom:10px;">
-        <div>Người xin tạm ứng: <strong>${myRec.name} (${myRec.code})</strong> · Cấp bậc: <strong>${acc ? acc.positionTitle : myRec.roleName}</strong></div>
-        <div>Công đã tích lũy (${formatDateRangeLabel()}): <strong>${scaledDays} ngày công</strong></div>
-        <div>Lương lũy kế hiện có: <strong>${formatVND(accrued)}</strong> · Hạn mức ứng tối đa (70%): <strong style="color:var(--ds-primary);">${formatVND(maxAdv)}</strong></div>
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm); font-size:11.5px; margin-bottom:8px;">
+        <div><strong>${myRec.name} (${myRec.code})</strong> · Công kỳ: <strong>${scaledDays} công</strong></div>
+        <div>Lương lũy kế: <strong>${formatVND(accrued)}</strong> · Tối đa (70%): <strong style="color:var(--ds-primary);">${formatVND(maxAdv)}</strong></div>
       </div>
       <div class="form-group">
-        <label>Số tiền xin tạm ứng (VNĐ) <span class="req">*</span></label>
+        <label>Số tiền ứng (VNĐ) <span class="req">*</span></label>
         <input type="number" id="personalAdvAmount" value="${Math.min(3000000, maxAdv)}" step="100000" max="${maxAdv}" />
       </div>
       <div class="form-group">
-        <label>Lý do xin tạm ứng <span class="req">*</span></label>
-        <input type="text" id="personalAdvReason" value="Tạm ứng lương trong kỳ (${acc ? acc.positionTitle : 'Nhân sự'})" />
+        <label>Lý do <span class="req">*</span></label>
+        <input type="text" id="personalAdvReason" value="Tạm ứng lương trong kỳ" />
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitPersonalAdvance()">💳 Gửi đơn trình Kế toán &amp; Tổng Giám đốc</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitPersonalAdvance()">💳 Gửi đơn</button>
       </div>
     `;
     document.getElementById('adjustModal').classList.add('open');
@@ -4390,230 +4114,13 @@
     renderMain();
   }
 
-  // ================= XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC XÁC NHẬN & ĐƯỢC TỔNG GIÁM ĐỐC ĐỒNG Ý) =================
-  function openDeleteConfirmModal(targetType, targetId) {
-    const acc = getCurrentAccount();
-    if (!acc) return;
-
-    let targetCode = '';
-    let targetName = '';
-    let targetRole = '';
-
-    if (targetType === 'ACCOUNT') {
-      const targetAcc = state.accounts.find(a => a.id === targetId);
-      if (!targetAcc) return;
-      if (targetAcc.username === 'admin') {
-        alert('Không thể xóa tài khoản Tổng Giám Đốc (admin)!');
-        return;
-      }
-      targetCode = targetAcc.username;
-      targetName = targetAcc.fullName;
-      targetRole = targetAcc.positionTitle;
-    } else {
-      const targetWorker = findAnyPersonById(targetId);
-      if (!targetWorker) return;
-      targetCode = targetWorker.code;
-      targetName = targetWorker.name;
-      targetRole = `${targetWorker.roleName} · ${targetWorker.teamName}`;
-    }
-
-    const isDirector = (acc.roleId === 'BGD');
-    const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
-
-    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
-        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
-      </div>
-
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
-        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
-        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
-        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
-      </div>
-
-      <div class="form-group">
-        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
-        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
-      </div>
-
-      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
-          <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
-          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
-        </label>
-      </div>
-
-      <div class="form-group">
-        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
-        ${isDirector ? `
-          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
-          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
-        ` : `
-          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
-          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
-        `}
-        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
-      </div>
-
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
-        <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
-          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
-        </button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
-  }
-
-  function executeHardDelete(targetType, targetId, targetCode, targetName, reason, actorLabel) {
-    // Xóa trong danh sách tài khoản
-    state.accounts = state.accounts.filter(a =>
-      a.id !== targetId &&
-      a.username.toLowerCase() !== String(targetCode).toLowerCase() &&
-      (!a.workerCode || a.workerCode.toLowerCase() !== String(targetCode).toLowerCase())
-    );
-    // Xóa trong danh sách công nhân
-    state.workers = state.workers.filter(w =>
-      w.id !== targetId &&
-      w.code.toLowerCase() !== String(targetCode).toLowerCase()
-    );
-    // Xóa trong danh sách cán bộ chấm công
-    if (state.staffAttendance) {
-      state.staffAttendance = state.staffAttendance.filter(s =>
-        s.id !== targetId &&
-        s.code.toLowerCase() !== String(targetCode).toLowerCase() &&
-        s.username.toLowerCase() !== String(targetCode).toLowerCase()
-      );
-    }
-
-    state.auditLogs.unshift({
-      id: 'LOG-DEL-' + (state.auditLogs.length + 1),
-      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
-      workerCode: targetCode,
-      workerName: targetName,
-      actorName: actorLabel,
-      actorRole: 'Đã được Tổng Giám đốc đồng ý xóa',
-      field: targetType === 'ACCOUNT' ? 'Xóa Tài khoản & Hồ sơ' : 'Xóa Hồ sơ Nhân sự & Tài khoản',
-      oldVal: `Đang hoạt động (${targetName})`,
-      newVal: 'ĐÃ XÓA VĨNH VIỄN (GĐ ĐỒNG Ý)',
-      reason
-    });
-  }
-
-  function submitDeleteOrRequest(targetType, targetId) {
-    const acc = getCurrentAccount();
-    if (!acc) return;
-
-    const checked = document.getElementById('delConfirmCheckbox')?.checked;
-    const reason = (document.getElementById('delReasonInput')?.value || '').trim();
-    const enteredDirectorPin = (document.getElementById('delDirectorPinInput')?.value || '').trim();
-    const errEl = document.getElementById('delErrMsg');
-
-    if (!checked || !reason) {
-      if (errEl) {
-        errEl.textContent = 'Bắt buộc phải tích chọn ô Xác nhận xóa và nhập Lý do xóa!';
-        errEl.style.display = 'block';
-      }
-      return;
-    }
-
-    let targetCode = '';
-    let targetName = '';
-    let targetRole = '';
-    if (targetType === 'ACCOUNT') {
-      const tAcc = state.accounts.find(a => a.id === targetId);
-      if (!tAcc) return;
-      targetCode = tAcc.username;
-      targetName = tAcc.fullName;
-      targetRole = tAcc.positionTitle;
-    } else {
-      const tW = findAnyPersonById(targetId);
-      if (!tW) return;
-      targetCode = tW.code;
-      targetName = tW.name;
-      targetRole = `${tW.roleName} · ${tW.teamName}`;
-    }
-
-    const directorAcc = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
-
-    // Trường hợp 1: Đang là Tổng Giám đốc hoặc đã nhập đúng PIN đồng ý trực tiếp của Tổng Giám đốc
-    if (acc.roleId === 'BGD' || (enteredDirectorPin && enteredDirectorPin === directorAcc.pin)) {
-      executeHardDelete(targetType, targetId, targetCode, targetName, reason, `${acc.fullName} (Được ${directorAcc.fullName} đồng ý)`);
-      saveState();
-      closeModal('adjustModal');
-      renderRoleNavigationAndHeader();
-      renderMain();
-      alert(`Đã xác nhận đồng ý của Tổng Giám đốc và xóa hoàn tất "${targetName} (${targetCode})" khỏi hệ thống!`);
-      return;
-    }
-
-    if (enteredDirectorPin && enteredDirectorPin !== directorAcc.pin) {
-      if (errEl) {
-        errEl.textContent = 'Mã PIN Tổng Giám đốc không đúng! Hãy để trống ô PIN để gửi Yêu cầu trình Giám đốc phê duyệt.';
-        errEl.style.display = 'block';
-      }
-      return;
-    }
-
-    // Trường hợp 2: Cấp dưới (Quản lý CT / Đội trưởng / Kế toán) gửi yêu cầu xóa trình lên Tổng Giám đốc đồng ý
-    state.deleteRequests = state.deleteRequests || [];
-    state.deleteRequests.unshift({
-      id: 'DEL-0' + (state.deleteRequests.length + 1),
-      targetType,
-      targetId,
-      targetCode,
-      targetName,
-      targetRole,
-      requestedBy: acc.fullName,
-      requestedRole: acc.positionTitle,
-      reason,
-      createdAt: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
-      status: 'CHO_BGD_DONG_Y'
-    });
-
-    saveState();
-    closeModal('adjustModal');
-    renderRoleNavigationAndHeader();
-    renderMain();
-    alert(`Đã xác nhận và gửi yêu cầu xóa "${targetName} (${targetCode})" lên Tổng Giám đốc (${directorAcc.fullName}). Nhân sự/Tài khoản sẽ được xóa ngay khi Giám đốc bấm Đồng ý!`);
-  }
-
-  function directorApproveDeleteRequest(reqId) {
-    const acc = getCurrentAccount();
-    if (!acc || acc.roleId !== 'BGD') {
-      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền đồng ý phê duyệt xóa tài khoản / nhân sự!');
-      return;
-    }
-    const req = (state.deleteRequests || []).find(r => r.id === reqId);
-    if (!req) return;
-
-    executeHardDelete(req.targetType, req.targetId, req.targetCode, req.targetName, req.reason, `${req.requestedBy} (Tổng Giám đốc ${acc.fullName} đồng ý xóa)`);
-    req.status = 'DA_XOA';
-    saveState();
-    renderRoleNavigationAndHeader();
-    renderMain();
-    alert(`Tổng Giám đốc đã đồng ý! Đã xóa "${req.targetName} (${req.targetCode})" khỏi hệ thống.`);
-  }
-
-  function directorRejectDeleteRequest(reqId) {
-    const acc = getCurrentAccount();
-    if (!acc || acc.roleId !== 'BGD') return;
-    const req = (state.deleteRequests || []).find(r => r.id === reqId);
-    if (!req) return;
-    req.status = 'TU_CHOI';
-    saveState();
-    renderRoleNavigationAndHeader();
-    renderMain();
-  }
-
   function openOtModal(workerId) {
     const w = findAnyPersonById(workerId);
     if (!w) return;
-    document.getElementById('adjustModalTitle').textContent = `Đăng Ký Tăng Ca (OT) — ${w.name} (${w.code})`;
+    document.getElementById('adjustModalTitle').textContent = `Đăng Ký Tăng Ca (OT) — ${w.name}`;
     document.getElementById('adjustModalBody').innerHTML = `
       <div class="form-group">
-        <label>Số giờ Tăng ca sau 17:30 <span class="req">*</span></label>
+        <label>Số giờ Tăng ca <span class="req">*</span></label>
         <select id="otHoursSelect">
           <option value="0" ${w.hoursOtRegistered === 0 ? 'selected' : ''}>0 giờ (Chốt 17:30)</option>
           <option value="2" ${w.hoursOtRegistered === 2 ? 'selected' : ''}>+2.0 giờ OT (17:30 → 19:30)</option>
@@ -4622,12 +4129,12 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Hạng mục tăng ca trình Quản lý (${w.managerName}) duyệt <span class="req">*</span></label>
+        <label>Hạng mục tăng ca <span class="req">*</span></label>
         <input type="text" id="otReasonInput" value="${w.otReason || w.assignedTaskToday || 'Tăng ca hoàn thiện mẻ bê tông'}" />
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitOtModal('${w.id}')">⏱️ Lưu Đăng ký Tăng ca</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitOtModal('${w.id}')">⏱️ Lưu</button>
       </div>
     `;
     document.getElementById('adjustModal').classList.add('open');
@@ -4647,223 +4154,6 @@
     renderMain();
   }
 
-  // ================= XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC XÁC NHẬN & ĐƯỢC TỔNG GIÁM ĐỐC ĐỒNG Ý) =================
-  function openDeleteConfirmModal(targetType, targetId) {
-    const acc = getCurrentAccount();
-    if (!acc) return;
-
-    let targetCode = '';
-    let targetName = '';
-    let targetRole = '';
-
-    if (targetType === 'ACCOUNT') {
-      const targetAcc = state.accounts.find(a => a.id === targetId);
-      if (!targetAcc) return;
-      if (targetAcc.username === 'admin') {
-        alert('Không thể xóa tài khoản Tổng Giám Đốc (admin)!');
-        return;
-      }
-      targetCode = targetAcc.username;
-      targetName = targetAcc.fullName;
-      targetRole = targetAcc.positionTitle;
-    } else {
-      const targetWorker = findAnyPersonById(targetId);
-      if (!targetWorker) return;
-      targetCode = targetWorker.code;
-      targetName = targetWorker.name;
-      targetRole = `${targetWorker.roleName} · ${targetWorker.teamName}`;
-    }
-
-    const isDirector = (acc.roleId === 'BGD');
-    const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
-
-    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
-        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
-      </div>
-
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
-        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
-        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
-        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
-      </div>
-
-      <div class="form-group">
-        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
-        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
-      </div>
-
-      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
-          <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
-          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
-        </label>
-      </div>
-
-      <div class="form-group">
-        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
-        ${isDirector ? `
-          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
-          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
-        ` : `
-          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
-          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
-        `}
-        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
-      </div>
-
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
-        <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
-          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
-        </button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
-  }
-
-  function executeHardDelete(targetType, targetId, targetCode, targetName, reason, actorLabel) {
-    // Xóa trong danh sách tài khoản
-    state.accounts = state.accounts.filter(a =>
-      a.id !== targetId &&
-      a.username.toLowerCase() !== String(targetCode).toLowerCase() &&
-      (!a.workerCode || a.workerCode.toLowerCase() !== String(targetCode).toLowerCase())
-    );
-    // Xóa trong danh sách công nhân
-    state.workers = state.workers.filter(w =>
-      w.id !== targetId &&
-      w.code.toLowerCase() !== String(targetCode).toLowerCase()
-    );
-    // Xóa trong danh sách cán bộ chấm công
-    if (state.staffAttendance) {
-      state.staffAttendance = state.staffAttendance.filter(s =>
-        s.id !== targetId &&
-        s.code.toLowerCase() !== String(targetCode).toLowerCase() &&
-        s.username.toLowerCase() !== String(targetCode).toLowerCase()
-      );
-    }
-
-    state.auditLogs.unshift({
-      id: 'LOG-DEL-' + (state.auditLogs.length + 1),
-      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
-      workerCode: targetCode,
-      workerName: targetName,
-      actorName: actorLabel,
-      actorRole: 'Đã được Tổng Giám đốc đồng ý xóa',
-      field: targetType === 'ACCOUNT' ? 'Xóa Tài khoản & Hồ sơ' : 'Xóa Hồ sơ Nhân sự & Tài khoản',
-      oldVal: `Đang hoạt động (${targetName})`,
-      newVal: 'ĐÃ XÓA VĨNH VIỄN (GĐ ĐỒNG Ý)',
-      reason
-    });
-  }
-
-  function submitDeleteOrRequest(targetType, targetId) {
-    const acc = getCurrentAccount();
-    if (!acc) return;
-
-    const checked = document.getElementById('delConfirmCheckbox')?.checked;
-    const reason = (document.getElementById('delReasonInput')?.value || '').trim();
-    const enteredDirectorPin = (document.getElementById('delDirectorPinInput')?.value || '').trim();
-    const errEl = document.getElementById('delErrMsg');
-
-    if (!checked || !reason) {
-      if (errEl) {
-        errEl.textContent = 'Bắt buộc phải tích chọn ô Xác nhận xóa và nhập Lý do xóa!';
-        errEl.style.display = 'block';
-      }
-      return;
-    }
-
-    let targetCode = '';
-    let targetName = '';
-    let targetRole = '';
-    if (targetType === 'ACCOUNT') {
-      const tAcc = state.accounts.find(a => a.id === targetId);
-      if (!tAcc) return;
-      targetCode = tAcc.username;
-      targetName = tAcc.fullName;
-      targetRole = tAcc.positionTitle;
-    } else {
-      const tW = findAnyPersonById(targetId);
-      if (!tW) return;
-      targetCode = tW.code;
-      targetName = tW.name;
-      targetRole = `${tW.roleName} · ${tW.teamName}`;
-    }
-
-    const directorAcc = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
-
-    // Trường hợp 1: Đang là Tổng Giám đốc hoặc đã nhập đúng PIN đồng ý trực tiếp của Tổng Giám đốc
-    if (acc.roleId === 'BGD' || (enteredDirectorPin && enteredDirectorPin === directorAcc.pin)) {
-      executeHardDelete(targetType, targetId, targetCode, targetName, reason, `${acc.fullName} (Được ${directorAcc.fullName} đồng ý)`);
-      saveState();
-      closeModal('adjustModal');
-      renderRoleNavigationAndHeader();
-      renderMain();
-      alert(`Đã xác nhận đồng ý của Tổng Giám đốc và xóa hoàn tất "${targetName} (${targetCode})" khỏi hệ thống!`);
-      return;
-    }
-
-    if (enteredDirectorPin && enteredDirectorPin !== directorAcc.pin) {
-      if (errEl) {
-        errEl.textContent = 'Mã PIN Tổng Giám đốc không đúng! Hãy để trống ô PIN để gửi Yêu cầu trình Giám đốc phê duyệt.';
-        errEl.style.display = 'block';
-      }
-      return;
-    }
-
-    // Trường hợp 2: Cấp dưới (Quản lý CT / Đội trưởng / Kế toán) gửi yêu cầu xóa trình lên Tổng Giám đốc đồng ý
-    state.deleteRequests = state.deleteRequests || [];
-    state.deleteRequests.unshift({
-      id: 'DEL-0' + (state.deleteRequests.length + 1),
-      targetType,
-      targetId,
-      targetCode,
-      targetName,
-      targetRole,
-      requestedBy: acc.fullName,
-      requestedRole: acc.positionTitle,
-      reason,
-      createdAt: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
-      status: 'CHO_BGD_DONG_Y'
-    });
-
-    saveState();
-    closeModal('adjustModal');
-    renderRoleNavigationAndHeader();
-    renderMain();
-    alert(`Đã xác nhận và gửi yêu cầu xóa "${targetName} (${targetCode})" lên Tổng Giám đốc (${directorAcc.fullName}). Nhân sự/Tài khoản sẽ được xóa ngay khi Giám đốc bấm Đồng ý!`);
-  }
-
-  function directorApproveDeleteRequest(reqId) {
-    const acc = getCurrentAccount();
-    if (!acc || acc.roleId !== 'BGD') {
-      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền đồng ý phê duyệt xóa tài khoản / nhân sự!');
-      return;
-    }
-    const req = (state.deleteRequests || []).find(r => r.id === reqId);
-    if (!req) return;
-
-    executeHardDelete(req.targetType, req.targetId, req.targetCode, req.targetName, req.reason, `${req.requestedBy} (Tổng Giám đốc ${acc.fullName} đồng ý xóa)`);
-    req.status = 'DA_XOA';
-    saveState();
-    renderRoleNavigationAndHeader();
-    renderMain();
-    alert(`Tổng Giám đốc đã đồng ý! Đã xóa "${req.targetName} (${req.targetCode})" khỏi hệ thống.`);
-  }
-
-  function directorRejectDeleteRequest(reqId) {
-    const acc = getCurrentAccount();
-    if (!acc || acc.roleId !== 'BGD') return;
-    const req = (state.deleteRequests || []).find(r => r.id === reqId);
-    if (!req) return;
-    req.status = 'TU_CHOI';
-    saveState();
-    renderRoleNavigationAndHeader();
-    renderMain();
-  }
-
   // ADMIN TẠO / SỬA TÀI KHOẢN CHO TỪNG VỊ TRÍ
   function openAccountFormModal(accId) {
     if (!isAdminAccount()) return;
@@ -4876,7 +4166,7 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <div class="form-group">
           <label>Tên đăng nhập <span class="req">*</span></label>
-          <input type="text" id="accFormUser" value="${editing ? editing.username : ''}" placeholder="VD: qlct_ct4 hoặc doitruong7" />
+          <input type="text" id="accFormUser" value="${editing ? editing.username : ''}" placeholder="VD: qlct_ct4" />
         </div>
         <div class="form-group">
           <label>Mã PIN / Mật khẩu <span class="req">*</span></label>
@@ -4885,30 +4175,30 @@
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <div class="form-group">
-          <label>Họ và Tên Nhân sự <span class="req">*</span></label>
+          <label>Họ và Tên <span class="req">*</span></label>
           <input type="text" id="accFormName" value="${editing ? editing.fullName : ''}" placeholder="VD: KS. Nguyễn Hoàng Long" />
         </div>
         <div class="form-group">
-          <label>Vị trí &amp; Giao diện làm việc <span class="req">*</span></label>
+          <label>Vị trí <span class="req">*</span></label>
           <select id="accFormRole">
-            <option value="BGD" ${editing && editing.roleId === 'BGD' ? 'selected' : ''}>Cấp 1 · Tổng Giám Đốc / Admin</option>
-            <option value="KT" ${editing && editing.roleId === 'KT' ? 'selected' : ''}>Cấp 2 · Hành chính – Kế toán</option>
-            <option value="QLCT" ${!editing || editing.roleId === 'QLCT' ? 'selected' : ''}>Cấp 3 · Quản lý Công trình</option>
-            <option value="DT1" ${editing && editing.roleId === 'DT1' ? 'selected' : ''}>Cấp 4 · Đội trưởng Thi công</option>
-            <option value="CN" ${editing && editing.roleId === 'CN' ? 'selected' : ''}>Cấp 5 · Công nhân / Nhân viên</option>
+            <option value="BGD" ${editing && editing.roleId === 'BGD' ? 'selected' : ''}>Tổng Giám Đốc / Admin</option>
+            <option value="KT" ${editing && editing.roleId === 'KT' ? 'selected' : ''}>Hành chính – Kế toán</option>
+            <option value="QLCT" ${!editing || editing.roleId === 'QLCT' ? 'selected' : ''}>Quản lý Công trình</option>
+            <option value="DT1" ${editing && editing.roleId === 'DT1' ? 'selected' : ''}>Đội trưởng Thi công</option>
+            <option value="CN" ${editing && editing.roleId === 'CN' ? 'selected' : ''}>Công nhân / Nhân viên</option>
           </select>
         </div>
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <div class="form-group">
-          <label>Phạm vi Công trình phụ trách</label>
+          <label>Công trình</label>
           <select id="accFormProject">
-            <option value="ALL" ${editing && editing.projectId === 'ALL' ? 'selected' : ''}>Toàn bộ Công trình (ALL)</option>
+            <option value="ALL" ${editing && editing.projectId === 'ALL' ? 'selected' : ''}>Toàn bộ (ALL)</option>
             ${state.projects.map(p => `<option value="${p.id}" ${editing && editing.projectId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
-          <label>Phạm vi Đội thi công</label>
+          <label>Đội thi công</label>
           <select id="accFormTeam">
             <option value="ALL" ${editing && editing.teamId === 'ALL' ? 'selected' : ''}>Tất cả Đội (ALL)</option>
             ${state.teams.map(t => `<option value="${t.id}" ${editing && editing.teamId === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
@@ -4917,7 +4207,7 @@
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.submitAccountForm('${editing ? editing.id : ''}')">💾 Lưu Tài khoản Vị trí</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitAccountForm('${editing ? editing.id : ''}')">💾 Lưu</button>
       </div>
     `;
     document.getElementById('adjustModal').classList.add('open');
@@ -4977,223 +4267,6 @@
 
     saveState();
     closeModal('adjustModal');
-    renderMain();
-  }
-
-  // ================= XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC XÁC NHẬN & ĐƯỢC TỔNG GIÁM ĐỐC ĐỒNG Ý) =================
-  function openDeleteConfirmModal(targetType, targetId) {
-    const acc = getCurrentAccount();
-    if (!acc) return;
-
-    let targetCode = '';
-    let targetName = '';
-    let targetRole = '';
-
-    if (targetType === 'ACCOUNT') {
-      const targetAcc = state.accounts.find(a => a.id === targetId);
-      if (!targetAcc) return;
-      if (targetAcc.username === 'admin') {
-        alert('Không thể xóa tài khoản Tổng Giám Đốc (admin)!');
-        return;
-      }
-      targetCode = targetAcc.username;
-      targetName = targetAcc.fullName;
-      targetRole = targetAcc.positionTitle;
-    } else {
-      const targetWorker = findAnyPersonById(targetId);
-      if (!targetWorker) return;
-      targetCode = targetWorker.code;
-      targetName = targetWorker.name;
-      targetRole = `${targetWorker.roleName} · ${targetWorker.teamName}`;
-    }
-
-    const isDirector = (acc.roleId === 'BGD');
-    const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
-
-    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
-    document.getElementById('adjustModalBody').innerHTML = `
-      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
-        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
-      </div>
-
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
-        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
-        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
-        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
-      </div>
-
-      <div class="form-group">
-        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
-        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
-      </div>
-
-      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
-          <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
-          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
-        </label>
-      </div>
-
-      <div class="form-group">
-        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
-        ${isDirector ? `
-          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
-          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
-        ` : `
-          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
-          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
-        `}
-        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
-      </div>
-
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
-        <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
-          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
-        </button>
-      </div>
-    `;
-    document.getElementById('adjustModal').classList.add('open');
-  }
-
-  function executeHardDelete(targetType, targetId, targetCode, targetName, reason, actorLabel) {
-    // Xóa trong danh sách tài khoản
-    state.accounts = state.accounts.filter(a =>
-      a.id !== targetId &&
-      a.username.toLowerCase() !== String(targetCode).toLowerCase() &&
-      (!a.workerCode || a.workerCode.toLowerCase() !== String(targetCode).toLowerCase())
-    );
-    // Xóa trong danh sách công nhân
-    state.workers = state.workers.filter(w =>
-      w.id !== targetId &&
-      w.code.toLowerCase() !== String(targetCode).toLowerCase()
-    );
-    // Xóa trong danh sách cán bộ chấm công
-    if (state.staffAttendance) {
-      state.staffAttendance = state.staffAttendance.filter(s =>
-        s.id !== targetId &&
-        s.code.toLowerCase() !== String(targetCode).toLowerCase() &&
-        s.username.toLowerCase() !== String(targetCode).toLowerCase()
-      );
-    }
-
-    state.auditLogs.unshift({
-      id: 'LOG-DEL-' + (state.auditLogs.length + 1),
-      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
-      workerCode: targetCode,
-      workerName: targetName,
-      actorName: actorLabel,
-      actorRole: 'Đã được Tổng Giám đốc đồng ý xóa',
-      field: targetType === 'ACCOUNT' ? 'Xóa Tài khoản & Hồ sơ' : 'Xóa Hồ sơ Nhân sự & Tài khoản',
-      oldVal: `Đang hoạt động (${targetName})`,
-      newVal: 'ĐÃ XÓA VĨNH VIỄN (GĐ ĐỒNG Ý)',
-      reason
-    });
-  }
-
-  function submitDeleteOrRequest(targetType, targetId) {
-    const acc = getCurrentAccount();
-    if (!acc) return;
-
-    const checked = document.getElementById('delConfirmCheckbox')?.checked;
-    const reason = (document.getElementById('delReasonInput')?.value || '').trim();
-    const enteredDirectorPin = (document.getElementById('delDirectorPinInput')?.value || '').trim();
-    const errEl = document.getElementById('delErrMsg');
-
-    if (!checked || !reason) {
-      if (errEl) {
-        errEl.textContent = 'Bắt buộc phải tích chọn ô Xác nhận xóa và nhập Lý do xóa!';
-        errEl.style.display = 'block';
-      }
-      return;
-    }
-
-    let targetCode = '';
-    let targetName = '';
-    let targetRole = '';
-    if (targetType === 'ACCOUNT') {
-      const tAcc = state.accounts.find(a => a.id === targetId);
-      if (!tAcc) return;
-      targetCode = tAcc.username;
-      targetName = tAcc.fullName;
-      targetRole = tAcc.positionTitle;
-    } else {
-      const tW = findAnyPersonById(targetId);
-      if (!tW) return;
-      targetCode = tW.code;
-      targetName = tW.name;
-      targetRole = `${tW.roleName} · ${tW.teamName}`;
-    }
-
-    const directorAcc = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
-
-    // Trường hợp 1: Đang là Tổng Giám đốc hoặc đã nhập đúng PIN đồng ý trực tiếp của Tổng Giám đốc
-    if (acc.roleId === 'BGD' || (enteredDirectorPin && enteredDirectorPin === directorAcc.pin)) {
-      executeHardDelete(targetType, targetId, targetCode, targetName, reason, `${acc.fullName} (Được ${directorAcc.fullName} đồng ý)`);
-      saveState();
-      closeModal('adjustModal');
-      renderRoleNavigationAndHeader();
-      renderMain();
-      alert(`Đã xác nhận đồng ý của Tổng Giám đốc và xóa hoàn tất "${targetName} (${targetCode})" khỏi hệ thống!`);
-      return;
-    }
-
-    if (enteredDirectorPin && enteredDirectorPin !== directorAcc.pin) {
-      if (errEl) {
-        errEl.textContent = 'Mã PIN Tổng Giám đốc không đúng! Hãy để trống ô PIN để gửi Yêu cầu trình Giám đốc phê duyệt.';
-        errEl.style.display = 'block';
-      }
-      return;
-    }
-
-    // Trường hợp 2: Cấp dưới (Quản lý CT / Đội trưởng / Kế toán) gửi yêu cầu xóa trình lên Tổng Giám đốc đồng ý
-    state.deleteRequests = state.deleteRequests || [];
-    state.deleteRequests.unshift({
-      id: 'DEL-0' + (state.deleteRequests.length + 1),
-      targetType,
-      targetId,
-      targetCode,
-      targetName,
-      targetRole,
-      requestedBy: acc.fullName,
-      requestedRole: acc.positionTitle,
-      reason,
-      createdAt: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
-      status: 'CHO_BGD_DONG_Y'
-    });
-
-    saveState();
-    closeModal('adjustModal');
-    renderRoleNavigationAndHeader();
-    renderMain();
-    alert(`Đã xác nhận và gửi yêu cầu xóa "${targetName} (${targetCode})" lên Tổng Giám đốc (${directorAcc.fullName}). Nhân sự/Tài khoản sẽ được xóa ngay khi Giám đốc bấm Đồng ý!`);
-  }
-
-  function directorApproveDeleteRequest(reqId) {
-    const acc = getCurrentAccount();
-    if (!acc || acc.roleId !== 'BGD') {
-      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền đồng ý phê duyệt xóa tài khoản / nhân sự!');
-      return;
-    }
-    const req = (state.deleteRequests || []).find(r => r.id === reqId);
-    if (!req) return;
-
-    executeHardDelete(req.targetType, req.targetId, req.targetCode, req.targetName, req.reason, `${req.requestedBy} (Tổng Giám đốc ${acc.fullName} đồng ý xóa)`);
-    req.status = 'DA_XOA';
-    saveState();
-    renderRoleNavigationAndHeader();
-    renderMain();
-    alert(`Tổng Giám đốc đã đồng ý! Đã xóa "${req.targetName} (${req.targetCode})" khỏi hệ thống.`);
-  }
-
-  function directorRejectDeleteRequest(reqId) {
-    const acc = getCurrentAccount();
-    if (!acc || acc.roleId !== 'BGD') return;
-    const req = (state.deleteRequests || []).find(r => r.id === reqId);
-    if (!req) return;
-    req.status = 'TU_CHOI';
-    saveState();
-    renderRoleNavigationAndHeader();
     renderMain();
   }
 

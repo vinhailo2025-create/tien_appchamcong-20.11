@@ -1176,9 +1176,7 @@ a {
 }
 
 .section-desc {
-  font-size: 10.5px;
-  color: var(--ds-text-muted);
-  margin-top: 2px;
+  display: none !important;
 }
 
 .table-scroll {

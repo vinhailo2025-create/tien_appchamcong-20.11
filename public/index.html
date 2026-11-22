@@ -91,23 +91,22 @@
     <div class="login-box">
       <div class="login-box-header">
         <img src="assets/logo-np-one-3d.png" alt="NP ONE" />
-        <span class="kicker" style="margin-bottom:2px;">HỆ THỐNG QUẢN LÝ CÔNG &amp; PHÂN VIỆC 5 CẤP</span>
-        <h3 style="color:#FFFFFF; font-size:16px;">Đăng nhập NP ONE — Nguyên Phát</h3>
-        <div style="font-size:10px; color:#FFFFFF; opacity:0.85; margin-top:2px;">Mỗi vị trí (Giám đốc · Kế toán · Quản lý CT · Đội trưởng · Công nhân) có giao diện làm việc riêng</div>
+        <span class="kicker" style="margin-bottom:2px;">NP ONE V2.0 · NGUYÊN PHÁT</span>
+        <h3 style="color:#FFFFFF; font-size:16px;">Đăng nhập Hệ thống</h3>
       </div>
       <form class="login-box-body" onsubmit="event.preventDefault(); window.NPApp.submitFullLogin();">
         <div class="form-group">
-          <label for="fullLoginUser">Tên đăng nhập / Mã Nhân viên <span class="req">*</span></label>
-          <input type="text" id="fullLoginUser" placeholder="Nhập tên tài khoản hoặc Mã NV..." autocomplete="username" />
+          <label for="fullLoginUser">Tài khoản / Mã NV <span class="req">*</span></label>
+          <input type="text" id="fullLoginUser" placeholder="Nhập tài khoản hoặc Mã NV..." autocomplete="username" />
         </div>
         <div class="form-group">
           <label for="fullLoginPin">Mật khẩu / Mã PIN <span class="req">*</span></label>
           <input type="password" id="fullLoginPin" placeholder="Nhập mật khẩu hoặc Mã PIN..." autocomplete="current-password" />
-          <div id="fullLoginErr" class="field-error-msg" style="display:none;">Tên đăng nhập hoặc Mã PIN không đúng, hoặc tài khoản đã bị khóa!</div>
+          <div id="fullLoginErr" class="field-error-msg" style="display:none;">Tài khoản hoặc Mã PIN không đúng!</div>
         </div>
         <div style="margin-top:10px;">
           <button class="btn btn-primary" type="submit" style="width:100%;">
-            🔐 Đăng nhập vào Giao diện Vị trí
+            🔐 Đăng nhập
           </button>
         </div>
       </form>
@@ -118,7 +117,7 @@
   <div class="modal-backdrop" id="photoModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h4 id="photoModalTitle">Ảnh xác nhận chấm công (Live Camera + GPS)</h4>
+        <h4 id="photoModalTitle">Ảnh chấm công GPS</h4>
         <button class="modal-close" onclick="window.NPApp.closeModal('photoModal')">✕</button>
       </div>
       <div class="modal-body" id="photoModalBody"></div>
@@ -129,17 +128,13 @@
   <div class="modal-backdrop" id="cameraModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h4 id="cameraModalHeaderTitle">📸 Chấm công Camera GPS (Chọn Vào ca / Ra ca)</h4>
+        <h4 id="cameraModalHeaderTitle">📸 Chấm công Camera GPS</h4>
         <button class="modal-close" onclick="window.NPApp.closeCameraModal()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="camera-no-gallery-alert">
-          CHỐNG GIAN LẬN: Đã khóa chọn ảnh từ thư viện máy. Bắt buộc chụp Camera trực tiếp kèm Địa điểm &amp; Tọa độ GPS thực tế.
-        </div>
-
         <!-- MỤC CHỌN HÌNH THỨC CHECK-IN HOẶC CHECK-OUT NGAY TRONG 1 MENU -->
         <div class="form-group">
-          <label>Chọn hình thức Chấm công <span class="req">*</span></label>
+          <label>Hình thức <span class="req">*</span></label>
           <div class="checkin-mode-selector">
             <button type="button" class="mode-pill-btn active" id="btnModeCheckin" onclick="window.NPApp.setCameraActionMode('VAO')">
               🟢 Check-in (Vào ca)
@@ -152,22 +147,22 @@
         </div>
 
         <div class="form-group" id="camWorkerSelectGroup">
-          <label for="camWorkerSelect">Nhân sự / Cán bộ chấm công <span class="req">*</span></label>
+          <label for="camWorkerSelect">Nhân sự <span class="req">*</span></label>
           <select id="camWorkerSelect"></select>
         </div>
 
         <div class="form-group">
-          <label for="camProjectSelect">Địa điểm / Công trình / Văn phòng <span class="req">*</span></label>
+          <label for="camProjectSelect">Công trình / Địa điểm <span class="req">*</span></label>
           <select id="camProjectSelect"></select>
         </div>
 
-        <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:8px 10px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
-            <span class="kicker" style="margin:0;">ĐỊNH VỊ GPS THỰC TẾ</span>
+        <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:6px 9px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
+            <span class="kicker" style="margin:0;">GPS THỰC TẾ</span>
             <button class="btn btn-soft btn-sm" type="button" onclick="window.NPApp.refreshRealGps()">🎯 Lấy lại GPS</button>
           </div>
-          <div id="gpsLiveStatus" style="font-size:10.5px; color:var(--ds-text); font-weight:500; line-height:1.35;">
-            Đang lấy tọa độ GPS thực tế từ thiết bị...
+          <div id="gpsLiveStatus" style="font-size:10.5px; color:var(--ds-text); font-weight:500; line-height:1.35; margin-top:2px;">
+            Đang lấy tọa độ GPS...
           </div>
         </div>
 
