@@ -7,16 +7,17 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="NP ONE" />
-  <title>NP ONE — Nguyên Phát Human Resources (Hệ thống Quản lý Công &amp; Phân việc 5 Cấp)</title>
+  <title>NP ONE | Quản lý nhân lực Nguyên Phát</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="assets/logo-np-one-3d.png" />
-  <link rel="apple-touch-icon" href="assets/logo-np-one-3d.png" />
+  <link rel="icon" href="assets/np-app-icon.png" />
+  <link rel="apple-touch-icon" href="assets/np-app-icon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lora:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="v2-shell.css" />
   <link rel="stylesheet" href="v2-dashboard.css" />
   <link rel="stylesheet" href="v2-tables.css" />
   <link rel="stylesheet" href="v2-mobile.css" />
+  <link rel="stylesheet" href="v2-workspace.css" />
 </head>
 <body>
   <!-- ================= MENU BÊN TRÁI TRƯỢT ĐÓNG/MỞ (TỰ ĐỘNG THAY ĐỔI THEO VỊ TRÍ ĐĂNG NHẬP) ================= -->
@@ -24,7 +25,7 @@
   <aside class="left-sidebar" id="leftSidebar" aria-label="Điều hướng NP ONE">
     <div class="sidebar-header">
       <div class="sidebar-brand">
-        <img src="assets/logo-np-one-flat.png" alt="" />
+        <img src="assets/np-mark.png" alt="" />
         <div>
           <div class="np-sidebar-title">NP ONE</div>
           <div class="np-sidebar-company">NGUYÊN PHÁT</div>
@@ -34,7 +35,7 @@
     </div>
 
     <!-- THÔNG TIN TÀI KHOẢN & CẤP QUẢN LÝ ĐANG ĐĂNG NHẬP -->
-    <div class="sidebar-role-box">
+    <div class="sidebar-role-box" id="npLegacyAccount">
       <label id="sidebarRoleLevelLabel">Tài khoản đang đăng nhập:</label>
       <div id="sidebarCurrentAccountInfo" style="font-size:11px; color:#FFFFFF; font-weight:600; line-height:1.38; margin-bottom:6px;">
         Chưa đăng nhập
@@ -67,7 +68,7 @@
           ☰
         </button>
         <div class="brand-box">
-          <img class="brand-logo" src="assets/logo-np-one-flat.png" alt="" />
+          <img class="brand-logo" src="assets/np-app-icon.png" alt="" />
           <div style="min-width:0;">
             <div class="brand-title"><span class="np-brand-mobile">NP ONE</span><span class="np-brand-desktop">Công ty TNHH Nhân Lực Nguyên Phát</span></div>
             <div class="brand-sub"><span id="headerRoleBadge">Nguyên Phát</span><span id="currentTabSubtitle"></span><span class="np-preview-badge">Demo</span></div>
@@ -92,31 +93,41 @@
 
   <!-- ================= MÀN HÌNH ĐĂNG NHẬP ĐẦU TIÊN (BẮT BUỘC ĐĂNG NHẬP MỚI VÀO TRANG TÍNH NĂNG) ================= -->
   <div class="login-screen-overlay open" id="fullLoginOverlay">
-    <div class="login-box">
-      <div class="login-box-header">
-        <img src="assets/logo-np-one-3d.png" alt="NP ONE" />
-        <span class="kicker" style="margin-bottom:2px;">HỆ THỐNG QUẢN LÝ CÔNG &amp; PHÂN VIỆC 5 CẤP</span>
-        <h1>Đăng nhập NP ONE</h1>
-      </div>
-      <form class="login-box-body" onsubmit="event.preventDefault(); window.NPApp.submitFullLogin();">
-        <div class="form-group">
-          <label for="fullLoginUser">Tên đăng nhập / Mã Nhân viên <span class="req">*</span></label>
-          <input type="text" id="fullLoginUser" placeholder="Tên tài khoản hoặc mã nhân viên" autocomplete="username" required />
+    <div class="np-login-layout">
+      <aside class="np-login-visual" aria-label="Nguyên Phát">
+        <div class="np-login-brand">
+          <img src="assets/np-mark.png" width="52" height="25" alt="" />
+          <div><strong>NP ONE</strong><span>NGUYÊN PHÁT</span></div>
         </div>
-        <div class="form-group">
-          <label for="fullLoginPin">Mật khẩu / Mã PIN <span class="req">*</span></label>
-          <input type="password" id="fullLoginPin" placeholder="Mật khẩu hoặc mã PIN" autocomplete="current-password" required />
-          <div id="fullLoginErr" class="field-error-msg" style="display:none;">Tên đăng nhập hoặc Mã PIN không đúng, hoặc tài khoản đã bị khóa!</div>
+        <div class="np-login-visual-copy">
+          <p>CÔNG TY TNHH NHÂN LỰC NGUYÊN PHÁT</p>
+          <strong>Quản lý nhân lực<br />và công trình</strong>
+          <span>Chấm công, điều phối và thanh toán trong cùng một hệ thống.</span>
         </div>
-        <div style="margin-top:10px;">
-          <button class="btn btn-primary" type="submit" style="width:100%;">
-            Đăng nhập
-          </button>
-        </div>
-      </form>
-      <section id="npPreviewRoles" class="np-preview-panel" hidden aria-label="Vai trò trong bản demo">
-        <strong>Xem giao diện với dữ liệu mẫu</strong>
-        <div class="np-preview-roles"></div>
+      </aside>
+      <section class="np-login-content" aria-labelledby="npLoginHeading">
+        <header class="np-login-heading">
+          <img src="assets/np-app-icon.png" width="54" height="54" alt="NP ONE" />
+          <span id="npLoginDemo" hidden>Bản demo · Dữ liệu mẫu</span>
+          <h1 id="npLoginHeading">Đăng nhập</h1>
+          <p>Nhập tài khoản được cấp để vào khu vực làm việc.</p>
+        </header>
+        <form class="np-login-form" onsubmit="event.preventDefault(); window.NPApp.submitFullLogin();">
+          <div class="form-group">
+            <label for="fullLoginUser">Tên tài khoản</label>
+            <input type="text" id="fullLoginUser" placeholder="Nhập tên tài khoản" autocapitalize="none" spellcheck="false" autocomplete="username" required />
+          </div>
+          <div class="form-group">
+            <label for="fullLoginPin">Mật khẩu</label>
+            <div class="np-password-field">
+              <input type="password" id="fullLoginPin" placeholder="Nhập mật khẩu" autocomplete="current-password" aria-describedby="fullLoginErr" required />
+              <button type="button" id="npPasswordToggle" class="np-password-toggle" aria-controls="fullLoginPin" aria-pressed="false">Hiện</button>
+            </div>
+          </div>
+          <p id="fullLoginErr" role="alert" class="field-error-msg" style="display:none;">Tên tài khoản hoặc mật khẩu chưa đúng. Anh/chị thử lại nhé.</p>
+          <button class="btn btn-primary np-login-submit" type="submit">Đăng nhập <span aria-hidden="true">→</span></button>
+        </form>
+        <div class="np-login-footer">NP ONE <span>·</span> Nguyên Phát</div>
       </section>
     </div>
   </div>
@@ -235,7 +246,7 @@
       </div>
       <div class="modal-body">
         <div style="display:flex; align-items:center; gap:10px; background:var(--ds-primary); color:#FFFFFF; padding:10px 12px; border-radius:var(--ds-radius-md); margin-bottom:10px;">
-          <img src="assets/logo-np-one-3d.png" alt="NP ONE" style="width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,0.5);" />
+          <img src="assets/np-app-icon.png" alt="NP ONE" style="width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,0.5);" />
           <div>
             <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:14px; color:#FFFFFF;">NP ONE — Nguyên Phát HR</div>
             <div style="font-size:10.5px; color:var(--ds-accent);">Hệ thống Quản lý Công &amp; Phân việc 5 Cấp</div>
@@ -252,7 +263,8 @@
     </div>
   </div>
 
-  <script src="seed.js"></script>
-  <script src="app.js"></script>
+  <script defer src="seed.js"></script>
+  <script defer src="v2-workspace.js"></script>
+  <script defer src="app.js"></script>
 </body>
 </html>

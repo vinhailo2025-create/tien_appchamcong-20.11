@@ -1,0 +1,146 @@
+.np-kd {
+  color: var(--ds-text, #112544);
+}
+
+.np-kd-heading {
+  margin-bottom: 18px;
+}
+
+.np-kd-heading h2 {
+  font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+  margin: 0 0 5px;
+}
+
+.np-kd-heading p,
+.np-kd-empty,
+.np-kd-table small {
+  color: var(--ds-muted, #52657d);
+}
+
+.np-kd-heading p,
+.np-kd-empty {
+  margin: 0;
+}
+
+.np-kd-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.np-kd .np-kd-panel {
+  margin-bottom: 16px;
+}
+
+.np-kd-form {
+  display: grid;
+  align-items: end;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 11px;
+}
+
+.np-kd-form .btn {
+  justify-self: start;
+}
+
+.np-kd-field {
+  display: grid;
+  gap: 5px;
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.np-kd-field input,
+.np-kd-field select {
+  min-width: 0;
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid var(--ds-line, #c9d6e6);
+  border-radius: 7px;
+  font: inherit;
+  font-weight: 400;
+  color: inherit;
+  background: var(--ds-paper, #fff);
+}
+
+.np-kd-table {
+  overflow-x: auto;
+  border: 1px solid var(--ds-line, #dbe4ee);
+  border-radius: 9px;
+}
+
+.np-kd-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.np-kd-table th,
+.np-kd-table td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.np-kd-table th {
+  background: #eef4fb;
+  color: #183d6d;
+}
+
+.np-kd-table td {
+  border-top: 1px solid var(--ds-line, #dbe4ee);
+}
+
+.np-kd-table small {
+  display: block;
+  margin-top: 4px;
+}
+
+.np-kd-controls {
+  display: grid;
+  gap: 8px;
+  min-width: 135px;
+}
+
+.np-kd-controls details[open] {
+  min-width: 208px;
+}
+
+.np-kd-controls summary {
+  color: #1b4f88;
+  cursor: pointer;
+}
+
+.np-kd-controls details form {
+  margin-top: 7px;
+}
+
+.np-kd-inline {
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+.np-kd-notice {
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  color: #145a3b;
+  background: #e5f7ec;
+  border-radius: 8px;
+}
+
+.np-kd-notice.is-error {
+  color: #7c2327;
+  background: #ffefef;
+}
+
+.np-kd-table + .np-kd-empty {
+  margin-top: 10px;
+}
+
+@media (max-width: 740px) {
+  .np-kd-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

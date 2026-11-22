@@ -1,4 +1,4 @@
-const CACHE_NAME = 'np-one-hr-v4';
+const CACHE_NAME = 'np-one-hr-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -9,9 +9,12 @@ const ASSETS = [
   '/v2-mobile.css',
   '/seed.js',
   '/app.js',
+  '/v2-workspace.js',
+  '/v2-workspace.css',
   '/manifest.json',
-  '/assets/logo-np-one-3d.png',
-  '/assets/logo-np-one-flat.png'
+  '/assets/np-app-icon.png',
+  '/assets/np-mark.png',
+  '/assets/np-construction.webp'
 ];
 
 self.addEventListener('install', event => {

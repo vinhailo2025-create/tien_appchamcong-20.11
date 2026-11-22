@@ -2,7 +2,7 @@
 // Đầy đủ: Chọn khoảng Ngày/Tháng/Năm (Bảng Lịch), Đổi Mật khẩu đồng bộ lên các cấp, Checkin/Checkout chung 1 Menu (Mọi cấp trừ Giám đốc), Kế toán chấm công Giám đốc thấy & Bảng kê Kế toán, Mọi cấp đều được Ứng lương.
 (function () {
   const isPreview = window.NP_PREVIEW === true;
-  const STORAGE_KEY = isPreview ? 'NP_ONE_V2_PREVIEW_STATE' : 'NP_ONE_HR_STATE_V9';
+  const STORAGE_KEY = isPreview ? 'NP_ONE_V2_WORKSPACE_STATE' : 'NP_ONE_HR_STATE_V9';
   const THEME_KEY = 'NP_ONE_THEME_V1';
 
   let state = loadState();
@@ -605,6 +605,13 @@
   function closeFullLoginScreen() {
     const overlay = document.getElementById('fullLoginOverlay');
     if (overlay) overlay.classList.remove('open');
+    if (isPreview) {
+      const toggle = document.getElementById('npPasswordToggle');
+      document.getElementById('fullLoginPin').type = 'password';
+      toggle.setAttribute('aria-pressed', 'false');
+      toggle.textContent = 'Hiện';
+      window.scrollTo(0, 0);
+    }
   }
 
   function submitFullLogin() {
@@ -613,6 +620,19 @@
     const errEl = document.getElementById('fullLoginErr');
     const u = ((uInput && uInput.value) || '').trim().toLowerCase();
     const p = ((pInput && pInput.value) || '').trim();
+
+    if (isPreview) {
+      const account = state.accounts.find(item => item.demoLogin === u && item.pin === p && item.status === 'ACTIVE');
+      if (!account) {
+        errEl.style.display = 'block';
+        pInput.focus();
+        return;
+      }
+      activateAccountSession(account);
+      pInput.value = '';
+      closeFullLoginScreen();
+      return;
+    }
 
     // 1. Tìm trong danh sách tài khoản đã cấp
     let acc = state.accounts.find(a =>
@@ -677,7 +697,7 @@
     filterStatus = 'ALL';
     searchQuery = '';
 
-    const cfg = ROLE_CONFIG[currentRoleId] || ROLE_CONFIG.BGD;
+    const cfg = isPreview ? window.NPWorkspace.roles[currentRoleId] : (ROLE_CONFIG[currentRoleId] || ROLE_CONFIG.BGD);
     currentTab = cfg.defaultTab;
 
     renderRoleNavigationAndHeader();
@@ -690,11 +710,18 @@
     currentAccountId = null;
     delete document.body.dataset.npRole;
     delete document.body.dataset.npTab;
+    if (isPreview) {
+      document.getElementById('fullLoginUser').value = '';
+      document.getElementById('fullLoginPin').value = '';
+      document.getElementById('appMain').replaceChildren();
+      document.getElementById('roleHeroSection').replaceChildren();
+    }
     toggleSidebar(false);
     openFullLoginScreen();
   }
 
   function loginAsAccount(accId) {
+    if (isPreview) return;
     const acc = state.accounts.find(a => a.id === accId);
     if (!acc) return;
     if (acc.status !== 'ACTIVE') {
@@ -723,6 +750,10 @@
     if (!acc) return;
     document.body.dataset.npRole = acc.roleId;
     document.body.dataset.npTab = currentTab;
+    if (isPreview) {
+      window.NPWorkspace.navigation(acc, currentTab, formatDateRangeShortLabel(), getBadgeCounts());
+      return;
+    }
     const cfg = ROLE_CONFIG[acc.roleId] || ROLE_CONFIG.BGD;
     const badges = getBadgeCounts();
 
@@ -843,7 +874,7 @@
   function renderRoleHeroSection() {
     const acc = getCurrentAccount();
     const container = document.getElementById('roleHeroSection');
-    if (!acc || !container) return;
+    if (!acc || !container || isPreview) return;
 
     const ktRecord = (state.staffAttendance || []).find(s => s.roleId === 'KT') || (state.staffAttendance || [])[0];
 
@@ -895,6 +926,7 @@
   function selectTab(tabName) {
     const acc = getCurrentAccount();
     if (!acc) return;
+    if (isPreview && !window.NPWorkspace.roles[acc.roleId].tabs.some(tab => tab.id === tabName)) return;
     if (tabName === 'phan-quyen' && !isAdminAccount()) {
       alert('Chỉ Tổng Giám Đốc / Admin mới có quyền truy cập trang Quản trị Tài khoản!');
       return;
@@ -903,7 +935,7 @@
     renderRoleNavigationAndHeader();
     toggleSidebar(false);
     renderMain();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, left: 0, behavior: isPreview ? 'instant' : 'smooth' });
   }
 
   // ================= ĐỊNH VỊ GPS THẬT TỪ THIẾT BỊ & DỊCH ĐỊA CHỈ THẬT =================
@@ -1249,6 +1281,30 @@
     const acc = getCurrentAccount();
     if (!acc) return;
 
+    if (isPreview) {
+      const workspace = window.NPWorkspace;
+      const tab = currentTab;
+      const key = workspace.moduleForTab(tab);
+      if (key) {
+        const isCurrent = () => currentAccountId === acc.id && currentTab === tab;
+        const renderError = (error) => {
+          console.error(error);
+          if (!isCurrent()) return;
+          main.innerHTML = '<section class="np-work-card"><h2>Không tải được màn hình</h2><button type="button" class="btn btn-soft" data-np-target="' + tab + '">Thử lại</button></section>';
+        };
+        const renderModule = () => {
+          if (!isCurrent()) return;
+          main.innerHTML = workspace.moduleNamed(key).render(tab, demoContext(acc));
+        };
+        if (workspace.moduleNamed(key) && workspace.isReady(key)) {
+          try { renderModule(); } catch (error) { renderError(error); }
+        } else {
+          main.innerHTML = '<section class="np-work-card np-module-loading" role="status">Đang tải dữ liệu…</section>';
+          workspace.loadModule(key).then(renderModule).catch(renderError);
+        }
+        return;
+      }
+    }
     renderRoleHeroSection();
 
     // 1. GIAO DIỆN TỔNG GIÁM ĐỐC / ADMIN (BGD)
@@ -1296,7 +1352,7 @@
 
     // 5. GIAO DIỆN CÁ NHÂN CÔNG NHÂN (CN)
     if (acc.roleId === 'CN') {
-      if (currentTab === 'cn-home') main.innerHTML = renderPersonalStatementBlock(getMyOwnAttendanceRecord(), 'BẢNG TỔNG KẾT CÔNG & THU NHẬP CÁ NHÂN CÔNG NHÂN');
+      if (currentTab === 'cn-home') main.innerHTML = isPreview ? renderWorkerWorkspace() : renderPersonalStatementBlock(getMyOwnAttendanceRecord(), 'BẢNG TỔNG KẾT CÔNG & THU NHẬP CÁ NHÂN CÔNG NHÂN');
       else if (currentTab === 'cn-history') main.innerHTML = renderCnPersonalHistory();
       else if (currentTab === 'cn-requests') main.innerHTML = renderCnPersonalRequests();
       else if (currentTab === 'cn-payslip') main.innerHTML = renderCnPersonalPayslip();
@@ -2467,7 +2523,7 @@
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[char]);
     const shortcuts = [
-      ['◷', 'Chấm công', `document.getElementById('v2TeamAttendance').scrollIntoView({block:'start',behavior:'smooth'})`],
+      ['◷', 'Chấm công', isPreview ? `window.NPApp.selectTab('v2-team-attendance')` : `document.getElementById('v2TeamAttendance').scrollIntoView({block:'start',behavior:'smooth'})`],
       ['♟', 'Nhân sự đội', `window.NPApp.selectTab('dt-members')`],
       ['▤', 'Công việc', `window.NPApp.selectTab('dt-tasks')`],
       ['₫', 'Ứng lương cá nhân', 'window.NPApp.openPersonalAdvanceModal()'],
@@ -2796,6 +2852,38 @@
         </div>
       </div>
     `;
+  }
+
+  function renderWorkerWorkspace() {
+    const worker = getMyOwnAttendanceRecord();
+    const { icon, esc } = window.NPWorkspace;
+    const workedDays = getScaledDaysWorked(worker.daysMonthApproved || 0);
+    const overtime = worker.otHoursMonthApproved || 0;
+    const todayStatus = { DANG_LAM: 'Đã vào ca', DA_RA: 'Đã ra ca', VANG: 'Chưa chấm công' };
+    const quick = [
+      ['calendar', 'Lịch làm', 'cn-history'],
+      ['money', 'Phiếu lương', 'cn-payslip'],
+      ['list', 'Xin nghỉ', 'v2-worker-leave'],
+      ['folder', 'Tạm ứng', 'cn-requests']
+    ];
+    return `<div class="np-worker-home">
+      <section class="np-work-card np-worker-hero">
+        <div><p>${esc(worker.teamName)} · ${esc(worker.projectName)}</p><h1>Xin chào, ${esc(worker.name)}</h1><small>${esc(worker.code)} · ${esc(worker.roleName)}</small></div>
+        <button type="button" class="btn btn-primary" onclick="window.NPApp.openUnifiedCheckinMenu(null)">${icon('clock')} Chấm công</button>
+      </section>
+      <section class="np-worker-actions" aria-label="Tác vụ của tôi">
+        ${quick.map(([symbol, label, tab]) => `<button data-np-target="${tab}"><span>${icon(symbol)}</span>${label}</button>`).join('')}
+      </section>
+      <section class="np-work-card">
+        <div class="np-worker-section-title"><h2>Công của tôi</h2>${renderDateRangeButtonHtml()}</div>
+        <div class="np-worker-stats"><article><span>Công đã duyệt</span><strong>${workedDays}<small> ngày</small></strong></article><article><span>Tăng ca đã duyệt</span><strong>${overtime}<small> giờ</small></strong></article></div>
+      </section>
+      <section class="np-work-card">
+        <div class="np-worker-section-title"><h2>Ca làm hôm nay</h2><span class="badge badge-navy">${todayStatus[worker.attendanceStatus] || 'Chưa chấm công'}</span></div>
+        <p class="np-worker-task">${esc(worker.assignedTaskToday || 'Chưa có công việc được giao.')}</p>
+        <dl class="np-worker-times"><dt>Giờ vào</dt><dd>${esc(worker.checkInTime || '—')}</dd><dt>Giờ ra</dt><dd>${esc(worker.checkOutTime || '—')}</dd></dl>
+      </section>
+    </div>`;
   }
 
   function renderCnPersonalPayslip() {
@@ -5091,21 +5179,76 @@
     document.getElementById('adjustModal').classList.add('open');
   }
 
+  function demoContext(account) {
+    return {
+      role: account.roleId,
+      account,
+      state,
+      data: state.workspace ||= {},
+      rangeLabel: formatDateRangeLabel(),
+      rangeControl: renderDateRangeButtonHtml(),
+      period: { ...dateRange },
+      esc: window.NPWorkspace.esc,
+      money: formatVND,
+      save: () => { saveState(); renderMain(); }
+    };
+  }
+
+  function runWorkspaceAction(target, formValues) {
+    const account = getCurrentAccount();
+    if (!account) return;
+    const module = window.NPWorkspace.moduleNamed(target.dataset.npModule);
+    if (!module) return;
+    try {
+      module.handle(target.dataset.npAction, formValues, demoContext(account));
+    } catch (error) {
+      const section = target.closest('form,section') || target.parentElement;
+      let feedback = section.querySelector('.np-workspace-error');
+      if (!feedback) {
+        feedback = document.createElement('p');
+        feedback.className = 'np-workspace-error';
+        feedback.setAttribute('role', 'alert');
+        section.append(feedback);
+      }
+      feedback.textContent = error.message;
+    }
+  }
+
   function init() {
     initTheme();
+    const password = document.getElementById('fullLoginPin');
+    const passwordToggle = document.getElementById('npPasswordToggle');
+    passwordToggle.addEventListener('click', () => {
+      const show = password.type === 'password';
+      password.type = show ? 'text' : 'password';
+      passwordToggle.setAttribute('aria-pressed', String(show));
+      passwordToggle.textContent = show ? 'Ẩn' : 'Hiện';
+    });
+    document.querySelector('.np-login-form').addEventListener('input', () => {
+      document.getElementById('fullLoginErr').style.display = 'none';
+    });
     if (isPreview) {
       document.body.dataset.npPreview = 'true';
-      const demo = document.getElementById('npPreviewRoles');
-      demo.hidden = false;
-      Object.entries(ROLE_CONFIG).forEach(([role, cfg]) => {
-        const account = state.accounts.find(item => item.roleId === role && item.status === 'ACTIVE');
-        if (!account) return;
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'btn btn-soft';
-        button.textContent = cfg.shortTitle;
-        button.addEventListener('click', () => loginAsAccount(account.id));
-        demo.querySelector('.np-preview-roles').append(button);
+      document.getElementById('npLoginDemo').hidden = false;
+      document.addEventListener('submit', event => {
+        if (!event.target.matches('form[data-np-module][data-np-action]')) return;
+        event.preventDefault();
+        runWorkspaceAction(event.target, new FormData(event.target));
+      });
+      document.addEventListener('click', event => {
+        const link = event.target.closest('[data-np-target]');
+        if (link) {
+          event.preventDefault();
+          selectTab(link.dataset.npTarget);
+          return;
+        }
+        const button = event.target.closest('button[data-np-module][data-np-action]');
+        if (button) {
+          event.preventDefault();
+          const values = button.form ? new FormData(button.form) : new FormData();
+          if (button.dataset.npId) values.set('id', button.dataset.npId);
+          runWorkspaceAction(button, values);
+        }
       });
     }
     if (!isPreview && 'serviceWorker' in navigator) {
@@ -5126,7 +5269,7 @@
     };
 
     const params = new URLSearchParams(window.location.search);
-    const autoUser = params.get('autologin');
+    const autoUser = isPreview ? null : params.get('autologin');
     if (autoUser) {
       const found = state.accounts.find(a => a.username.toLowerCase() === autoUser.toLowerCase());
       if (found) {
@@ -5142,13 +5285,13 @@
     if (params.get('tab')) {
       selectTab(params.get('tab'));
     }
-    if (params.get('openmodal') === 'date') {
+    if (!isPreview && params.get('openmodal') === 'date') {
       openDateRangeModal();
-    } else if (params.get('openmodal') === 'checkin') {
+    } else if (!isPreview && params.get('openmodal') === 'checkin') {
       openUnifiedCheckinMenu(null);
-    } else if (params.get('openmodal') === 'password') {
+    } else if (!isPreview && params.get('openmodal') === 'password') {
       openChangeMyPasswordModal();
-    } else if (params.get('openmodal') === 'delete') {
+    } else if (!isPreview && params.get('openmodal') === 'delete') {
       openDeleteConfirmModal('WORKER', 'W1');
     }
 

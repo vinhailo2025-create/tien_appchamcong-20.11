@@ -10,9 +10,22 @@ const previewAssets = [
   'v2-dashboard.css',
   'v2-tables.css',
   'v2-mobile.css',
+  'v2-workspace.css',
+  'v2-workspace.js',
+  'v2-business.js',
+  'v2-business.css',
+  'v2-people.js',
+  'v2-people.css',
+  'v2-finance.js',
+  'v2-finance.css',
+  'v2-attendance.js',
+  'v2-attendance.css',
+  'v2-director.js',
+  'v2-director.css',
   'manifest.json',
-  'assets/logo-np-one-3d.png',
-  'assets/logo-np-one-flat.png'
+  'assets/np-mark.png',
+  'assets/np-app-icon.png',
+  'assets/np-construction.webp'
 ];
 const projectNames = ['Khu mẫu Bờ Đông', 'Nhà mẫu Ánh Dương', 'Khu mẫu Vườn Mây'];
 const managerNames = ['Lâm Quốc Huy', 'Bùi Mỹ Hạnh', 'Vũ Thanh Nam'];
@@ -173,6 +186,22 @@ function buildDemoSeed() {
   });
   firstWorker.pin = workerAccount.pin;
 
+  addAccount({
+    username: 'demo-kinh-doanh', fullName: 'Nguyễn Linh Chi', positionTitle: 'Kinh doanh', roleId: 'KD',
+    level: 2, projectId: 'ALL', teamId: 'ALL'
+  });
+  addAccount({
+    username: 'demo-nhan-su', fullName: 'Phạm Gia Hân', positionTitle: 'Nhân sự', roleId: 'NS',
+    level: 2, projectId: 'ALL', teamId: 'ALL'
+  });
+
+  const demoLogins = { BGD: 'giamdoc', KD: 'kinhdoanh', NS: 'nhansu', KT: 'ketoan', DT1: 'doitruong', CN: 'congnhan' };
+  for (const [roleId, demoLogin] of Object.entries(demoLogins)) {
+    const account = accounts.find(item => item.roleId === roleId);
+    account.demoLogin = demoLogin;
+    account.pin = '9999';
+  }
+
   const staffAttendance = accounts.filter(account => ['KT', 'QLCT', 'DT1'].includes(account.roleId)).map((account, index) => {
     const project = projects.find(row => row.id === account.projectId) || projects[0];
     const team = teams.find(row => row.id === account.teamId);
@@ -200,7 +229,7 @@ function buildDemoSeed() {
     };
   });
 
-  const roles = ['BGD', 'KT', 'QLCT', 'DT1', 'CN'].map(roleId => {
+  const roles = ['BGD', 'KD', 'NS', 'KT', 'DT1', 'CN'].map(roleId => {
     const account = accounts.find(row => row.roleId === roleId);
     return {
       id: roleId,
