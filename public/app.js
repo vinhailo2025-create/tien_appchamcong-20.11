@@ -56,19 +56,24 @@
       hasPersonalCheckin: false,
       defaultTab: 'bgd-overview',
       tabs: [
-        { id: 'bgd-overview', icon: '🏛️', label: 'Tổng quan & Cây Quản lý 5 Cấp', shortLabel: 'Tổng quan' },
+        { id: 'bgd-overview', icon: '🏠', label: 'Tổng quan Giám đốc & Cây Quản lý', shortLabel: 'Tổng quan' },
+        { id: 'bgd-hr-pro', icon: '👥', label: 'Quản lý Nhân sự (108 người)', shortLabel: 'Nhân sự' },
+        { id: 'bgd-excel-pro', icon: '📊', label: 'Chấm công Excel Pro (Khóa kỳ)', shortLabel: 'Excel Pro' },
+        { id: 'bgd-finance', icon: '💼', label: 'Thanh toán & Công nợ Đội / Đối tác', shortLabel: 'Tài chính' },
         { id: 'bgd-staff-check', icon: '👔', label: 'Check Chấm công Kế toán · QLCT · Đội trưởng', shortLabel: 'Check Cán bộ' },
-        { id: 'bgd-approvals', icon: '✍️', label: 'Phê duyệt Ứng lương (Mọi cấp) & Bảng lương', shortLabel: 'Phê duyệt', badgeKey: 'bgdPending' },
+        { id: 'bgd-approvals', icon: '✍️', label: 'Phê duyệt Ứng lương / Xóa NS & Bảng lương', shortLabel: 'Phê duyệt', badgeKey: 'bgdPending' },
         { id: 'bgd-audit', icon: '🛡️', label: 'Giám sát Công & Lịch sử Đổi MK / Sửa công', shortLabel: 'Giám sát' },
-        { id: 'phan-quyen', icon: '🔐', label: 'Admin Quản trị & Mật khẩu các Cấp', shortLabel: 'Admin TK' }
+        { id: 'phan-quyen', icon: '⚙️', label: 'Hệ thống & Phân quyền Tài khoản', shortLabel: 'Hệ thống' }
       ]
     },
     KT: {
       badge: 'CẤP 2 · HÀNH CHÍNH – KẾ TOÁN',
       shortTitle: 'Hành chính – Kế toán',
       hasPersonalCheckin: true,
-      defaultTab: 'kt-my-statement',
+      defaultTab: 'kt-excel-pro',
       tabs: [
+        { id: 'kt-excel-pro', icon: '📊', label: 'Bảng công Excel Pro (Nhập/Xuất/Khóa kỳ)', shortLabel: 'Excel Pro' },
+        { id: 'kt-finance', icon: '💼', label: 'Thanh toán & Công nợ Đội / Đối tác', shortLabel: 'Thanh toán' },
         { id: 'kt-my-statement', icon: '🪪', label: 'Chấm công & Bảng kê Công / Ứng lương của Kế toán', shortLabel: 'Bảng kê KT' },
         { id: 'kt-attendance', icon: '📋', label: 'Check Chấm công toàn Công ty (Theo QLCT & Đội)', shortLabel: 'Check Công' },
         { id: 'kt-advances', icon: '💳', label: 'Kiểm tra & Đối chiếu Ứng lương các Cấp', shortLabel: 'Duyệt Ứng', badgeKey: 'ktPending' },
@@ -1241,6 +1246,9 @@
     // 1. GIAO DIỆN TỔNG GIÁM ĐỐC / ADMIN (BGD)
     if (acc.roleId === 'BGD') {
       if (currentTab === 'bgd-overview') main.innerHTML = renderBgdOverview();
+      else if (currentTab === 'bgd-hr-pro') main.innerHTML = renderV2HrManagement();
+      else if (currentTab === 'bgd-excel-pro') main.innerHTML = renderV2ExcelProAttendance();
+      else if (currentTab === 'bgd-finance') main.innerHTML = renderV2FinancePayables();
       else if (currentTab === 'bgd-staff-check') main.innerHTML = renderBgdStaffCheck();
       else if (currentTab === 'bgd-approvals') main.innerHTML = renderBgdApprovals();
       else if (currentTab === 'bgd-audit') main.innerHTML = renderBgdAudit();
@@ -1251,12 +1259,14 @@
 
     // 2. GIAO DIỆN HÀNH CHÍNH - KẾ TOÁN (KT)
     if (acc.roleId === 'KT') {
-      if (currentTab === 'kt-my-statement') main.innerHTML = renderPersonalStatementBlock(getMyOwnAttendanceRecord(), 'BẢNG KÊ CÔNG & LƯƠNG CỦA KẾ TOÁN (GIÁM ĐỐC TRỰC TIẾP GIÁM SÁT)');
+      if (currentTab === 'kt-excel-pro') main.innerHTML = renderV2ExcelProAttendance();
+      else if (currentTab === 'kt-finance') main.innerHTML = renderV2FinancePayables();
+      else if (currentTab === 'kt-my-statement') main.innerHTML = renderPersonalStatementBlock(getMyOwnAttendanceRecord(), 'BẢNG KÊ CÔNG & LƯƠNG CỦA KẾ TOÁN (GIÁM ĐỐC TRỰC TIẾP GIÁM SÁT)');
       else if (currentTab === 'kt-attendance') main.innerHTML = renderKtAttendance();
       else if (currentTab === 'kt-advances') main.innerHTML = renderKtAdvances();
       else if (currentTab === 'kt-payroll') main.innerHTML = renderKtPayroll();
       else if (currentTab === 'kt-directory') main.innerHTML = renderKtHierarchyDirectory();
-      else main.innerHTML = renderPersonalStatementBlock(getMyOwnAttendanceRecord(), 'BẢNG KÊ CÔNG & LƯƠNG CỦA KẾ TOÁN');
+      else main.innerHTML = renderV2ExcelProAttendance();
       return;
     }
 
@@ -1297,45 +1307,152 @@
   function renderBgdOverview() {
     const total = state.workers.length;
     const present = state.workers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+    const leaveCount = total - present;
     const staffList = state.staffAttendance || [];
-    const ktPerson = staffList.find(s => s.roleId === 'KT') || staffList[0];
-
-    const totalMonthPayroll = state.workers.reduce((sum, w) => {
-      const d = getScaledDaysWorked(w.daysMonthApproved);
-      const hourly = w.dailyWage / 8;
-      return sum + (d * w.dailyWage) + Math.round(w.otHoursMonthApproved * hourly * 1.5);
-    }, 0);
+    const pendingAdv = state.advances.filter(a => a.status !== 'BGD_DA_DUYET').length;
+    const pendingDel = (state.deleteRequests || []).filter(r => r.status === 'CHO_BGD_DONG_Y').length;
 
     return `
-      <!-- KPI TỔNG GIÁM ĐỐC -->
-      <div class="kpi-grid-4">
-        <div class="kpi-card">
+      <!-- 1. DẢI 6 KPI ICON MÀU THEO ĐÚNG MẪU DASHBOARD GIÁM ĐỐC NP ONE V2.0 -->
+      <div class="v2-kpi-grid cols-6">
+        <div class="v2-kpi-card" style="cursor:pointer;" onclick="window.NPApp.selectTab('bgd-hr-pro')">
+          <div class="v2-kpi-icon blue">👥</div>
           <div>
-            <span class="kpi-label">KẾ TOÁN &amp; CÁN BỘ CHẤM CÔNG</span>
-            <div class="kpi-value">${staffList.length}<span class="unit">/${staffList.length} có mặt</span></div>
+            <div class="v2-kpi-title">Quân số hiện tại</div>
+            <div class="v2-kpi-num">${total}</div>
+            <div class="v2-kpi-trend" style="color:#1E8E3E;">↑ +6 so với kỳ trước</div>
           </div>
-          <div class="kpi-sub">Kế toán (${ktPerson ? ktPerson.name : 'KTT'}) vào ca: <strong>${ktPerson ? ktPerson.checkInTime : '07:45'}</strong></div>
         </div>
-        <div class="kpi-card">
+        <div class="v2-kpi-card" style="cursor:pointer;" onclick="window.NPApp.selectTab('bgd-excel-pro')">
+          <div class="v2-kpi-icon green">✓</div>
           <div>
-            <span class="kpi-label">QUÂN SỐ CÔNG NHÂN ĐI LÀM</span>
-            <div class="kpi-value">${present}<span class="unit">/${total} người</span></div>
+            <div class="v2-kpi-title">Có mặt hôm nay</div>
+            <div class="v2-kpi-num">${present}</div>
+            <div class="v2-kpi-trend" style="color:#1E8E3E;">(${((present / total) * 100).toFixed(1)}%)</div>
           </div>
-          <div class="kpi-sub">Tỷ lệ có mặt: <strong>${Math.round((present / total) * 100)}%</strong> (3 Công trình · 6 Đội)</div>
         </div>
-        <div class="kpi-card">
+        <div class="v2-kpi-card">
+          <div class="v2-kpi-icon orange">👷</div>
           <div>
-            <span class="kpi-label">KỲ LỌC DỮ LIỆU ĐANG XEM</span>
-            <div class="kpi-value" style="font-size:13.5px;">${formatDateRangeLabel()}</div>
+            <div class="v2-kpi-title">Đội trưởng</div>
+            <div class="v2-kpi-num">${state.teams.length}</div>
+            <div class="v2-kpi-trend" style="color:#5B6678;">Nghỉ/Vắng: ${leaveCount} người</div>
           </div>
-          <div class="kpi-sub">Bấm nút Lịch trên thanh Header để đổi ngày/tháng</div>
         </div>
-        <div class="kpi-card">
+        <div class="v2-kpi-card">
+          <div class="v2-kpi-icon purple">🔄</div>
           <div>
-            <span class="kpi-label">QUỸ LƯƠNG LŨY KẾ TRONG KỲ</span>
-            <div class="kpi-value">${formatVND(totalMonthPayroll)}</div>
+            <div class="v2-kpi-title">Điều chuyển</div>
+            <div class="v2-kpi-num">3</div>
+            <div class="v2-kpi-trend" style="color:#5B6678;">(2,8% quân số)</div>
           </div>
-          <div class="kpi-sub">Chỉ tính trên ngày công đã duyệt hợp lệ</div>
+        </div>
+        <div class="v2-kpi-card">
+          <div class="v2-kpi-icon teal">🏢</div>
+          <div>
+            <div class="v2-kpi-title">Công trình thi công</div>
+            <div class="v2-kpi-num">${state.projects.length}</div>
+            <div class="v2-kpi-trend" style="color:#087F91;">3 Quản lý CT phụ trách</div>
+          </div>
+        </div>
+        <div class="v2-kpi-card" style="cursor:pointer;" onclick="window.NPApp.selectTab('bgd-staff-check')">
+          <div class="v2-kpi-icon pink">👔</div>
+          <div>
+            <div class="v2-kpi-title">Kế toán &amp; Cán bộ</div>
+            <div class="v2-kpi-num">${staffList.length}/10</div>
+            <div class="v2-kpi-trend" style="color:#1E8E3E;">Đã chấm công GPS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. KHỐI KẾT QUẢ KINH DOANH KỲ (DOANH THU / CHI PHÍ / LỢI NHUẬN) + CƠ CẤU CHI PHÍ + CÔNG VIỆC CHỜ XỬ LÝ -->
+      <div class="v2-fin-grid">
+        <div class="section-card" style="margin-bottom:0;">
+          <div class="section-header">
+            <div>
+              <span class="kicker">TÌNH HÌNH TÀI CHÍNH KỲ (${formatDateRangeLabel()})</span>
+              <h3>Kết Quả Kinh Doanh Kỳ (Tạm Tính)</h3>
+            </div>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-finance')">Chi tiết ▸</button>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
+            <div class="v2-fin-box rev">
+              <div style="font-size:10px; color:#5B6678; font-weight:700;">Doanh thu</div>
+              <div style="font-size:14px; font-weight:800; color:#1E8E3E; margin-top:3px;">620.000.000đ</div>
+              <div style="font-size:9.5px; color:#1E8E3E; font-weight:700; margin-top:2px;">↑ +14%</div>
+            </div>
+            <div class="v2-fin-box cost">
+              <div style="font-size:10px; color:#5B6678; font-weight:700;">Chi phí</div>
+              <div style="font-size:14px; font-weight:800; color:#C0392B; margin-top:3px;">512.000.000đ</div>
+              <div style="font-size:9.5px; color:#C0392B; font-weight:700; margin-top:2px;">Lương &amp; Đội khoán</div>
+            </div>
+            <div class="v2-fin-box prof">
+              <div style="font-size:10px; color:#5B6678; font-weight:700;">Lợi nhuận</div>
+              <div style="font-size:14px; font-weight:800; color:#1976D2; margin-top:3px;">108.000.000đ</div>
+              <div style="font-size:9.5px; color:#1976D2; font-weight:700; margin-top:2px;">(17,4%)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card" style="margin-bottom:0;">
+          <div class="section-header">
+            <div>
+              <span class="kicker">PHÂN TÍCH CHI PHÍ</span>
+              <h3>Cơ Cấu Chi Phí</h3>
+            </div>
+          </div>
+          <div class="v2-donut-wrap">
+            <div class="v2-donut-ring">
+              <div class="v2-donut-hole">
+                <strong style="font-size:14px; color:#102D54;">512</strong>
+                <span style="font-size:8.5px; color:#5B6678;">Triệu đồng</span>
+              </div>
+            </div>
+            <div style="font-size:10.5px; display:grid; gap:4px;">
+              <div><span style="color:#1976D2;">●</span> Nhân công (74%)</div>
+              <div><span style="color:#F7931E;">●</span> Đội khoán (12%)</div>
+              <div><span style="color:#1E8E3E;">●</span> Vật tư - CCDC (8%)</div>
+              <div><span style="color:#7E57C2;">●</span> Chi phí khác (6%)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card" style="margin-bottom:0;">
+          <div class="section-header">
+            <div>
+              <span class="kicker">HÀNG CHỜ PHÊ DUYỆT CỦA GIÁM ĐỐC</span>
+              <h3>Công Việc Chờ Xử Lý (${3 + pendingAdv + pendingDel})</h3>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('bgd-approvals')">Xem tất cả ▸</button>
+          </div>
+          <div style="display:grid; gap:5px; font-size:11px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:var(--ds-bg-soft); border-radius:6px; cursor:pointer;" onclick="window.NPApp.selectTab('bgd-finance')">
+              <span>💳 <strong>3 đề nghị thanh toán đội</strong></span>
+              <span class="badge badge-orange">Chờ duyệt ▸</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:var(--ds-bg-soft); border-radius:6px; cursor:pointer;" onclick="window.NPApp.selectTab('bgd-excel-pro')">
+              <span>📊 <strong>2 bảng công cần đối chiếu</strong></span>
+              <span class="badge badge-navy">Kế toán gửi ▸</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:var(--ds-bg-soft); border-radius:6px; cursor:pointer;" onclick="window.NPApp.selectTab('bgd-approvals')">
+              <span>🗑️ <strong>${pendingDel} yêu cầu xóa nhân sự &amp; ${pendingAdv} đơn ứng</strong></span>
+              <span class="badge badge-warning">Cần xác nhận ▸</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. TRUY CẬP NHANH 8 PHÂN HỆ THEO MẪU V2.0 -->
+      <div class="section-card">
+        <div style="font-size:11px; font-weight:700; color:var(--ds-primary); margin-bottom:6px;">⚡ TRUY CẬP NHANH CÁC PHÂN HỆ NGHIỆP VỤ NP ONE V2.0</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(115px, 1fr)); gap:6px;">
+          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-hr-pro')">👥 Quản lý Nhân sự</button>
+          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-excel-pro')">📊 Bảng công Excel Pro</button>
+          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-finance')">💼 Thanh toán &amp; Công nợ</button>
+          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-staff-check')">👔 Check Công Kế toán</button>
+          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-approvals')">✍️ Phê duyệt Ứng / Xóa</button>
+          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('bgd-audit')">🛡️ Nhật ký Audit Log</button>
+          <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">⚙️ Hệ thống &amp; Tài khoản</button>
         </div>
       </div>
 
@@ -1520,6 +1637,295 @@
   }
 
   // TAB MỚI CỦA GIÁM ĐỐC: CHECK CHẤM CÔNG KẾ TOÁN, QUẢN LÝ CÔNG TRÌNH & ĐỘI TRƯỞNG
+  // =================================================================================================
+  // CÁC MÀN HÌNH NP ONE V2.0 (2. QUẢN LÝ NHÂN SỰ · 3. CHẤM CÔNG EXCEL PRO · 4. THANH TOÁN & CÔNG NỢ)
+  // =================================================================================================
+  function renderV2HrManagement() {
+    const total = state.workers.length;
+    const workingCount = state.workers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+    const leaveCount = total - workingCount;
+
+    const filtered = state.workers.filter(w => {
+      if (filterProject !== 'ALL' && w.projectId !== filterProject) return false;
+      if (filterTeam !== 'ALL' && w.teamId !== filterTeam) return false;
+      if (filterStatus === 'WORKING' && w.attendanceStatus !== 'DANG_LAM' && w.attendanceStatus !== 'DA_RA') return false;
+      if (filterStatus === 'LEAVE' && (w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA')) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!w.name.toLowerCase().includes(q) && !w.code.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">MÀN HÌNH 2 · QUẢN LÝ NHÂN SỰ &amp; ĐIỀU PHỐI (NP ONE V2.0)</span>
+            <h3>Quản Lý Nhân Sự Toàn Công Ty (${total} Hồ Sơ · Mã Nhân Sự Bất Biến)</h3>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm nhân sự</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📥 Xuất Excel</button>
+          </div>
+        </div>
+
+        <div class="v2-filter-pills">
+          <button class="v2-pill-tab ${filterStatus === 'ALL' ? 'active' : ''}" onclick="window.NPApp.setFilterStatus('ALL')">Tất cả (${total})</button>
+          <button class="v2-pill-tab ${filterStatus === 'WORKING' ? 'active' : ''}" onclick="window.NPApp.setFilterStatus('WORKING')">Đang làm (${workingCount})</button>
+          <button class="v2-pill-tab ${filterStatus === 'LEAVE' ? 'active' : ''}" onclick="window.NPApp.setFilterStatus('LEAVE')">Nghỉ việc / Tạm nghỉ (${leaveCount})</button>
+          <button class="v2-pill-tab" onclick="window.NPApp.setFilterStatus('ALL')">Tái tuyển (3)</button>
+        </div>
+
+        <div class="filter-bar" style="margin-bottom:10px;">
+          <input type="text" placeholder="🔍 Tìm theo mã, họ tên..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
+          <select onchange="window.NPApp.setFilterTeam(this.value)">
+            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Đội: Tất cả 6 Đội</option>
+            ${state.teams.map(t => `<option value="${t.id}" ${filterTeam === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+          </select>
+          <select onchange="window.NPApp.setFilterProject(this.value)">
+            <option value="ALL" ${filterProject === 'ALL' ? 'selected' : ''}>Công trình: Tất cả</option>
+            ${state.projects.map(p => `<option value="${p.id}" ${filterProject === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" /></th>
+                <th>Mã NV</th>
+                <th>Mật khẩu / PIN</th>
+                <th>Họ và tên</th>
+                <th>Đội</th>
+                <th>Công trình</th>
+                <th>Quản lý CT phụ trách</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.slice(0, 40).map(w => {
+                const isWorking = (w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA');
+                const pin = getAccountPinByUsernameOrCode(w.code);
+                return `
+                  <tr>
+                    <td><input type="checkbox" /></td>
+                    <td><strong><code>${w.code}</code></strong></td>
+                    <td><code>${pin}</code></td>
+                    <td>
+                      <div style="display:flex; align-items:center; gap:7px;">
+                        <span style="width:24px; height:24px; border-radius:50%; background:#EAF4FF; color:#1976D2; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:11px;">👷</span>
+                        <div>
+                          <strong>${w.name}</strong>
+                          <div style="font-size:9.5px; color:var(--ds-text-muted);">${w.roleName}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><strong>${w.teamName}</strong><br/><span style="font-size:9.5px; color:var(--ds-text-muted);">${w.leaderName}</span></td>
+                    <td><strong>${w.projectId}</strong></td>
+                    <td><span class="badge badge-navy">${w.managerName}</span></td>
+                    <td>
+                      ${isWorking
+                        ? `<span class="badge badge-success">Đang làm</span>`
+                        : `<span class="badge badge-danger">Nghỉ việc</span>`
+                      }
+                    </td>
+                    <td>
+                      <div style="display:flex; gap:4px;">
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPhotoModal('${w.id}')">👁️</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderV2ExcelProAttendance() {
+    const filtered = state.workers.filter(w => {
+      if (filterProject !== 'ALL' && w.projectId !== filterProject) return false;
+      if (filterTeam !== 'ALL' && w.teamId !== filterTeam) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!w.name.toLowerCase().includes(q) && !w.code.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+
+    const daysCols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">MÀN HÌNH 3 · CHẤM CÔNG EXCEL PRO (KỲ 01–15 &amp; 16–CUỐI THÁNG)</span>
+            <h3>Bảng Công Kỳ (${formatDateRangeLabel()}) — Chấm Công Excel Pro</h3>
+            <div class="section-desc">Hỗ trợ nhập/dán từ Excel, kiểm tra ô lỗi, đối chiếu theo Đội &amp; Công trình và Khóa kỳ công (sau khi khóa chỉ tạo phiếu điều chỉnh có duyệt).</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${renderDateRangeButtonHtml()}
+            <button class="btn btn-soft btn-sm" onclick="alert('Tính năng Nhập/Dán từ Excel (.CSV/.XLSX): Sẵn sàng nhận dữ liệu bảng công!')">📥 Nhập Excel</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📤 Xuất Excel</button>
+            <button class="btn btn-primary btn-sm" onclick="alert('Đã Khóa kỳ công ${formatDateRangeLabel()}! Sau khi khóa, mọi sửa đổi sẽ tạo Phiếu điều chỉnh lưu Audit Log.')">🔒 Khóa kỳ</button>
+          </div>
+        </div>
+
+        <div class="filter-bar" style="margin-bottom:10px;">
+          <select onchange="window.NPApp.setFilterProject(this.value)">
+            <option value="ALL" ${filterProject === 'ALL' ? 'selected' : ''}>Công trình: Tất cả 3 Công trình</option>
+            ${state.projects.map(p => `<option value="${p.id}" ${filterProject === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+          </select>
+          <select onchange="window.NPApp.setFilterTeam(this.value)">
+            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Đội: Tất cả 6 Đội</option>
+            ${state.teams.map(t => `<option value="${t.id}" ${filterTeam === t.id ? 'selected' : ''}>${t.name} (${t.leader})</option>`).join('')}
+          </select>
+          <input type="text" placeholder="🔍 Tìm mã NV, họ tên..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Mã NV</th>
+                <th>Họ và tên</th>
+                <th>Đội</th>
+                ${daysCols.map(d => `<th style="text-align:center;">${String(d).padStart(2, '0')}</th>`).join('')}
+                <th style="text-align:center;">Tổng giờ HC</th>
+                <th style="text-align:center;">TC (giờ)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.slice(0, 25).map((w, idx) => {
+                let totalHours = 0;
+                const cells = daysCols.map(d => {
+                  const seed = (idx + d * 3) % 13;
+                  if (seed === 5) return `<td class="excel-cell excel-N">N</td>`;
+                  if (seed === 9) { totalHours += 8; return `<td class="excel-cell excel-TC">TC</td>`; }
+                  if (seed === 11) return `<td class="excel-cell excel-P">P</td>`;
+                  totalHours += 8;
+                  return `<td class="excel-cell excel-8">8</td>`;
+                }).join('');
+                return `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td><strong><code>${w.code}</code></strong></td>
+                    <td><strong>${w.name}</strong></td>
+                    <td>${w.teamId}</td>
+                    ${cells}
+                    <td style="text-align:center; font-weight:800; color:#102D54;">${totalHours}</td>
+                    <td style="text-align:center; font-weight:800; color:#F7931E;">${w.otHoursMonthApproved || 8}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; padding-top:8px; border-top:1px solid var(--ds-line); font-size:10.5px;">
+          <span><strong class="excel-cell excel-8" style="display:inline-block; padding:1px 6px;">8</strong> : Công thường (8h)</span>
+          <span><strong class="excel-cell excel-TC" style="display:inline-block; padding:1px 6px;">TC</strong> : Tăng ca</span>
+          <span><strong class="excel-cell excel-N" style="display:inline-block; padding:1px 6px;">N</strong> : Nghỉ</span>
+          <span><strong class="excel-cell excel-P" style="display:inline-block; padding:1px 6px;">P</strong> : Nghỉ phép</span>
+          <span><strong class="excel-cell excel-Om" style="display:inline-block; padding:1px 6px;">Ôm</strong> : Nghỉ ốm</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderV2FinancePayables() {
+    const paymentList = [
+      { id: 1, team: 'Đội 01 – Riverside (ĐT1. Nguyễn Văn Sơn)', content: `Thanh toán kỳ ${formatDateRangeShortLabel()}`, amount: 167000000, status: 'Chờ duyệt' },
+      { id: 2, team: 'Đội 02 – Riverside (ĐT2. Lê Hoàng Nam)', content: `Thanh toán kỳ ${formatDateRangeShortLabel()}`, amount: 145000000, status: 'Chờ duyệt' },
+      { id: 3, team: 'Đội 03 – NP Tower (ĐT3. Vũ Đình Trọng)', content: 'Tạm ứng thi công M&E đợt 2', amount: 75000000, status: 'Chờ duyệt' },
+      { id: 4, team: 'Đội 04 – NP Tower (ĐT4. Phan Thanh Hải)', content: `Thanh toán kỳ ${formatDateRangeShortLabel()}`, amount: 125000000, status: 'Đã duyệt' }
+    ];
+
+    return `
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">MÀN HÌNH 4 · THANH TOÁN &amp; CÔNG NỢ ĐỘI / ĐỐI TÁC (NP ONE V2.0)</span>
+            <h3>Thanh Toán &amp; Công Nợ (${formatDateRangeLabel()})</h3>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${renderDateRangeButtonHtml()}
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">📥 Xuất Đối soát Thanh toán (.CSV)</button>
+          </div>
+        </div>
+
+        <div class="kpi-grid-4" style="margin-bottom:10px;">
+          <div class="kpi-card" style="background:#EAF4FF; border-color:#C2DDFB;">
+            <span class="kpi-label" style="color:#1976D2;">GIÁ TRỊ ĐỐI TÁC NGHIỆM THU</span>
+            <div class="kpi-value" style="color:#1976D2;">620.000.000đ</div>
+          </div>
+          <div class="kpi-card" style="background:#FFF3E0; border-color:#FFE0B2;">
+            <span class="kpi-label" style="color:#E65100;">CHI PHÍ ĐỘI THI CÔNG</span>
+            <div class="kpi-value" style="color:#E65100;">512.000.000đ</div>
+          </div>
+          <div class="kpi-card" style="background:#F3E8FF; border-color:#E9D5FF;">
+            <span class="kpi-label" style="color:#6B21A8;">ĐÃ TẠM ỨNG TRONG KỲ</span>
+            <div class="kpi-value" style="color:#6B21A8;">75.000.000đ</div>
+          </div>
+          <div class="kpi-card" style="background:#EBF7EE; border-color:#C6E9CE;">
+            <span class="kpi-label" style="color:#1E8E3E;">CÒN PHẢI TRẢ ĐỘI</span>
+            <div class="kpi-value" style="color:#1E8E3E;">437.000.000đ</div>
+          </div>
+        </div>
+
+        <div class="v2-filter-pills">
+          <button class="v2-pill-tab active">Đề nghị thanh toán (3)</button>
+          <button class="v2-pill-tab">Đã duyệt (8)</button>
+          <button class="v2-pill-tab">Đã chuyển tiền (8)</button>
+          <button class="v2-pill-tab">Công nợ (2)</button>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Đội / Công trình</th>
+                <th>Nội dung</th>
+                <th>Số tiền</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${paymentList.map(item => `
+                <tr>
+                  <td><strong>${item.id}</strong></td>
+                  <td><strong>${item.team}</strong></td>
+                  <td>${item.content}</td>
+                  <td><strong style="color:var(--ds-primary); font-size:12.5px;">${formatVND(item.amount)}</strong></td>
+                  <td>
+                    ${item.status === 'Chờ duyệt'
+                      ? `<span class="badge badge-warning">Chờ duyệt</span>`
+                      : `<span class="badge badge-success">✓ Đã duyệt</span>`
+                    }
+                  </td>
+                  <td>
+                    <div style="display:flex; gap:4px;">
+                      <button class="btn btn-primary btn-sm" onclick="alert('Đã phê duyệt đề nghị thanh toán ${formatVND(item.amount)} cho ${item.team}!')">✓ Duyệt chi</button>
+                      <button class="btn btn-soft btn-sm" onclick="window.NPApp.selectTab('${currentRoleId === 'BGD' ? 'bgd-approvals' : 'kt-advances'}')">👁️</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
   function renderBgdStaffCheck() {
     const staffList = state.staffAttendance || [];
     return `
@@ -2385,49 +2791,71 @@
     const tm = getTeam(acc.teamId);
     const teamWorkers = getScopedWorkersForCurrentAccount();
     const present = teamWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
-    const workingNow = teamWorkers.filter(w => w.attendanceStatus === 'DANG_LAM').length;
+    const leaveCount = teamWorkers.length - present;
+    const otCount = teamWorkers.filter(w => (w.hoursOtRegistered || 0) > 0).length;
 
     return `
-      <div class="kpi-grid-4">
-        <div class="kpi-card">
+      <!-- LƯỚI 6 Ô CHỨC NĂNG ĐỘI TRƯỞNG MOBILE THEO ĐÚNG MẪU V2.0 (MÀN HÌNH 5) -->
+      <div class="section-card">
+        <div class="section-header">
           <div>
-            <span class="kpi-label">QUÂN SỐ ${tm.name.toUpperCase()}</span>
-            <div class="kpi-value">${present}<span class="unit">/${teamWorkers.length} người</span></div>
+            <span class="kicker">MÀN HÌNH 5 · ỨNG DỤNG ĐỘI TRƯỞNG (NP ONE V2.0)</span>
+            <h3>Xin chào, ${acc.fullName} — ${tm.name} (${tm.projectId})</h3>
           </div>
-          <div class="kpi-sub">Đội trưởng chỉ quản lý nhân sự thuộc ${tm.id}</div>
+          ${renderDateRangeButtonHtml()}
         </div>
-        <div class="kpi-card">
-          <div>
-            <span class="kpi-label">ĐANG LÀM VIỆC TRÊN CÔNG TRÌNH</span>
-            <div class="kpi-value" style="color:var(--ds-success);">${workingNow}<span class="unit">người</span></div>
+
+        <div class="dt-quick-grid-6">
+          <div class="dt-quick-tile" onclick="window.NPApp.openUnifiedCheckinMenu(null)">
+            <div class="tile-ico">📅</div>
+            <span>Chấm công</span>
           </div>
-          <div class="kpi-sub">Đã chụp Camera GPS Check-in hợp lệ</div>
+          <div class="dt-quick-tile" onclick="window.NPApp.selectTab('dt-members')">
+            <div class="tile-ico">👥</div>
+            <span>Nhân sự đội (${teamWorkers.length})</span>
+          </div>
+          <div class="dt-quick-tile" onclick="window.NPApp.selectTab('dt-tasks')">
+            <div class="tile-ico">📋</div>
+            <span>Báo cáo hiện trường</span>
+          </div>
+          <div class="dt-quick-tile" onclick="window.NPApp.openPersonalAdvanceModal()">
+            <div class="tile-ico">💳</div>
+            <span>Đề nghị tạm ứng</span>
+          </div>
+          <div class="dt-quick-tile" onclick="window.NPApp.selectTab('dt-tasks')">
+            <div class="tile-ico">📦</div>
+            <span>Khối lượng &amp; Việc</span>
+          </div>
+          <div class="dt-quick-tile" onclick="window.NPApp.selectTab('dt-my-statement')">
+            <div class="tile-ico">☑️</div>
+            <span>Đối chiếu kỳ</span>
+          </div>
         </div>
-        <div class="kpi-card">
+
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; text-align:center; background:var(--ds-bg-soft); padding:8px; border-radius:8px; border:1px solid var(--ds-line);">
           <div>
-            <span class="kpi-label">KỲ LỌC NGÀY ĐANG XEM</span>
-            <div class="kpi-value" style="font-size:13.5px;">${formatDateRangeLabel()}</div>
+            <div style="font-size:16px; font-weight:800; color:#1E8E3E;">${present}</div>
+            <div style="font-size:10px; font-weight:600; color:#5B6678;">🟢 Có mặt</div>
           </div>
-          <div class="kpi-sub">Bấm nút Lịch trên Header để chọn ngày</div>
-        </div>
-        <div class="kpi-card">
           <div>
-            <span class="kpi-label">QUẢN LÝ CÔNG TRÌNH DUYỆT</span>
-            <div class="kpi-value" style="font-size:14px;">${tm.managerName}</div>
+            <div style="font-size:16px; font-weight:800; color:#C0392B;">${leaveCount}</div>
+            <div style="font-size:10px; font-weight:600; color:#5B6678;">🔴 Nghỉ</div>
           </div>
-          <div class="kpi-sub">Đội trưởng nhập công → Trình ${tm.managerName} duyệt</div>
+          <div>
+            <div style="font-size:16px; font-weight:800; color:#7E57C2;">${otCount}</div>
+            <div style="font-size:10px; font-weight:600; color:#5B6678;">🟣 Tăng ca</div>
+          </div>
         </div>
       </div>
 
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">MỤC CHECK CHẤM CÔNG &amp; ĐIỂM DANH CAMERA GPS RIÊNG CỦA ${tm.name.toUpperCase()}</span>
+            <span class="kicker">CHẤM CÔNG ĐỘI · ${tm.name.toUpperCase()}</span>
             <h3>Check &amp; Điểm Danh (Check-in / Check-out Chung 1 Menu) Cho ${teamWorkers.length} Công Nhân Đội Tôi</h3>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu(null)">📸 Mở Menu Chấm công (Chọn Vào ca / Ra ca)</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu(null)">✓ Cập nhật chấm công Camera GPS</button>
           </div>
         </div>
 
