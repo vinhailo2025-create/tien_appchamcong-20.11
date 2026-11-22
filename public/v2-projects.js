@@ -26,11 +26,11 @@
     </nav>`;
   }
 
-  function sharedTable(headers, rows, esc, empty) {
+  function sharedTable(headers, rows, empty) {
     if (!rows.length) return `<p class="np-project-empty">${empty}</p>`;
     return `<div class="table-scroll" tabindex="0"><table class="data-table">
       <thead><tr>${headers.map(label => `<th scope="col">${label}</th>`).join('')}</tr></thead>
-      <tbody>${rows.map(row => `<tr>${row.map(value => `<td>${esc(value ?? '—')}</td>`).join('')}</tr>`).join('')}</tbody>
+      <tbody>${rows.map(row => `<tr>${row.map(value => `<td>${value}</td>`).join('')}</tr>`).join('')}</tbody>
     </table></div>`;
   }
 
@@ -62,13 +62,18 @@
     const teamName = new Map(teams.map(team => [team.id, team.name]));
     const headcounts = new Map();
     for (const worker of workers) headcounts.set(worker.teamId, (headcounts.get(worker.teamId) || 0) + 1);
-    const status = { DANG_LAM: 'Đang làm', DA_RA: 'Đã ra ca', VANG: 'Vắng', NGHI_PHEP: 'Nghỉ phép', NGHI_KP: 'Nghỉ không phép' };
     const taskStatus = { DANG_THUC_HIEN: 'Đang thực hiện', HOAN_THANH: 'Hoàn thành', CHUA_BAT_DAU: 'Chưa bắt đầu', CHO_NHAN: 'Chờ nhận' };
+    const cell = value => esc(value ?? '—');
+    const { attendanceBadge, detailButton, detailDialog } = window.NPPeople;
+    const records = worker => {
+      const day = worker.date?.split('-');
+      return day?.length === 3 ? day.reverse().join('/') : worker.date;
+    };
     const definitions = {
-      teams: [['Đội', 'Đội trưởng', 'Nhân sự'], teams, team => [team.name, team.leader, headcounts.get(team.id) || 0], 'Công trình chưa có đội thi công.'],
-      workers: [['Mã NV', 'Họ và tên', 'Vị trí', 'Đội'], workers, worker => [worker.code, worker.name, worker.roleName, teamName.get(worker.teamId)], 'Chưa có nhân sự thuộc công trình.'],
-      attendance: [['Mã NV', 'Họ và tên', 'Ngày ghi nhận', 'Vào ca', 'Ra ca', 'Trạng thái'], workers, worker => [worker.code, worker.name, worker.date, worker.checkInTime, worker.checkOutTime, status[worker.attendanceStatus] || 'Chưa chấm công'], 'Chưa có dữ liệu chấm công.'],
-      tasks: [['Hạng mục', 'Đội thi công', 'Ngày', 'Tiến độ', 'Trạng thái'], tasks, task => [task.title, teamName.get(task.teamId), task.date, Number.isFinite(task.progressPercent) ? task.progressPercent + '%' : '—', taskStatus[task.status] || '—'], 'Chưa có công việc của công trình.']
+      teams: [['Đội', 'Đội trưởng', 'Nhân sự'], teams, team => [team.name, team.leader, headcounts.get(team.id) || 0].map(cell), 'Công trình chưa có đội thi công.'],
+      workers: [['Mã NV', 'Họ và tên', 'Vị trí', 'Đội', 'Hồ sơ'], workers, worker => [worker.code, worker.name, worker.roleName, teamName.get(worker.teamId)].map(cell).concat(detailButton(worker, esc)), 'Chưa có nhân sự thuộc công trình.'],
+      attendance: [['Mã NV', 'Họ và tên', 'Ngày ghi nhận', 'Vào ca', 'Ra ca', 'Trạng thái', 'Hồ sơ'], workers, worker => [worker.code, worker.name, records(worker), worker.checkInTime, worker.checkOutTime].map(cell).concat(attendanceBadge(worker.attendanceStatus), detailButton(worker, esc)), 'Chưa có dữ liệu chấm công.'],
+      tasks: [['Hạng mục', 'Đội thi công', 'Ngày', 'Tiến độ', 'Trạng thái'], tasks, task => [task.title, teamName.get(task.teamId), task.date, Number.isFinite(task.progressPercent) ? task.progressPercent + '%' : '—', taskStatus[task.status] || '—'].map(cell), 'Chưa có công việc của công trình.']
     };
     const [headers, items, toRow, empty] = definitions[view.section];
     const page = pageItems(items, view.page);
@@ -85,13 +90,14 @@
           <div><strong>${workers.filter(present).length}</strong><span>Có mặt theo bản ghi</span></div>
         </div>
       </section>
-      <section class="np-work-card np-project-related">
+      <section class="np-work-card np-project-related" data-project-section="${view.section}">
         <nav class="np-project-tabs" aria-label="Thông tin công trình">${Object.entries(sections).map(([id, name]) => `<button type="button" data-np-module="projects" data-np-action="section" data-np-id="${id}" aria-pressed="${id === view.section}">${name}</button>`).join('')}</nav>
         <h2>${sections[view.section]} <span class="np-project-count">${items.length}</span></h2>
-        ${sharedTable(headers, page.rows.map(toRow), esc, empty)}
+        ${sharedTable(headers, page.rows.map(toRow), empty)}
         ${footer(items.length,page)}
       </section>
       <button type="button" class="btn btn-soft np-project-finance" data-np-target="v2-director-payments" data-np-project="${esc(project.id)}">${icon('money')} Tài chính công trình ${icon('arrow')}</button>
+      ${detailDialog}
     </div>`;
   }
 

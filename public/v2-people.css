@@ -167,3 +167,72 @@
     min-height: 36px;
   }
 }
+
+.np-people-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.np-people-pages > span { margin-inline-end: auto; }
+.np-director-teams { margin-top: 12px; }
+.np-director-teams summary { cursor: pointer; font-weight: 700; }
+.np-director-teams[open] summary { margin-bottom: 10px; }
+.np-worker-detail-button { min-height: 34px; color: #145b93; }
+
+.np-attendance-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: #e9eff5;
+  color: #405b74;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.np-attendance-pill::before {
+  display: block;
+  flex: 0 0 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
+}
+
+.np-attendance-pill[data-tone="working"] { background: #def3e7; color: #146045; }
+.np-attendance-pill[data-tone="completed"] { background: #e3eefc; color: #1b538b; }
+.np-attendance-pill[data-tone="leave"] { background: #fff0d4; color: #804608; }
+.np-attendance-pill[data-tone="absent"] { background: #fbe8e5; color: #96362d; }
+
+.np-worker-detail-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #dce6f0;
+  background: #f1f7fd;
+}
+
+.np-worker-detail-head p { margin: 0; color: #4f6882; }
+.np-worker-detail-head h2 { margin: 3px 0 0; font-size: 1.2rem; overflow-wrap: anywhere; }
+.np-worker-detail-head .btn { width: 40px; height: 40px; }
+.np-worker-detail-body { display: grid; gap: 16px; padding: 14px 16px 18px; }
+.np-worker-detail-body h3 { margin: 0 0 6px; color: #102d54; }
+.np-worker-detail-body dl { margin: 0; }
+.np-worker-detail-body dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+  gap: 8px;
+  padding-block: 5px;
+  border-bottom: 1px solid #e6edf4;
+}
+.np-worker-detail-body dt { color: #476583; }
+.np-worker-detail-body dd { margin: 0; overflow-wrap: anywhere; }

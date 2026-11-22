@@ -185,19 +185,22 @@
     const visibleRows = [...rows].reverse().slice(offset, offset + pageSize);
     const today = isoDay(new Date());
     const esc = context.esc;
+    const icon = window.NPWorkspace.icon;
     return `<section class="np-finance">
-      <header class="np-finance-head"><div><h1>${role === DIRECTOR ? 'Duyệt chi & Công nợ' : 'Thanh toán & Công nợ'}</h1><p>Giao dịch mẫu.</p></div>${role === ACCOUNTANT && projects.length ? createForm(context, projects) : ''}</header>
+      <header class="np-finance-head"><div class="np-finance-title"><span class="np-finance-title-icon">${icon('money')}</span><div><h1>${role === DIRECTOR ? 'Duyệt chi & Công nợ' : 'Thanh toán & Công nợ'}</h1><p>${projects.length} công trình · Dữ liệu mẫu</p></div></div>${role === ACCOUNTANT && projects.length ? createForm(context, projects) : ''}</header>
       <div class="np-finance-filters"><form data-np-module="finance" data-np-action="filter">
         <label>Công trình<select name="projectId"><option value="">Tất cả</option>${projects.map(project => `<option value="${esc(project.id)}" ${filter.projectId === project.id ? 'selected' : ''}>${esc(project.name)}</option>`).join('')}</select></label>
         <label>Loại<select name="kind"><option value="">Tất cả</option><option value="payable" ${filter.kind === 'payable' ? 'selected' : ''}>Phải trả</option><option value="receivable" ${filter.kind === 'receivable' ? 'selected' : ''}>Phải thu</option></select></label>
         <label>Trạng thái<select name="status"><option value="">Tất cả</option>${Object.entries(STATUS).map(([key, label]) => `<option value="${key}" ${filter.status === key ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
-        <button type="submit">Lọc</button>
+        <button type="submit">${icon('filter')} Lọc</button>
       </form></div>
       <div class="np-finance-kpis">
-        <article><span>Còn phải thu</span><strong>${context.money(totals.receivable)}</strong></article>
-        <article><span>Còn phải trả đã duyệt</span><strong>${context.money(totals.payable)}</strong></article>
-        <article><span>Đề nghị chờ duyệt</span><strong>${totals.pendingCount}</strong></article>
-        <article><span>Chứng từ quá hạn</span><strong>${totals.overdueCount}</strong></article>
+        ${[
+          ['arrow-down', 'Còn phải thu', context.money(totals.receivable)],
+          ['arrow-up', 'Còn phải trả đã duyệt', context.money(totals.payable)],
+          ['clipboard', 'Đề nghị chờ duyệt', totals.pendingCount],
+          ['clock', 'Chứng từ quá hạn', totals.overdueCount]
+        ].map(([symbol, label, value]) => `<article><span class="np-finance-metric-icon">${icon(symbol)}</span><span>${label}</span><strong>${value}</strong></article>`).join('')}
       </div>
       <p class="np-finance-feedback" role="status" data-finance-feedback>${esc(feedback)}</p>
       <div class="np-finance-table" tabindex="0" role="region" aria-label="Thanh toán và công nợ">
@@ -213,7 +216,7 @@
         </tr>`).join('') : '<tr><td colspan="8" class="np-finance-empty">Chưa có chứng từ phù hợp.</td></tr>'}</tbody></table>
       </div>
       ${pageCount > 1 ? `<nav class="np-finance-pagination" aria-label="Phân trang chứng từ"><span>${offset + 1}–${offset + visibleRows.length} / ${rows.length}</span><button type="button" data-np-module="finance" data-np-action="page" data-np-id="${page - 1}" ${page <= 1 ? 'disabled' : ''}>Trước</button><span>Trang ${page} / ${pageCount}</span><button type="button" data-np-module="finance" data-np-action="page" data-np-id="${page + 1}" ${page >= pageCount ? 'disabled' : ''}>Sau</button></nav>` : ''}
-      <dialog class="np-finance-detail" id="npFinanceDetail" aria-labelledby="npFinanceDetailTitle"></dialog>
+      <dialog class="np-detail-dialog np-finance-detail" id="npFinanceDetail" aria-labelledby="npFinanceDetailTitle"></dialog>
     </section>`;
   }
 

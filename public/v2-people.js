@@ -2,7 +2,7 @@
   'use strict';
 
   const views = new Map([
-    ['ns-workers', 'NS'], ['ns-assignments', 'NS'], ['ns-leave', 'NS'],
+    ['v2-director-people', 'BGD'], ['ns-workers', 'NS'], ['ns-assignments', 'NS'], ['ns-leave', 'NS'],
     ['v2-team-leave', 'DT1'], ['v2-worker-leave', 'CN']
   ]);
 
@@ -113,46 +113,127 @@
     return `<label>${label}<select name="${name}" required>${options}</select></label>`;
   }
 
-  function rosterView(context, people) {
+  const PAGE_SIZE = 50;
+  const attendanceStates = {
+    DANG_LAM: ['working', 'Đang làm'], DA_RA: ['completed', 'Đã ra ca'],
+    NGHI_PHEP: ['leave', 'Nghỉ phép'], NGHI_KP: ['absent', 'Nghỉ không phép'],
+    VANG: ['absent', 'Vắng']
+  };
+
+  function attendanceBadge(status) {
+    const [tone, label] = Object.hasOwn(attendanceStates, status) ? attendanceStates[status] : ['empty', 'Chưa chấm công'];
+    return `<span class="np-attendance-pill" data-tone="${tone}">${label}</span>`;
+  }
+
+  function detailButton(worker, esc) {
+    return `<button type="button" class="btn btn-soft btn-sm np-worker-detail-button" data-np-module="people" data-np-action="worker-detail" data-np-id="${esc(worker.code)}" aria-label="Xem hồ sơ ${esc(worker.name)}">Xem hồ sơ</button>`;
+  }
+
+  const detailDialog = '<dialog class="np-detail-dialog np-worker-detail" id="npWorkerDetail" aria-labelledby="npWorkerDetailTitle"></dialog>';
+
+  function directorWorkers(context, people) {
+    const scope = context.account.projectId;
+    if (!scope || scope === 'ALL') return roster(context, people);
+    return roster(context, people).filter(worker => {
+      const team = byId(context.state.teams, teamAt(worker, people, today()));
+      return (team?.projectId || worker.projectId) === scope;
+    });
+  }
+
+  function directorTeams(context, workers) {
+    const { state, esc } = context;
+    const scope = context.account.projectId;
+    const teams = state.teams.filter(team => !scope || scope === 'ALL' || team.projectId === scope);
+    const projects = new Map(state.projects.map(project => [project.id, project]));
+    const currentDate = today();
+    const people = read(context);
+    const rows = teams.map(team => {
+      const project = projects.get(team.projectId);
+      return `<tr><td>${esc(team.name)}</td><td>${esc(team.leader)}</td><td>${project ? `<button type="button" class="btn btn-soft btn-sm" data-np-target="v2-projects" data-np-project="${esc(project.id)}">${esc(project.name)}</button>` : '—'}</td><td>${workers.filter(worker => teamAt(worker, people, currentDate) === team.id).length}</td></tr>`;
+    });
+    return `<details class="np-work-card np-director-teams"><summary>Nhân sự theo đội</summary>${table(['Đội', 'Quản lý đội', 'Công trình', 'Quân số'], rows, 'Nhân sự theo đội', 'Chưa có đội.')}</details>`;
+  }
+
+  function openWorkerDetail(code, context) {
+    if (!mayUse(context, 'BGD')) return;
+    const { state, esc } = context;
+    const people = read(context);
+    const worker = directorWorkers(context, people).find(item => item.code === code);
+    const dialog = document.getElementById('npWorkerDetail');
+    if (!worker || !dialog || dialog.open) return;
+    const profile = Object.hasOwn(people.profiles, code) ? people.profiles[code] : {};
+    const team = byId(state.teams, teamAt(worker, people, today()));
+    const project = byId(state.projects, team?.projectId || worker.projectId);
+    const fields = entries => `<dl>${entries.map(([label, value]) => `<div><dt>${label}</dt><dd>${esc(value ?? '—')}</dd></div>`).join('')}</dl>`;
+    const documents = value => value === true ? 'Đã đủ' : value === false ? 'Chưa đủ' : 'Chưa cập nhật';
+    dialog.innerHTML = `<header class="np-worker-detail-head">
+      <div><p>Hồ sơ nhân sự · ${esc(worker.code)}</p><h2 id="npWorkerDetailTitle">${esc(worker.name)}</h2></div>
+      <form method="dialog"><button type="submit" class="btn btn-soft" aria-label="Đóng hồ sơ" autofocus>×</button></form>
+    </header>
+    <div class="np-worker-detail-body">
+      <section><h3>Thông tin công việc</h3>${fields([
+        ['Vị trí', worker.roleName || worker.skill], ['Trạng thái', profileStates[profile.status] || profileStates.active],
+        ['Đội', team?.name], ['Công trình', project?.name], ['Đội trưởng', team?.leader],
+        ['Số điện thoại', worker.phone || 'Chưa cập nhật']
+      ])}</section>
+      <section><h3>Hồ sơ lao động</h3>${fields([
+        ['Ngày vào làm', formatDate(profile.joinedOn)], ['Ngày nghỉ việc', formatDate(profile.leftOn)],
+        ['Ngày tái tuyển', formatDate(profile.rehiredOn)], ['Hạn hợp đồng', formatDate(profile.contractUntil)],
+        ['Giấy tờ xác minh', documents(profile.identityReady)], ['Hợp đồng', documents(profile.contractReady)]
+      ])}</section>
+      <section><h3>Bản ghi chấm công</h3>${worker.date ? attendanceBadge(worker.attendanceStatus) + fields([
+        ['Ngày ghi nhận', formatDate(worker.date)], ['Vào ca', worker.checkInTime], ['Ra ca', worker.checkOutTime]
+      ]) : '<p>Chưa có bản ghi chấm công.</p>'}</section>
+    </div>`;
+    dialog.showModal();
+  }
+
+  function rosterView(context, people, director = false) {
     const { esc, state } = context;
-    const workers = roster(context, people);
+    const workers = director ? directorWorkers(context, people) : roster(context, people);
     const currentDate = today();
     const employeeStatus = worker => Object.hasOwn(people.profiles, worker.code) ? people.profiles[worker.code].status || 'active' : 'active';
     const isReady = worker => {
       const profile = Object.hasOwn(people.profiles, worker.code) ? people.profiles[worker.code] : {};
       return Boolean(profile.identityReady && profile.contractReady && (!profile.contractUntil || profile.contractUntil >= currentDate));
     };
-    const rows = workers.map(worker => {
+    const rows = workers.map((worker, index) => {
       const profile = Object.hasOwn(people.profiles, worker.code) ? people.profiles[worker.code] : {};
       const team = byId(state.teams, teamAt(worker, people, currentDate));
       const status = profileStates[profile.status] || 'Đang làm';
-      const selectedStates = Object.entries(profileStates).map(([key, label]) => `<option value="${key}" ${key === (profile.status || 'active') ? 'selected' : ''}>${label}</option>`).join('');
-      const edit = form('update-profile', `
-        <input type="hidden" name="workerCode" value="${esc(worker.code)}">
-        ${select('Trạng thái', 'status', selectedStates)}
-        ${input('Ngày vào làm', 'joinedOn', `value="${esc(profile.joinedOn || '')}"`, 'date')}
-        ${input('Ngày nghỉ việc', 'leftOn', `value="${esc(profile.leftOn || '')}"`, 'date')}
-        ${input('Ngày tái tuyển', 'rehiredOn', `value="${esc(profile.rehiredOn || '')}"`, 'date')}
-        ${input('Hạn hợp đồng', 'contractUntil', `value="${esc(profile.contractUntil || '')}"`, 'date')}
-        <label class="v2-people-check"><input name="identityReady" type="checkbox" ${profile.identityReady ? 'checked' : ''}> Đã đủ giấy tờ xác minh</label>
-        <label class="v2-people-check"><input name="contractReady" type="checkbox" ${profile.contractReady ? 'checked' : ''}> Đã đủ hợp đồng</label>
-      `, 'Lưu hồ sơ');
-      const history = [...(profile.history || [])].reverse().map(entry => `<li>${formatDate(entry.at.slice(0, 10))} · ${esc(profileStates[entry.status])} · ${esc(entry.by)}</li>`).join('');
-      const project = byId(state.projects, team?.projectId);
-      return `<tr data-people-row data-name="${esc(worker.name)}" data-code="${esc(worker.code)}" data-status="${esc(employeeStatus(worker))}" data-team="${esc(team?.id || '')}" data-project="${esc(project?.id || '')}">
+      let action = '';
+      if (director) {
+        action = detailButton(worker, esc);
+      } else {
+        const selectedStates = Object.entries(profileStates).map(([key, label]) => `<option value="${key}" ${key === (profile.status || 'active') ? 'selected' : ''}>${label}</option>`).join('');
+        const editForm = form('update-profile', `
+          <input type="hidden" name="workerCode" value="${esc(worker.code)}">
+          ${select('Trạng thái', 'status', selectedStates)}
+          ${input('Ngày vào làm', 'joinedOn', `value="${esc(profile.joinedOn || '')}"`, 'date')}
+          ${input('Ngày nghỉ việc', 'leftOn', `value="${esc(profile.leftOn || '')}"`, 'date')}
+          ${input('Ngày tái tuyển', 'rehiredOn', `value="${esc(profile.rehiredOn || '')}"`, 'date')}
+          ${input('Hạn hợp đồng', 'contractUntil', `value="${esc(profile.contractUntil || '')}"`, 'date')}
+          <label class="v2-people-check"><input name="identityReady" type="checkbox" ${profile.identityReady ? 'checked' : ''}> Đã đủ giấy tờ xác minh</label>
+          <label class="v2-people-check"><input name="contractReady" type="checkbox" ${profile.contractReady ? 'checked' : ''}> Đã đủ hợp đồng</label>
+        `, 'Lưu hồ sơ');
+        const history = [...(profile.history || [])].reverse().map(entry => `<li>${formatDate(entry.at.slice(0, 10))} · ${esc(profileStates[entry.status])} · ${esc(entry.by)}</li>`).join('');
+        action = `<details class="v2-people-edit"><summary>Cập nhật</summary>${editForm}${history ? `<details class="v2-people-meta"><summary>Lịch sử cập nhật</summary><ul>${history}</ul></details>` : ''}</details>`;
+      }
+      const project = byId(state.projects, team?.projectId || worker.projectId);
+      return `<tr data-people-row ${director && index >= PAGE_SIZE ? 'hidden' : ''} data-name="${esc(worker.name)}" data-code="${esc(worker.code)}" data-status="${esc(employeeStatus(worker))}" data-team="${esc(team?.id || '')}" data-project="${esc(project?.id || '')}">
         <td><strong>${esc(worker.code)}</strong></td><td>${esc(worker.name)}</td><td>${esc(team?.name || 'Chưa có đội')}</td><td>${esc(project?.name || '—')}</td>
         <td><span class="badge ${profile.status === 'left' ? 'badge-danger' : profile.status === 'paused' ? 'badge-warning' : 'badge-success'}">${status}</span></td>
         <td><span class="badge ${isReady(worker) ? 'badge-success' : 'badge-warning'}">${isReady(worker) ? 'Đủ hồ sơ' : profile.contractUntil && profile.contractUntil < currentDate ? 'Hợp đồng hết hạn' : 'Cần rà soát'}</span></td>
-        <td><details class="v2-people-edit"><summary>Cập nhật</summary>${edit}${history ? `<details class="v2-people-meta"><summary>Lịch sử cập nhật</summary><ul>${history}</ul></details>` : ''}</details></td></tr>`;
+        <td>${action}</td></tr>`;
     });
     const statuses = [['', 'Tất cả'], ...Object.entries(profileStates)];
     const options = (items = []) => items.map(item => `<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('');
-    const buttons = `<div class="v2-people-actions"><button class="btn btn-primary" type="button" data-people-add aria-expanded="false" aria-controls="np-people-create">+ Thêm nhân sự</button>
+    const buttons = director ? '' : `<div class="v2-people-actions"><button class="btn btn-primary" type="button" data-people-add aria-expanded="false" aria-controls="np-people-create">+ Thêm nhân sự</button>
       <button class="btn btn-soft" type="button" data-people-export ${rows.length ? '' : 'disabled'}>Xuất CSV</button></div>`;
-    return panel('Quản lý nhân sự', 'Mã nhân sự, tình trạng làm việc và mức độ đầy đủ của hồ sơ.', `
-      <div id="np-people-create" class="v2-people-add" hidden>
+    return panel(director ? 'Danh sách nhân sự' : 'Quản lý nhân sự', 'Tra cứu theo mã, họ tên, đội hoặc công trình.', `
+      ${director ? '' : `<div id="np-people-create" class="v2-people-add" hidden>
         ${form('create-worker', input('Mã nhân sự', 'code', 'required maxlength="40"') + input('Họ và tên', 'name', 'required maxlength="120"') + input('Ngày vào làm', 'joinedOn', '', 'date'), 'Tạo hồ sơ')}
-      </div>
+      </div>`}
       <div class="v2-people-statuses" role="group" aria-label="Lọc theo trạng thái">
         ${statuses.map(([value, label]) => `<button type="button" data-people-status="${value}" aria-pressed="${!value}">${label} (${value ? workers.filter(worker => employeeStatus(worker) === value).length : workers.length})</button>`).join('')}
       </div>
@@ -162,7 +243,12 @@
         <select aria-label="Lọc theo công trình" data-people-filter="project"><option value="">Tất cả công trình</option>${options(state.projects)}</select>
         <select aria-label="Lọc theo trạng thái" data-people-filter="status">${statuses.map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}</select>
       </div>
-      ${table(['Mã NV', 'Họ và tên', 'Đội', 'Công trình', 'Trạng thái', 'Hồ sơ', 'Thao tác'], rows, 'Hồ sơ nhân sự', 'Chưa có hồ sơ nhân sự.', true)}`, buttons);
+      ${table(['Mã NV', 'Họ và tên', 'Đội', 'Công trình', 'Trạng thái', 'Hồ sơ', 'Thao tác'], rows, 'Hồ sơ nhân sự', 'Chưa có hồ sơ nhân sự.', true)}
+      ${director ? `<nav class="np-people-pages" data-people-pages aria-label="Phân trang nhân sự" ${workers.length > PAGE_SIZE ? '' : 'hidden'}>
+        <span role="status">1–${PAGE_SIZE} / ${workers.length}</span>
+        <button class="btn btn-soft" type="button" data-people-page="-1" disabled>Trước</button>
+        <button class="btn btn-soft" type="button" data-people-page="1">Sau</button>
+      </nav>${detailDialog}` : ''}`, buttons) + (director ? directorTeams(context, workers) : '');
   }
 
   function assignmentView(context, people) {
@@ -235,6 +321,7 @@
       return panel('Không có quyền xem', 'Màn hình dành cho vai trò được phân công.', '');
     }
     const people = read(context);
+    if (tab === 'v2-director-people') return rosterView(context, people, true);
     if (tab === 'ns-workers') return rosterView(context, people);
     if (tab === 'ns-assignments') return assignmentView(context, people);
     return leaveView(context, people);
@@ -244,18 +331,30 @@
     return value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd').trim();
   }
 
-  function updateRosterFilters(panel) {
+  function updateRosterFilters(panel, requestedPage = 1) {
     const filters = Object.fromEntries([...panel.querySelectorAll('[data-people-filter]')].map(field => [field.dataset.peopleFilter, field.value]));
     const query = searchKey(filters.search);
     const rows = [...panel.querySelectorAll('[data-people-row]')];
-    for (const row of rows) {
-      row.hidden = !searchKey(`${row.dataset.name} ${row.dataset.code}`).includes(query)
-        || ['status', 'team', 'project'].some(key => filters[key] && row.dataset[key] !== filters[key]);
+    const matches = rows.filter(row => searchKey(`${row.dataset.name} ${row.dataset.code}`).includes(query)
+      && ['status', 'team', 'project'].every(key => !filters[key] || row.dataset[key] === filters[key]));
+    const pager = panel.querySelector('[data-people-pages]');
+    const count = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
+    const page = Math.max(1, Math.min(requestedPage, count));
+    const offset = (page - 1) * PAGE_SIZE;
+    const visible = new Set(pager ? matches.slice(offset, offset + PAGE_SIZE) : matches);
+    for (const row of rows) row.hidden = !visible.has(row);
+    if (pager) {
+      pager.hidden = count <= 1;
+      pager.dataset.page = page;
+      pager.querySelector('[role="status"]').textContent = `${offset + 1}–${Math.min(offset + PAGE_SIZE, matches.length)} / ${matches.length}`;
+      pager.querySelector('[data-people-page="-1"]').disabled = page <= 1;
+      pager.querySelector('[data-people-page="1"]').disabled = page >= count;
     }
     panel.querySelectorAll('[data-people-status]').forEach(button => button.setAttribute('aria-pressed', button.dataset.peopleStatus === filters.status));
     const emptyRow = panel.querySelector('[data-people-empty]');
-    if (emptyRow) emptyRow.hidden = rows.some(row => !row.hidden);
-    panel.querySelector('[data-people-export]').disabled = !rows.some(row => !row.hidden);
+    if (emptyRow) emptyRow.hidden = matches.length > 0;
+    const exportButton = panel.querySelector('[data-people-export]');
+    if (exportButton) exportButton.disabled = matches.length === 0;
   }
 
   function exportRoster(panel) {
@@ -277,6 +376,7 @@
   }
 
   function handle(action, formData, context) {
+    if (action === 'worker-detail') return openWorkerDetail(formData.get('id'), context);
     const hr = mayUse(context, 'NS');
     const lead = mayUse(context, 'DT1');
     const workerRole = mayUse(context, 'CN');
@@ -363,7 +463,7 @@
       updateRosterFilters(event.target.closest('.v2-people'));
     });
     document.addEventListener('click', event => {
-      const button = event.target.closest?.('[data-people-add], [data-people-status], [data-people-export]');
+      const button = event.target.closest?.('[data-people-add], [data-people-status], [data-people-export], [data-people-page]');
       if (!button) return;
       const panel = button.closest('.v2-people');
       if (button.hasAttribute('data-people-add')) {
@@ -374,11 +474,14 @@
       } else if (button.hasAttribute('data-people-status')) {
         panel.querySelector('[data-people-filter="status"]').value = button.dataset.peopleStatus;
         updateRosterFilters(panel);
+      } else if (button.hasAttribute('data-people-page')) {
+        const page = Number(button.parentElement.dataset.page || 1);
+        updateRosterFilters(panel, page + Number(button.dataset.peoplePage));
       } else {
         exportRoster(panel);
       }
     });
   }
 
-  window.NPPeople = { render, handle };
+  window.NPPeople = { render, handle, attendanceBadge, detailButton, detailDialog };
 })();

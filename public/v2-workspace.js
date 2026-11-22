@@ -10,6 +10,9 @@
     folder: '<path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
     back: '<path d="m14 6-6 6 6 6M8 12h13"/>',
     arrow: '<path d="m9 18 6-6-6-6"/>',
+    filter: '<path d="M4 7h16M7 12h10m-7 5h4"/>',
+    'arrow-down': '<path d="M12 4v15m-5-5 5 5 5-5"/>',
+    'arrow-up': '<path d="M12 20V5m-5 5 5-5 5 5"/>',
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>',
     key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8m-3 3 2 2m-5 1 2 2"/>',
     clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2m-6 9 2 2 4-4"/>',
@@ -83,15 +86,6 @@
     }
     if (context.role !== 'BGD') return '';
     const access = adminStore(context);
-    if (tabId === 'v2-director-people') {
-      const projects = new Map(state.projects.map(project => [project.id, project]));
-      const rows = state.teams.map(team => {
-        const project = projects.get(team.projectId);
-        return `<tr><td>${esc(team.name)}</td><td>${esc(team.leader)}</td><td>${project ? `<button type="button" class="btn btn-soft btn-sm" data-np-target="v2-projects" data-np-project="${esc(project.id)}">${esc(project.name)}</button>` : '—'}</td><td>${state.workers.filter(worker => worker.teamId === team.id).length}</td></tr>`;
-      }).join('');
-      return `<section class="np-work-card"><h2>Nhân sự theo đội</h2><div class="table-scroll"><table class="data-table"><thead><tr><th>Đội</th><th>Quản lý đội</th><th>Công trình</th><th>Quân số</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
-    }
-
     if (tabId === 'v2-director-assignments') {
       const active = context.data.people?.assignments || [];
       const rows = active.map(item => {
@@ -336,6 +330,7 @@
     return Promise.all([
       loadAsset('v2-' + key + '.css', 'link'),
       loadAsset('v2-' + key + '.js', 'script'),
+      ...(key === 'projects' ? [loadModule('people')] : []),
       ...(key === 'director' ? ['business', 'finance'].map(name => loadAsset('v2-' + name + '.js', 'script')) : [])
     ]);
   }
@@ -349,8 +344,9 @@
     if (tabId === 'v2-profile') return 'profile';
     if (tabId === 'bgd-approvals') return 'approvals';
     if (tabId === 'v2-projects') return 'projects';
+    if (tabId === 'v2-director-people') return 'people';
     if (tabId === 'bgd-overview') return 'director';
-    if (['v2-admin-roles', 'v2-director-people', 'v2-director-assignments', 'v2-director-acceptance', 'bgd-audit', 'dt-members'].includes(tabId)) return 'admin';
+    if (['v2-admin-roles', 'v2-director-assignments', 'v2-director-acceptance', 'bgd-audit', 'dt-members'].includes(tabId)) return 'admin';
     if (tabId.startsWith('kd-') || tabId === 'v2-director-quotes') return 'business';
     if (tabId.startsWith('ns-') || tabId.endsWith('-leave')) return 'people';
     if (tabId.endsWith('-payments')) return 'finance';
@@ -406,7 +402,10 @@
     roleBadge.textContent = role.shortTitle;
     subtitle.textContent = tabItem ? ' · ' + tabItem.shortLabel : '';
     const count = notices.reduce((sum, item) => sum + item.count, 0);
-    const items = notices.map(item => `<li><button type="button" data-np-target="${item.target}">${icon(item.iconName)}<span>${item.count} ${item.label}</span>${icon('arrow')}</button></li>`).join('');
+    const items = notices.map(item => `<li><button type="button" data-np-target="${item.target}" data-notice-icon="${item.iconName}" aria-label="${item.count} ${item.label}">
+      <span class="np-notice-icon">${icon(item.iconName)}</span><span class="np-notice-label">${item.label}</span>
+      <span class="np-notice-count">${item.count}</span>${icon('arrow')}
+    </button></li>`).join('');
     header.innerHTML = `<div class="np-header-search" role="search">
       <div class="np-search-box">${icon('search')}<input id="npMenuSearch" type="search" placeholder="Tìm chức năng..." aria-label="Tìm chức năng" autocomplete="off" /></div>
       <div id="npMenuMatches" class="np-header-popover np-search-results" hidden></div>
@@ -414,7 +413,10 @@
     <button class="np-header-period" type="button" onclick="window.NPApp.openDateRangeModal()">${icon('calendar')}<span>Kỳ: ${esc(range)}</span></button>
     <details id="npNotificationsPopup" class="np-header-details np-notices">
       <summary class="np-header-icon" aria-label="${count ? 'Thông báo, ' + count + ' công việc cần xử lý' : 'Thông báo'}">${icon('bell')}${count ? `<span class="np-alert-count" aria-hidden="true">${count}</span>` : ''}</summary>
-      <div class="np-header-popover np-notices-panel"><strong>Thông báo</strong>${items ? `<ul>${items}</ul>` : '<p>Chưa có thông báo mới.</p>'}</div>
+      <div class="np-header-popover np-notices-panel">
+        <div class="np-notices-heading"><strong>Thông báo</strong>${count ? `<span>${count} cần xử lý</span>` : ''}</div>
+        ${items ? `<ul>${items}</ul>` : '<p class="np-notices-empty">Chưa có thông báo mới.</p>'}
+      </div>
     </details>
     <button type="button" class="np-account-summary np-account-desktop" data-np-target="v2-profile" aria-label="Tài khoản"><span class="np-account-avatar">${esc(initials)}</span><span class="np-account-title"><strong>${esc(displayName)}</strong><small>${role.shortTitle}</small></span></button>`;
     const popup = header.querySelector('#npNotificationsPopup');

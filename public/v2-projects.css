@@ -164,3 +164,32 @@
   .np-project-card { padding: 12px; }
   .np-project-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.np-project-related[data-project-section="attendance"] td:nth-child(2) {
+  color: #123e6d;
+  font-weight: 700;
+}
+
+.np-project-related[data-project-section="attendance"] td:is(:nth-child(4), :nth-child(5)) {
+  color: #245b85;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 620px) {
+  #appMain .np-project-related[data-project-section="attendance"] table[data-np-responsive] tbody > tr:has(.np-attendance-pill) {
+    border-inline-start: 3px solid #7d9ab1;
+    background: #f8fbff;
+  }
+
+  #appMain .np-project-related[data-project-section="attendance"] table[data-np-responsive] tbody > tr:has([data-tone="working"]) { border-inline-start-color: #27936d; }
+  #appMain .np-project-related[data-project-section="attendance"] table[data-np-responsive] tbody > tr:has([data-tone="completed"]) { border-inline-start-color: #397cc1; }
+  #appMain .np-project-related[data-project-section="attendance"] table[data-np-responsive] tbody > tr:has([data-tone="leave"]) { border-inline-start-color: #cb8027; }
+  #appMain .np-project-related[data-project-section="attendance"] table[data-np-responsive] tbody > tr:has([data-tone="absent"]) { border-inline-start-color: #b94a40; }
+}
+
+.np-project-intro {
+  background: radial-gradient(ellipse at 100% 0%, #e5f1ff, transparent 58%), #fff;
+}
+.np-project-intro-heading .np-project-icon { width: 44px; height: 44px; }
+.np-project-stats > div:nth-child(2) { background: #f1f8ff; }
+.np-project-stats > div:nth-child(3) { background: #edf8f2; border-color: #d7eee2; }
