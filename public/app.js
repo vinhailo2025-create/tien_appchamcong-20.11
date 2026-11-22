@@ -8,6 +8,7 @@
   let currentTab = 'quan-ly';
   let currentRoleId = 'BGD';
   let currentAccountId = 'ACC-01';
+  let isAuthenticated = false;
   let requirePinOnRoleSwitch = false;
   let filterProject = 'ALL';
   let filterTeam = 'ALL';
@@ -2002,6 +2003,7 @@
     }
     currentAccountId = acc.id;
     currentRoleId = acc.roleId;
+    isAuthenticated = true;
 
     // Tự động áp dụng phạm vi lọc Công trình & Đội theo tài khoản vừa đăng nhập
     filterProject = acc.projectId || 'ALL';
@@ -2018,10 +2020,17 @@
       const scopeTag = acc.projectId === 'ALL' ? 'Toàn công ty' : `${acc.projectId}${acc.teamId !== 'ALL' ? ' · ' + acc.teamId : ''}`;
       bannerTitle.textContent = `Tài khoản: ${acc.username} (${acc.positionTitle}) — ${acc.fullName} [${scopeTag}]`;
     }
+    closeFullLoginScreen();
     updateAdminVisibility();
     toggleSidebar(false);
     renderMorningReport830();
     renderMain();
+  }
+
+  function logoutAccount() {
+    isAuthenticated = false;
+    toggleSidebar(false);
+    openFullLoginScreen();
   }
 
   function openFullLoginScreen() {
@@ -2038,6 +2047,7 @@
   }
 
   function closeFullLoginScreen() {
+    if (!isAuthenticated) return;
     const overlay = document.getElementById('fullLoginOverlay');
     if (overlay) overlay.classList.remove('open');
   }
@@ -2458,6 +2468,7 @@
     toggleAccountStatus,
     deleteAccount,
     loginAsAccount,
+    logoutAccount,
     openLoginModal,
     openFullLoginScreen,
     closeFullLoginScreen,

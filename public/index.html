@@ -33,10 +33,10 @@
     <div class="sidebar-role-box">
       <label>Tài khoản đang đăng nhập:</label>
       <div id="sidebarCurrentAccountInfo" style="font-size:11.5px; color:#FFFFFF; font-weight:600; line-height:1.4; margin-bottom:6px;">
-        GĐ. Nguyễn Phát (admin)
+        Chưa đăng nhập
       </div>
-      <button class="btn btn-outline-dark btn-sm" style="width:100%;" onclick="window.NPApp.openFullLoginScreen()">
-        🔐 Đăng xuất / Đổi Tài khoản
+      <button class="btn btn-outline-dark btn-sm" style="width:100%;" onclick="window.NPApp.logoutAccount()">
+        🚪 Đăng xuất Tài khoản
       </button>
     </div>
 
@@ -85,8 +85,8 @@
       <button class="sidebar-item" data-tab="so-do" onclick="window.NPApp.selectTab('so-do')">
         <span class="sidebar-item-left"><span>🗺️</span> <span>Sơ đồ &amp; 5 Quy tắc Kiểm soát</span></span>
       </button>
-      <button class="sidebar-item" onclick="window.NPApp.openFullLoginScreen()">
-        <span class="sidebar-item-left"><span>🔐</span> <span>Đăng nhập Tài khoản khác</span></span>
+      <button class="sidebar-item" onclick="window.NPApp.logoutAccount()">
+        <span class="sidebar-item-left"><span>🚪</span> <span>Đăng xuất Hệ thống</span></span>
       </button>
       <button class="sidebar-item" onclick="window.NPApp.toggleTheme()">
         <span class="sidebar-item-left"><span>🎨</span> <span>Đổi Bộ màu (Navy/Cam ↔ Vịnh/Vàng)</span></span>
@@ -120,11 +120,11 @@
         <button class="btn btn-outline-dark btn-sm hide-on-mobile" onclick="window.NPApp.toggleTheme()" title="Đổi Bộ màu 1 (Navy & Cam) ↔ Bộ màu 2 (Xanh vịnh & Vàng mật)">
           🎨 Bộ màu
         </button>
-        <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.openFullLoginScreen()" title="Đăng nhập hoặc đổi tài khoản nhân sự">
-          🔐 Đăng nhập
-        </button>
         <button class="btn btn-outline-dark btn-sm admin-only-el" onclick="window.NPApp.selectTab('phan-quyen')" title="Chỉ Admin mới thấy: Quản trị & Tạo tài khoản cho từng vị trí">
           👑 Tạo TK
+        </button>
+        <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.logoutAccount()" title="Đăng xuất tài khoản">
+          🚪 Đăng xuất
         </button>
         <!-- Quy tắc: Mỗi khối chỉ MỘT nút chính màu Cam -->
         <button class="btn btn-primary btn-sm" id="btnOpenCamera">
@@ -137,16 +137,16 @@
   <!-- ================= KHỐI HÀNH ĐỘNG NHANH & BÁO CÁO 08:30 ================= -->
   <div class="main-container">
     <div class="compact-top-panel">
-      <!-- Khối nền Navy Chính: Hiển thị rõ tài khoản đang đăng nhập + Nút Đổi Tài khoản + Nút Admin Tạo Tài khoản (chỉ hiện khi là Admin) -->
+      <!-- Khối nền Navy Chính: Hiển thị rõ tài khoản đang đăng nhập + Nút Đăng xuất + Nút Admin Tạo Tài khoản -->
       <div class="mobile-action-bar">
         <div class="mobile-action-info">
           <span class="kicker" style="margin-bottom:2px;">TÀI KHOẢN ĐANG ĐĂNG NHẬP · PHÂN CẤP 5 TẦNG</span>
           <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:14px; color:#FFFFFF;" id="activeRoleBannerTitle">
-            Tài khoản: admin (Admin &amp; Ban Giám Đốc) — GĐ. Nguyễn Phát [Toàn công ty]
+            Vui lòng đăng nhập để sử dụng hệ thống
           </div>
           <div style="margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.openFullLoginScreen()">
-              🔐 Đăng xuất / Đổi Tài khoản
+            <button class="btn btn-outline-dark btn-sm" onclick="window.NPApp.logoutAccount()">
+              🚪 Đăng xuất / Đổi Tài khoản
             </button>
             <button class="btn btn-outline-dark btn-sm admin-only-el" onclick="window.NPApp.selectTab('phan-quyen')">
               👑 Admin Tạo &amp; Cấp Tài khoản Vị trí
@@ -195,8 +195,8 @@
     </button>
   </nav>
 
-  <!-- ================= MÀN HÌNH ĐĂNG NHẬP CHÍNH THỨC (FULL-SCREEN LOGIN - BẢO MẬT, KHÔNG LỘ TK/PIN) ================= -->
-  <div class="login-screen-overlay" id="fullLoginOverlay">
+  <!-- ================= MÀN HÌNH ĐĂNG NHẬP ĐẦU TIÊN (BẮT BUỘC ĐĂNG NHẬP MỚI VÀO TRANG TÍNH NĂNG) ================= -->
+  <div class="login-screen-overlay open" id="fullLoginOverlay">
     <div class="login-box">
       <div class="login-box-header">
         <img src="assets/logo-np-one-3d.png" alt="NP ONE" />
@@ -204,7 +204,7 @@
         <h3 style="color:#FFFFFF; font-size:17px;">Đăng nhập NP ONE — Nguyên Phát</h3>
         <div style="font-size:10.5px; color:#FFFFFF; opacity:0.82; margin-top:2px;">Vui lòng nhập Tên đăng nhập (hoặc Mã NV) và Mã PIN của bạn</div>
       </div>
-      <div class="login-box-body">
+      <form class="login-box-body" onsubmit="event.preventDefault(); window.NPApp.submitFullLogin();">
         <div class="form-group">
           <label for="fullLoginUser">Tên đăng nhập / Mã Nhân viên <span class="req">*</span></label>
           <input type="text" id="fullLoginUser" placeholder="Nhập tên tài khoản hoặc Mã NV..." autocomplete="username" />
@@ -214,13 +214,12 @@
           <input type="password" id="fullLoginPin" placeholder="Nhập mật khẩu hoặc Mã PIN..." autocomplete="current-password" />
           <div id="fullLoginErr" class="field-error-msg" style="display:none;">Tên đăng nhập hoặc Mã PIN không đúng, hoặc tài khoản đã bị khóa!</div>
         </div>
-        <div style="display:flex; gap:8px; margin-top:12px;">
-          <button class="btn btn-soft" type="button" onclick="window.NPApp.closeFullLoginScreen()">Quay lại</button>
-          <button class="btn btn-primary" type="button" style="flex:1;" onclick="window.NPApp.submitFullLogin()">
+        <div style="margin-top:12px;">
+          <button class="btn btn-primary" type="submit" style="width:100%;">
             🔐 Đăng nhập Hệ thống
           </button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 
