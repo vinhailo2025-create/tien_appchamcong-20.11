@@ -1,7 +1,8 @@
 // Ứng dụng Quản lý Chấm công, Phân việc, Quân số, Tăng ca & Tính lương 5 Cấp NP ONE — Nguyên Phát HR
 // Đầy đủ: Chọn khoảng Ngày/Tháng/Năm (Bảng Lịch), Đổi Mật khẩu đồng bộ lên các cấp, Checkin/Checkout chung 1 Menu (Mọi cấp trừ Giám đốc), Kế toán chấm công Giám đốc thấy & Bảng kê Kế toán, Mọi cấp đều được Ứng lương.
 (function () {
-  const STORAGE_KEY = 'NP_ONE_HR_STATE_V9';
+  const isPreview = window.NP_PREVIEW === true;
+  const STORAGE_KEY = isPreview ? 'NP_ONE_V2_PREVIEW_STATE' : 'NP_ONE_HR_STATE_V9';
   const THEME_KEY = 'NP_ONE_THEME_V1';
 
   let state = loadState();
@@ -131,6 +132,7 @@
   function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (isPreview) return;
       fetch('/api/state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -576,6 +578,7 @@
     const backdrop = document.getElementById('sidebarBackdrop');
     if (!sidebar || !backdrop) return;
     const isOpen = typeof forceOpen === 'boolean' ? forceOpen : !sidebar.classList.contains('open');
+    document.querySelector('.btn-menu-toggle')?.setAttribute('aria-expanded', String(isOpen));
     if (isOpen) {
       sidebar.classList.add('open');
       backdrop.classList.add('open');
@@ -685,6 +688,8 @@
   function logoutAccount() {
     isAuthenticated = false;
     currentAccountId = null;
+    delete document.body.dataset.npRole;
+    delete document.body.dataset.npTab;
     toggleSidebar(false);
     openFullLoginScreen();
   }
@@ -716,6 +721,8 @@
   function renderRoleNavigationAndHeader() {
     const acc = getCurrentAccount();
     if (!acc) return;
+    document.body.dataset.npRole = acc.roleId;
+    document.body.dataset.npTab = currentTab;
     const cfg = ROLE_CONFIG[acc.roleId] || ROLE_CONFIG.BGD;
     const badges = getBadgeCounts();
 
@@ -724,11 +731,11 @@
     if (roleLvl) roleLvl.textContent = cfg.badge;
     const sideInfo = document.getElementById('sidebarCurrentAccountInfo');
     if (sideInfo) {
-      sideInfo.innerHTML = `
-        <div style="font-size:12px; font-weight:700; color:#FFFFFF;">${acc.fullName}</div>
-        <div style="font-size:10px; color:rgba(255,255,255,0.85);">${acc.positionTitle}</div>
-        <div style="font-size:10px; color:var(--ds-accent); margin-top:2px;">TK: <code>${acc.username}</code> · PIN hiện tại: <code>${acc.pin}</code></div>
-      `;
+      const name = document.createElement('strong');
+      const role = document.createElement('span');
+      name.textContent = acc.fullName;
+      role.textContent = acc.positionTitle || cfg.shortTitle;
+      sideInfo.replaceChildren(name, role);
     }
 
     // 2. Cập nhật danh sách Menu bên trái
@@ -740,8 +747,8 @@
         const bVal = t.badgeKey ? badges[t.badgeKey] : 0;
         const badgeHtml = bVal > 0 ? `<span class="sidebar-badge">${bVal}</span>` : '';
         html += `
-          <button class="sidebar-item ${currentTab === t.id ? 'active' : ''}" data-tab="${t.id}" onclick="window.NPApp.selectTab('${t.id}')">
-            <span><span class="s-icon">${t.icon}</span> ${t.label}</span>
+          <button class="sidebar-item ${currentTab === t.id ? 'active' : ''}" data-tab="${t.id}" ${currentTab === t.id ? 'aria-current="page"' : ''} onclick="window.NPApp.selectTab('${t.id}')">
+            <span><span class="s-icon" aria-hidden="true">${t.icon}</span> ${t.shortLabel}</span>
             ${badgeHtml}
           </button>
         `;
@@ -781,12 +788,12 @@
 
     // 3. Cập nhật Header trên cùng (Kèm nút chọn khoảng ngày, nút Đổi MK, và nút Chấm công chung 1 menu cho mọi cấp trừ Giám đốc)
     const headerRoleBadge = document.getElementById('headerRoleBadge');
-    if (headerRoleBadge) headerRoleBadge.textContent = `· ${cfg.shortTitle}`;
+    if (headerRoleBadge) headerRoleBadge.textContent = cfg.shortTitle;
 
     const activeTabObj = cfg.tabs.find(t => t.id === currentTab) || cfg.tabs[0];
     const sub = document.getElementById('currentTabSubtitle');
     if (sub && activeTabObj) {
-      sub.textContent = `${acc.fullName} — ${activeTabObj.label}`;
+      sub.textContent = ` · ${activeTabObj.shortLabel}`;
     }
 
     const headerRight = document.getElementById('headerRightActions');
@@ -813,18 +820,19 @@
           🔑 Đổi MK
         </button>
         <button class="btn btn-outline-dark btn-sm hide-on-mobile" onclick="window.NPApp.logoutAccount()" title="Đăng xuất / Đổi tài khoản">
-          👤 ${acc.fullName}
+          <span aria-hidden="true">👤</span> <span id="npHeaderAccountName"></span>
         </button>
         ${primaryBtnHtml}
       `;
+      headerRight.querySelector('#npHeaderAccountName').textContent = acc.fullName;
     }
 
     // 4. Cập nhật Thanh điều hướng đáy điện thoại (Mobile Bottom Nav)
     const bottomNav = document.getElementById('mobileBottomNav');
     if (bottomNav) {
       bottomNav.innerHTML = cfg.tabs.map(t => `
-        <button class="bnav-item ${currentTab === t.id ? 'active' : ''}" data-tab="${t.id}" onclick="window.NPApp.selectTab('${t.id}')">
-          <span class="b-icon">${t.icon}</span>
+        <button class="bnav-item ${currentTab === t.id ? 'active' : ''}" data-tab="${t.id}" ${currentTab === t.id ? 'aria-current="page"' : ''} onclick="window.NPApp.selectTab('${t.id}')">
+          <span class="b-icon" aria-hidden="true">${t.icon}</span>
           <span>${t.shortLabel}</span>
         </button>
       `).join('');
@@ -940,6 +948,11 @@
   }
 
   function refreshRealGps() {
+    if (isPreview) {
+      liveGps.address = 'Vị trí mẫu dùng để xem trước thao tác chấm công';
+      updateGpsStatusBox();
+      return;
+    }
     if (!navigator.geolocation) {
       liveGps.address = 'Thiết bị không hỗ trợ Geolocation API';
       updateGpsStatusBox();
@@ -1295,10 +1308,24 @@
   // I. GIAO DIỆN CẤP 1: TỔNG GIÁM ĐỐC / ADMIN (THẤY CHẤM CÔNG CỦA KẾ TOÁN, QLCT, ĐỘI TRƯỞNG & 108 CÔNG NHÂN)
   // =================================================================================================
   function renderBgdOverview() {
+    const countPresent = people => people.filter(p => p.attendanceStatus === 'DANG_LAM' || p.attendanceStatus === 'DA_RA').length;
     const total = state.workers.length;
-    const present = state.workers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
+    const present = countPresent(state.workers);
+    const presentPercent = total ? Math.round(present * 100 / total) : 0;
     const staffList = state.staffAttendance || [];
-    const ktPerson = staffList.find(s => s.roleId === 'KT') || staffList[0];
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+    const companyCounts = [
+      { icon: '👥︎', label: 'Công nhân', value: total, detail: 'Tổng quân số', color: 'blue' },
+      { icon: '✓', label: 'Có mặt hôm nay', value: present, detail: `${presentPercent}% quân số`, color: 'green' },
+      { icon: '⚒︎', label: 'Đội thi công', value: state.teams.length, detail: 'Trong danh sách', color: 'orange' },
+      { icon: '▤', label: 'Công trình', value: state.projects.length, detail: 'Trong danh sách', color: 'violet' }
+    ];
+    const approvals = [
+      { label: 'Đề nghị ứng lương', icon: '▣', count: state.advances.filter(a => a.status === 'CHO_BGD_DUYET').length },
+      { label: 'Bảng lương', icon: '▤', count: state.payrollMonthStatus === 'CHO_BGD_DUYET' ? 1 : 0 },
+      { label: 'Yêu cầu xóa tài khoản / nhân sự', icon: '⌑', count: (state.deleteRequests || []).filter(r => r.status === 'CHO_BGD_DONG_Y').length }
+    ].filter(item => item.count > 0);
+    const approvalTotal = approvals.reduce((sum, item) => sum + item.count, 0);
 
     const totalMonthPayroll = state.workers.reduce((sum, w) => {
       const d = getScaledDaysWorked(w.daysMonthApproved);
@@ -1307,48 +1334,84 @@
     }, 0);
 
     return `
-      <!-- KPI TỔNG GIÁM ĐỐC -->
-      <div class="kpi-grid-4">
-        <div class="kpi-card">
+      <div class="v2-director-dashboard">
+        <div class="v2-director-heading">
           <div>
-            <span class="kpi-label">KẾ TOÁN &amp; CÁN BỘ CHẤM CÔNG</span>
-            <div class="kpi-value">${staffList.length}<span class="unit">/${staffList.length} có mặt</span></div>
+            <h2>Xin chào, ${esc(getCurrentAccount()?.fullName || 'Giám đốc')}</h2>
+            <p>Tổng quan hoạt động toàn công ty</p>
           </div>
-          <div class="kpi-sub">Kế toán (${ktPerson ? ktPerson.name : 'KTT'}) vào ca: <strong>${ktPerson ? ktPerson.checkInTime : '07:45'}</strong></div>
+          ${renderDateRangeButtonHtml()}
         </div>
-        <div class="kpi-card">
-          <div>
-            <span class="kpi-label">QUÂN SỐ CÔNG NHÂN ĐI LÀM</span>
-            <div class="kpi-value">${present}<span class="unit">/${total} người</span></div>
-          </div>
-          <div class="kpi-sub">Tỷ lệ có mặt: <strong>${Math.round((present / total) * 100)}%</strong> (3 Công trình · 6 Đội)</div>
+
+        <div class="v2-director-kpis">
+          ${companyCounts.map(item => `
+            <article class="v2-director-kpi">
+              <span class="v2-director-icon is-${item.color}" aria-hidden="true">${item.icon}</span>
+              <div>
+                <strong>${item.value}</strong>
+                <h3>${item.label}</h3>
+                <p>${item.detail}</p>
+              </div>
+            </article>
+          `).join('')}
         </div>
-        <div class="kpi-card">
-          <div>
-            <span class="kpi-label">KỲ LỌC DỮ LIỆU ĐANG XEM</span>
-            <div class="kpi-value" style="font-size:13.5px;">${formatDateRangeLabel()}</div>
-          </div>
-          <div class="kpi-sub">Bấm nút Lịch trên thanh Header để đổi ngày/tháng</div>
+
+        <div class="v2-director-panels">
+          <section class="v2-director-panel">
+            <h3>Nhân sự và quỹ lương</h3>
+            <div class="v2-director-figures">
+              <div><span>Quỹ lương công nhân (ước tính)</span><strong>${formatVND(totalMonthPayroll)}</strong></div>
+              <div><span>Cán bộ và kế toán có mặt</span><strong>${countPresent(staffList)} / ${staffList.length}</strong></div>
+            </div>
+            <p class="v2-director-note">Ước tính theo công đã duyệt và kỳ đang chọn. Số liệu có mặt lấy theo trạng thái hiện tại.</p>
+          </section>
+
+          <section class="v2-director-panel">
+            <h3>Cơ cấu có mặt hôm nay</h3>
+            <div class="v2-director-attendance">
+              <div class="v2-director-ring" style="--presence: ${presentPercent}%" aria-hidden="true"><strong>${presentPercent}%</strong></div>
+              <dl class="v2-director-legend">
+                <div><dt>Có mặt</dt><dd>${present} (${presentPercent}%)</dd></div>
+                <div><dt>Chưa ghi nhận có mặt</dt><dd>${total - present}</dd></div>
+              </dl>
+            </div>
+          </section>
+
+          <section class="v2-director-panel">
+            <h3>Có mặt theo công trình</h3>
+            ${state.projects.length ? `<ul class="v2-director-projects">${state.projects.map(project => {
+              const people = state.workers.filter(worker => worker.projectId === project.id);
+              const onSite = countPresent(people);
+              const percent = people.length ? Math.round(onSite * 100 / people.length) : 0;
+              return `<li>
+                <div><span>${esc(project.name)}</span><strong>${onSite}/${people.length}</strong></div>
+                <div class="v2-director-track" aria-hidden="true"><span style="width:${percent}%"></span></div>
+              </li>`;
+            }).join('')}</ul>` : '<p class="v2-director-note">Chưa có công trình trong danh sách.</p>'}
+          </section>
+
+          <section class="v2-director-panel">
+            <div class="v2-director-panel-heading">
+              <h3>Công việc chờ xử lý (${approvalTotal})</h3>
+              <button class="v2-director-link" type="button" onclick="window.NPApp.selectTab('bgd-approvals')">Xem tất cả <span aria-hidden="true">›</span></button>
+            </div>
+            ${approvals.length ? `<ul class="v2-director-queue">${approvals.map(item => `
+              <li><button type="button" onclick="window.NPApp.selectTab('bgd-approvals')">
+                <span class="v2-director-queue-icon" aria-hidden="true">${item.icon}</span>
+                <span>${item.count} · ${item.label}</span><span class="v2-director-queue-badge">Chờ duyệt</span>
+              </button></li>`).join('')}</ul>` : '<p class="v2-director-note">Không có công việc chờ duyệt.</p>'}
+          </section>
         </div>
-        <div class="kpi-card">
-          <div>
-            <span class="kpi-label">QUỸ LƯƠNG LŨY KẾ TRONG KỲ</span>
-            <div class="kpi-value">${formatVND(totalMonthPayroll)}</div>
-          </div>
-          <div class="kpi-sub">Chỉ tính trên ngày công đã duyệt hợp lệ</div>
-        </div>
-      </div>
 
       <!-- CÂY PHÂN CẤP QUẢN LÝ: TỔNG GIÁM ĐỐC -> 3 QUẢN LÝ CÔNG TRÌNH -> 6 ĐỘI TRƯỞNG -> CLICK RA TOÀN BỘ CÔNG NHÂN DƯỚI QUYỀN -->
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">SƠ ĐỒ CÂY NHÂN SỰ TƯƠNG TÁC (CLICK VÀO ĐỘI TRƯỞNG ĐỂ XEM TOÀN BỘ NHÂN SỰ DƯỚI QUYỀN)</span>
-            <h3>Cây Nhân Sự Toàn Công Ty: Tổng Giám Đốc → 3 Quản Lý Công Trình → 6 Đội Trưởng → 108 Công Nhân</h3>
-            <div class="section-desc">💡 Bấm trực tiếp vào bất kỳ <strong>Đội trưởng</strong> nào bên dưới để xổ ra danh sách toàn bộ nhân sự dưới quyền Đội trưởng đó (kèm ảnh GPS, Mã NV, Mật khẩu/PIN, giờ vào/ra, công tích lũy và nút xóa/sửa).</div>
+            <h3>Cây nhân sự toàn công ty</h3>
+            <div class="section-desc">${state.projects.length} công trình · ${state.teams.length} đội · ${total} công nhân. Chọn một đội để xem thành viên và chấm công.</div>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">📂 Mở tất cả 6 Đội (108 người)</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">Mở tất cả đội</button>
             <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(false)">📁 Thu gọn các Đội</button>
             <button class="btn btn-primary btn-sm" onclick="window.NPApp.selectTab('phan-quyen')">🔐 Quản lý Tài khoản &amp; Mật khẩu</button>
           </div>
@@ -1360,7 +1423,6 @@
             const pWorkers = state.workers.filter(w => w.projectId === p.id);
             const pPresent = pWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
             const pApproved = pWorkers.filter(w => w.approvalStatus === 'DA_DUYET').length;
-            const mgrPin = getAccountPinByUsernameOrCode(p.managerUsername);
 
             return `
               <div class="hierarchy-card">
@@ -1374,7 +1436,6 @@
                     <span class="badge badge-orange">Bấm xem ${pWorkers.length} người ▾</span>
                   </div>
                   <div style="font-size:12.5px; font-weight:700; margin-top:2px;">👷 ${p.manager}</div>
-                  <div style="font-size:10.5px; opacity:0.92; margin-top:2px;">TK: <code>${p.managerUsername}</code> · PIN hiện tại: <code>${mgrPin}</code></div>
                   <div style="font-size:10.5px; opacity:0.9; margin-top:2px;">Quân số có mặt: <strong>${pPresent}/${pWorkers.length}</strong> · Đã duyệt: <strong>${pApproved}/${pWorkers.length}</strong></div>
                 </div>
 
@@ -1385,7 +1446,6 @@
                   ${pTeams.map(tm => {
                     const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
                     const tmPresent = tmWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
-                    const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
                     const isOpen = !!expandedTeams[tm.id];
                     return `
                       <div style="border:1.5px solid ${isOpen ? 'var(--ds-accent)' : 'var(--ds-line)'}; border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:7px; overflow:hidden;">
@@ -1400,7 +1460,6 @@
                           </div>
                           <div style="font-size:11px; color:var(--ds-text); margin-top:3px;">
                             Đội trưởng: <strong style="color:var(--ds-primary); text-decoration:underline;">${tm.leader}</strong>
-                            (TK: <code>${tm.leaderUsername}</code> · PIN: <code>${dtPin}</code>)
                           </div>
                           <div style="font-size:10px; color:var(--ds-link); font-weight:600; margin-top:3px;">
                             ${isOpen ? '▴ Đang mở danh sách ' + tmWorkers.length + ' nhân sự dưới quyền (Bấm để thu gọn)' : '▾ Bấm vào đây để xem toàn bộ ' + tmWorkers.length + ' nhân sự dưới quyền ' + tm.leader}
@@ -1422,7 +1481,7 @@
                                 <thead>
                                   <tr>
                                     <th>#</th>
-                                    <th>Mã NV &amp; PIN</th>
+                                    <th>Mã NV</th>
                                     <th>Họ tên &amp; Vai trò</th>
                                     <th>Vào/Ra</th>
                                     <th>Công</th>
@@ -1431,12 +1490,11 @@
                                 </thead>
                                 <tbody>
                                   ${tmWorkers.map((w, idx) => {
-                                    const wPin = getAccountPinByUsernameOrCode(w.code);
                                     const sDays = getScaledDaysWorked(w.daysMonthApproved);
                                     return `
                                       <tr>
                                         <td>${idx + 1}</td>
-                                        <td><strong><code>${w.code}</code></strong><br/><span style="font-size:9px; color:var(--ds-primary);">PIN: <code>${wPin}</code></span></td>
+                                        <td><strong><code>${w.code}</code></strong></td>
                                         <td>
                                           <strong style="cursor:pointer; color:var(--ds-primary);" onclick="window.NPApp.openPhotoModal('${w.id}')" title="Bấm xem ảnh GPS chấm công">${w.name}</strong>
                                           <div style="font-size:9px; color:var(--ds-text-muted);">${w.roleName}</div>
@@ -1473,9 +1531,8 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">GIÁM ĐỐC KIỂM TRA CHẤM CÔNG CỦA KẾ TOÁN &amp; BAN CHỈ HUY</span>
-            <h3>Kế Toán Chấm Công → Tổng Giám Đốc Trực Tiếp Thấy &amp; Phê Duyệt</h3>
-            <div class="section-desc">Trừ Tổng Giám đốc, mọi vị trí từ Kế toán, Quản lý Công trình, Đội trưởng đến Công nhân đều bắt buộc chấm công Camera GPS và có bảng kê riêng.</div>
+            <h3>Chấm công cán bộ và kế toán</h3>
+            <div class="section-desc">Xem giờ vào, ra và trạng thái phê duyệt.</div>
           </div>
           <div style="display:flex; gap:6px;">
             ${renderDateRangeButtonHtml()}
@@ -1489,7 +1546,6 @@
                 <th>Ảnh GPS</th>
                 <th>Mã &amp; Họ tên Cán bộ</th>
                 <th>Chức vụ</th>
-                <th>Mật khẩu / PIN (Đồng bộ)</th>
                 <th>Giờ Vào - Ra hôm nay</th>
                 <th>Công kỳ (${formatDateRangeLabel()})</th>
                 <th>Trạng thái Giám đốc duyệt</th>
@@ -1498,14 +1554,12 @@
             <tbody>
               ${staffList.slice(0, 4).map(stf => {
                 const thumb = getWorkerStampedPhoto(stf);
-                const curPin = getAccountPinByUsernameOrCode(stf.username);
                 const scaledD = getScaledDaysWorked(stf.daysMonthApproved);
                 return `
                   <tr>
                     <td><img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${stf.id}')" /></td>
                     <td><strong>${stf.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">TK: <code>${stf.username}</code> · Mã: ${stf.code}</span></td>
                     <td><span class="badge badge-navy">${stf.roleName}</span></td>
-                    <td><code>${curPin}</code></td>
                     <td>Vào: <code>${stf.checkInTime}</code><br/>Ra: <code>${stf.checkOutTime || 'Đang làm'}</code></td>
                     <td><strong style="color:var(--ds-primary);">${scaledD} công</strong> (+${stf.otHoursMonthApproved}h OT)</td>
                     <td>${renderApprovalBadge(stf.approvalStatus)}</td>
@@ -1516,6 +1570,7 @@
           </table>
         </div>
       </div>
+      </div>
     `;
   }
 
@@ -1523,12 +1578,12 @@
   function renderBgdStaffCheck() {
     const staffList = state.staffAttendance || [];
     return `
-      <div class="section-card">
-        <div class="section-header">
+      <div class="section-card v2-table-section">
+        <div class="section-header v2-table-header">
           <div>
-            <span class="kicker">GIÁM ĐỐC KIỂM TRA CHẤM CÔNG CÁC CẤP QUẢN LÝ &amp; KẾ TOÁN</span>
-            <h3>Bảng Check Chấm Công Của Kế Toán · 3 Quản Lý Công Trình · 6 Đội Trưởng (${formatDateRangeLabel()})</h3>
-            <div class="section-desc">Kế toán chấm công Giám đốc thấy ngay tại đây. Giám đốc có thể xem ảnh Camera GPS, sửa giờ hoặc duyệt bảng công cho Kế toán và Quản lý Công trình.</div>
+            <span class="kicker">NHÂN SỰ</span>
+            <h3>Chấm công nhân sự quản lý</h3>
+            <div class="section-desc">Ảnh GPS, giờ vào ra và công đã ghi nhận theo kỳ.</div>
           </div>
           <div style="display:flex; gap:6px;">
             ${renderDateRangeButtonHtml()}
@@ -1542,7 +1597,7 @@
                 <th>Ảnh GPS</th>
                 <th>Mã &amp; Họ tên</th>
                 <th>Vị trí / Cấp bậc</th>
-                <th>Tài khoản &amp; PIN hiện tại</th>
+                <th>Tài khoản</th>
                 <th>Giờ Check-in / Check-out</th>
                 <th>Công trong kỳ (${formatDateRangeLabel()})</th>
                 <th>Lương lũy kế kỳ</th>
@@ -1553,7 +1608,6 @@
             <tbody>
               ${staffList.map(stf => {
                 const thumb = getWorkerStampedPhoto(stf);
-                const curPin = getAccountPinByUsernameOrCode(stf.username);
                 const scaledDays = getScaledDaysWorked(stf.daysMonthApproved);
                 const gross = scaledDays * stf.dailyWage + Math.round(stf.otHoursMonthApproved * (stf.dailyWage / 8) * 1.5);
                 return `
@@ -1561,7 +1615,7 @@
                     <td><img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${stf.id}')" /></td>
                     <td><strong>${stf.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${stf.code} · ${stf.teamName}</span></td>
                     <td><span class="badge ${stf.roleId === 'KT' ? 'badge-orange' : 'badge-navy'}">${stf.roleName}</span></td>
-                    <td>TK: <code>${stf.username}</code><br/>PIN: <strong style="color:var(--ds-primary);"><code>${curPin}</code></strong></td>
+                    <td><code>${stf.username}</code></td>
                     <td>Vào: <code>${stf.checkInTime}</code><br/>Ra: <code>${stf.checkOutTime || 'Đang làm'}</code></td>
                     <td><strong>${scaledDays} công</strong> (+${stf.otHoursMonthApproved}h OT)</td>
                     <td><strong style="color:var(--ds-primary);">${formatVND(gross)}</strong></td>
@@ -1765,11 +1819,8 @@
   // II. GIAO DIỆN CẤP 2: HÀNH CHÍNH – KẾ TOÁN (CÓ CHẤM CÔNG, CÓ BẢNG KÊ RIÊNG, CHECK CÔNG TOÀN CÔNG TY)
   // =================================================================================================
   function renderKtAttendance() {
-    const managers = [
-      { username: 'qlct_ct1', name: 'KS. Trần Minh Hoàng', project: 'CT1 - Riverside' },
-      { username: 'qlct_ct2', name: 'KS. Phạm Quốc Bảo', project: 'CT2 - NP Tower' },
-      { username: 'qlct_ct3', name: 'KS. Đặng Văn Hùng', project: 'CT3 - Nhà máy CNC' }
-    ];
+    const managers = Array.from(new Map(state.projects.filter(p => p.managerUsername).map(p => [p.managerUsername, p.manager])).entries());
+    const escape = value => String(value ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
     const filtered = state.workers.filter(w => {
       if (filterManager !== 'ALL' && w.managerUsername !== filterManager) return false;
@@ -1782,33 +1833,42 @@
       return true;
     });
 
+    const visible = filtered.slice(0, 45);
     return `
-      <div class="section-card">
-        <div class="section-header">
+      <div class="section-card v2-table-section">
+        <div class="section-header v2-table-header">
           <div>
-            <span class="kicker">MỤC CHECK CHẤM CÔNG DÀNH CHO KẾ TOÁN (${formatDateRangeLabel()})</span>
-            <h3>Bảng Check Chấm Công Theo Từng Quản Lý Công Trình &amp; Đội Trưởng</h3>
-            <div class="section-desc">Kế toán chọn khoảng ngày (Từ ngày → Đến ngày), lọc theo từng Quản lý Công trình / Đội trưởng để kiểm tra ảnh GPS và ngày công đã duyệt.</div>
+            <span class="kicker">CHẤM CÔNG</span>
+            <h3>Bảng công kỳ ${formatDateRangeLabel()}</h3>
+            <div class="section-desc">Công đã ghi nhận, giờ tăng ca và tình trạng duyệt theo nhân sự.</div>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📥 Xuất Excel Bảng Công (.CSV)</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportAttendanceCsv()">Xuất toàn bộ CSV</button>
           </div>
         </div>
 
-        <div class="filter-bar" style="margin-bottom:10px;">
-          <input type="text" placeholder="🔍 Tìm tên công nhân, mã NV, tên Quản lý..." value="${searchQuery}" oninput="window.NPApp.setSearch(this.value)" />
-          <select onchange="window.NPApp.setFilterManager(this.value)">
-            <option value="ALL" ${filterManager === 'ALL' ? 'selected' : ''}>Tất cả Quản lý Công trình (3 QLCT)</option>
-            ${managers.map(m => `<option value="${m.username}" ${filterManager === m.username ? 'selected' : ''}>Quản lý: ${m.name} (${m.project})</option>`).join('')}
+        <div class="filter-bar v2-table-filters">
+          <form class="v2-table-search" onsubmit="event.preventDefault(); window.NPApp.setSearch(this.elements.workerQuery.value);">
+            <input type="search" name="workerQuery" aria-label="Tìm nhân sự" placeholder="Tìm tên, mã NV hoặc quản lý" value="${escape(searchQuery)}" />
+            <button class="btn btn-soft btn-sm" type="submit">Tìm</button>
+          </form>
+          <select aria-label="Công trình" onchange="window.NPApp.setFilterProject(this.value)">
+            <option value="ALL" ${filterProject === 'ALL' ? 'selected' : ''}>Mọi công trình</option>
+            ${state.projects.map(p => `<option value="${escape(p.id)}" ${filterProject === p.id ? 'selected' : ''}>${escape(p.name)}</option>`).join('')}
           </select>
-          <select onchange="window.NPApp.setFilterTeam(this.value)">
-            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Tất cả 6 Đội thi công</option>
+          <select aria-label="Quản lý công trình" onchange="window.NPApp.setFilterManager(this.value)">
+            <option value="ALL" ${filterManager === 'ALL' ? 'selected' : ''}>Mọi quản lý công trình</option>
+            ${managers.map(([username, name]) => `<option value="${escape(username)}" ${filterManager === username ? 'selected' : ''}>${escape(name)}</option>`).join('')}
+          </select>
+          <select aria-label="Đội thi công" onchange="window.NPApp.setFilterTeam(this.value)">
+            <option value="ALL" ${filterTeam === 'ALL' ? 'selected' : ''}>Mọi đội thi công</option>
             ${state.teams.map(t => `<option value="${t.id}" ${filterTeam === t.id ? 'selected' : ''}>${t.name} — ${t.leader}</option>`).join('')}
           </select>
         </div>
 
-        <div class="table-scroll">
+        <div class="v2-table-meta">Hiển thị ${visible.length} / ${filtered.length} nhân sự theo bộ lọc</div>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Bảng công">
           <table class="data-table">
             <thead>
               <tr>
@@ -1824,7 +1884,7 @@
               </tr>
             </thead>
             <tbody>
-              ${filtered.slice(0, 45).map(w => {
+              ${visible.length ? visible.map(w => {
                 const thumb = getWorkerStampedPhoto(w);
                 const scaledD = getScaledDaysWorked(w.daysMonthApproved);
                 return `
@@ -1840,7 +1900,7 @@
                     <td>${renderApprovalBadge(w.approvalStatus)}</td>
                   </tr>
                 `;
-              }).join('')}
+              }).join('') : '<tr><td colspan="9" class="v2-table-empty">Không có nhân sự khớp bộ lọc.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -1849,17 +1909,35 @@
   }
 
   function renderKtAdvances() {
+    const advances = state.advances || [];
+    const summary = [
+      ['Chờ kế toán kiểm tra', 'CHO_KT_KIEM_TRA', 'orange'],
+      ['Đã trình giám đốc', 'CHO_BGD_DUYET', 'blue'],
+      ['Giám đốc đã duyệt', 'BGD_DA_DUYET', 'green']
+    ].map(([label, status, tone]) => {
+      const items = advances.filter(adv => adv.status === status);
+      return { label, tone, count: items.length, total: items.reduce((sum, adv) => sum + (Number(adv.amount) || 0), 0) };
+    });
     return `
-      <div class="section-card">
-        <div class="section-header">
+      <div class="section-card v2-table-section">
+        <div class="section-header v2-table-header">
           <div>
-            <span class="kicker">BƯỚC 1: KẾ TOÁN KIỂM TRA ĐƠN ỨNG LƯƠNG CỦA MỌI CẤP</span>
-            <h3>Kiểm Tra &amp; Đối Chiếu Đơn Xin Ứng Lương (Công Nhân · Đội Trưởng · Quản Lý CT · Kế Toán)</h3>
-            <div class="section-desc">Cấp nào cũng có thể gửi đơn ứng lương. Kế toán kiểm tra công tích lũy hoặc bấm "+ Tạo đơn ứng lương của tôi" để ứng lương cho chính mình.</div>
+            <span class="kicker">TÀI CHÍNH</span>
+            <h3>Tạm ứng lương</h3>
+            <div class="section-desc">Đối chiếu công tích lũy và theo dõi hồ sơ trình duyệt.</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 + Tạo đơn Xin Ứng lương của Kế toán</button>
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">+ Tạo đơn tạm ứng của tôi</button>
         </div>
-        <div class="table-scroll">
+        <div class="v2-table-summary" aria-label="Tổng hợp đơn tạm ứng">
+          ${summary.map(item => `
+            <div class="v2-table-stat v2-table-stat--${item.tone}">
+              <span>${item.label}</span>
+              <strong>${formatVND(item.total)}</strong>
+              <small>${item.count} đơn</small>
+            </div>
+          `).join('')}
+        </div>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Danh sách tạm ứng">
           <table class="data-table">
             <thead>
               <tr>
@@ -1876,19 +1954,19 @@
               </tr>
             </thead>
             <tbody>
-              ${state.advances.map(adv => {
+              ${advances.length ? advances.map(adv => {
                 const w = state.workers.find(x => x.code === adv.workerCode) ||
                           (state.staffAttendance || []).find(s => s.code === adv.workerCode || s.username === adv.workerCode) ||
-                          state.workers[0];
-                const accSal = adv.accruedSalary || adv.accruedSalaryAtRequest || (getScaledDaysWorked(w.daysMonthApproved) * w.dailyWage);
-                const daysW = adv.daysWorkedSoFar || getScaledDaysWorked(w.daysMonthApproved);
+                          null;
+                const accSal = adv.accruedSalary ?? adv.accruedSalaryAtRequest ?? (w ? getScaledDaysWorked(w.daysMonthApproved) * w.dailyWage : 0);
+                const daysW = adv.daysWorkedSoFar ?? (w ? getScaledDaysWorked(w.daysMonthApproved) : 0);
                 const ratio = Math.round((adv.amount / Math.max(1, accSal)) * 100);
                 return `
                   <tr>
                     <td><strong>${adv.id}</strong><br/><span style="font-size:10px;">${adv.date}</span></td>
                     <td><strong>${adv.workerName}</strong> (${adv.workerCode})</td>
-                    <td>${adv.teamName || w.teamName}</td>
-                    <td><strong style="color:var(--ds-primary);">${w.managerName}</strong></td>
+                    <td>${adv.teamName || w?.teamName || '—'}</td>
+                    <td><strong style="color:var(--ds-primary);">${w?.managerName || '—'}</strong></td>
                     <td><strong>${daysW} công</strong></td>
                     <td><strong>${formatVND(accSal)}</strong></td>
                     <td><strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong><br/><span style="font-size:10px;">${adv.reason}</span></td>
@@ -1909,7 +1987,7 @@
                     </td>
                   </tr>
                 `;
-              }).join('')}
+              }).join('') : '<tr><td colspan="10" class="v2-table-empty">Chưa có đơn tạm ứng.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -1923,12 +2001,14 @@
       return true;
     });
 
+    const visible = filtered.slice(0, 40);
     return `
-      <div class="section-card">
-        <div class="section-header">
+      <div class="section-card v2-table-section">
+        <div class="section-header v2-table-header">
           <div>
-            <span class="kicker">TỰ ĐỘNG TÍNH LƯƠNG THEO KHOẢNG NGÀY ĐÃ CHỌN (${formatDateRangeLabel()})</span>
-            <h3>Bảng Tính Lương Phân Theo Quản Lý Công Trình</h3>
+            <span class="kicker">TÀI CHÍNH</span>
+            <h3>Bảng lương theo kỳ</h3>
+            <div class="section-desc">Công, tăng ca, tạm ứng đã duyệt và thu nhập thực lĩnh.</div>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             ${renderDateRangeButtonHtml()}
@@ -1938,11 +2018,12 @@
               <option value="qlct_ct2" ${filterManager === 'qlct_ct2' ? 'selected' : ''}>Quản lý CT2: KS. Phạm Quốc Bảo</option>
               <option value="qlct_ct3" ${filterManager === 'qlct_ct3' ? 'selected' : ''}>Quản lý CT3: KS. Đặng Văn Hùng</option>
             </select>
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">📥 Xuất Excel Bảng Lương (.CSV)</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.exportPayrollCsv()">Xuất toàn bộ CSV</button>
           </div>
         </div>
 
-        <div class="table-scroll">
+        <div class="v2-table-meta">Hiển thị ${visible.length} / ${filtered.length} nhân sự theo bộ lọc</div>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Bảng lương theo kỳ">
           <table class="data-table">
             <thead>
               <tr>
@@ -1959,7 +2040,7 @@
               </tr>
             </thead>
             <tbody>
-              ${filtered.slice(0, 40).map(w => {
+              ${visible.length ? visible.map(w => {
                 const scaledD = getScaledDaysWorked(w.daysMonthApproved);
                 const hourly = w.dailyWage / 8;
                 const basePay = scaledD * w.dailyWage;
@@ -1985,7 +2066,7 @@
                     <td><button class="btn btn-soft btn-sm" onclick="window.NPApp.openPayslipModal('${w.id}')">Phiếu</button></td>
                   </tr>
                 `;
-              }).join('')}
+              }).join('') : '<tr><td colspan="10" class="v2-table-empty">Không có nhân sự khớp bộ lọc.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -1995,53 +2076,48 @@
 
   function renderKtHierarchyDirectory() {
     return `
-      <div class="section-card">
-        <div class="section-header">
+      <div class="section-card v2-table-section">
+        <div class="section-header v2-table-header">
           <div>
-            <span class="kicker">ĐỐI CHIẾU CÂY NHÂN SỰ TƯƠNG TÁC &amp; MẬT KHẨU ĐỒNG BỘ TỪ CẤP DƯỚI</span>
-            <h3>Cây Nhân Sự: Click Vào Đội Trưởng Để Xem Toàn Bộ Nhân Viên Dưới Quyền</h3>
-            <div class="section-desc">💡 Bấm vào từng Đội trưởng bên dưới để xổ ra danh sách toàn bộ công nhân thuộc Đội trưởng đó quản lý.</div>
+            <span class="kicker">NHÂN SỰ</span>
+            <h3>Danh bạ theo công trình</h3>
+            <div class="section-desc">Mở từng đội để xem nhân sự và công đã ghi nhận.</div>
           </div>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">📂 Mở tất cả 6 Đội</button>
-            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(false)">📁 Thu gọn</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(true)">Mở tất cả đội</button>
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.expandAllHierarchyTeams(false)">Thu gọn</button>
           </div>
         </div>
-        <div class="grid-3">
+        <div class="v2-table-meta">${state.projects.length} công trình · ${state.teams.length} đội · ${state.workers.length} công nhân</div>
+        <div class="v2-directory-grid">
           ${state.projects.map(p => {
             const pTeams = state.teams.filter(t => t.projectId === p.id);
             const pWorkers = state.workers.filter(w => w.projectId === p.id);
-            const mgrPin = getAccountPinByUsernameOrCode(p.managerUsername);
             return `
-              <div class="hierarchy-card">
-                <span class="kicker">QUẢN LÝ CÔNG TRÌNH ${p.id}</span>
-                <h4>👷 ${p.manager} (TK: <code>${p.managerUsername}</code> · PIN: <code>${mgrPin}</code>)</h4>
-                <div style="font-size:11px; color:var(--ds-text-muted); margin-bottom:8px;">Công trình: ${p.name} · Tổng số: <strong>${pWorkers.length} nhân sự</strong></div>
+              <div class="hierarchy-card v2-directory-card">
+                <span class="kicker">CÔNG TRÌNH ${p.id}</span>
+                <h4>${p.name}</h4>
+                <p class="v2-directory-meta">${p.manager} · ${pWorkers.length} nhân sự</p>
                 ${pTeams.map(tm => {
                   const tmWorkers = pWorkers.filter(w => w.teamId === tm.id);
-                  const dtPin = getAccountPinByUsernameOrCode(tm.leaderUsername);
                   const isOpen = !!expandedTeams[tm.id];
                   return `
-                    <div style="border:1.5px solid ${isOpen ? 'var(--ds-accent)' : 'var(--ds-line)'}; border-radius:var(--ds-radius-sm); background:#FFFFFF; margin-bottom:6px; overflow:hidden;">
-                      <div style="padding:8px; cursor:pointer; background:${isOpen ? 'var(--ds-bg-soft)' : '#FFFFFF'};" onclick="window.NPApp.toggleTeamHierarchy('${tm.id}')">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                          <div style="font-weight:700; color:var(--ds-primary); font-size:11.5px;">${isOpen ? '📂' : '📁'} ${tm.name} — ${tm.leader}</div>
-                          <span class="badge ${isOpen ? 'badge-orange' : 'badge-navy'}">${tmWorkers.length} người ${isOpen ? '▴' : '▾'}</span>
-                        </div>
-                        <div style="font-size:10.5px; color:var(--ds-text-muted); margin:2px 0;">TK Đội trưởng: <code>${tm.leaderUsername}</code> · PIN đồng bộ: <code>${dtPin}</code></div>
-                        <div style="font-size:10px; color:var(--ds-link); font-weight:600;">${isOpen ? '▴ Thu gọn danh sách' : '▾ Click để xem ' + tmWorkers.length + ' nhân sự dưới quyền'}</div>
-                      </div>
+                    <div class="v2-directory-group">
+                      <button class="v2-directory-toggle" type="button" aria-expanded="${isOpen}" onclick="window.NPApp.toggleTeamHierarchy('${tm.id}')">
+                        <span><strong>${tm.name}</strong><small>${tm.leader}</small></span>
+                        <span class="badge ${isOpen ? 'badge-orange' : 'badge-navy'}">${tmWorkers.length} người ${isOpen ? '▴' : '▾'}</span>
+                      </button>
                       ${isOpen ? `
-                        <div style="border-top:1px solid var(--ds-line); padding:6px; max-height:240px; overflow-y:auto;">
-                          <table class="data-table" style="font-size:10px;">
+                        <div class="v2-directory-table">
+                          <table class="data-table">
                             <thead>
-                              <tr><th>#</th><th>Mã NV &amp; PIN</th><th>Họ và Tên</th><th>Công</th></tr>
+                              <tr><th>STT</th><th>Mã NV</th><th>Họ và tên</th><th>Công</th></tr>
                             </thead>
                             <tbody>
                               ${tmWorkers.map((w, idx) => `
                                 <tr>
                                   <td>${idx + 1}</td>
-                                  <td><code>${w.code}</code><br/>PIN: <code>${getAccountPinByUsernameOrCode(w.code)}</code></td>
+                                  <td><code>${w.code}</code></td>
                                   <td><strong>${w.name}</strong><br/><span style="font-size:9px; color:var(--ds-text-muted);">${w.roleName}</span></td>
                                   <td><strong>${getScaledDaysWorked(w.daysMonthApproved)}c</strong></td>
                                 </tr>
@@ -2268,44 +2344,42 @@
   }
 
   function renderQlctStaff() {
-    const acc = getCurrentAccount();
     const myWorkers = getScopedWorkersForCurrentAccount();
 
     return `
-      <div class="section-card">
-        <div class="section-header">
+      <div class="section-card v2-table-section">
+        <div class="section-header v2-table-header">
           <div>
-            <span class="kicker">QUẢN LÝ NHÂN SỰ &amp; MẬT KHẨU CẤP DƯỚI THUỘC QUYỀN ${acc.fullName.toUpperCase()}</span>
-            <h3>Danh Sách Đội Trưởng &amp; ${myWorkers.length} Công Nhân Dưới Quyền (Xóa Nhân Sự Cần Giám Đốc Đồng Ý)</h3>
+            <span class="kicker">NHÂN SỰ</span>
+            <h3>Quản lý nhân sự</h3>
+            <div class="section-desc">Danh sách công nhân tại công trình được giao.</div>
           </div>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm Nhân viên / Công nhân dưới quyền tôi</button>
+            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm nhân sự</button>
           </div>
         </div>
 
-        <div class="table-scroll">
+        <div class="v2-table-meta">Tất cả (${myWorkers.length})</div>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Danh sách công nhân">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Mã NV (Tài khoản)</th>
-                <th>Mật khẩu / PIN (Đồng bộ)</th>
+                <th>Mã NV</th>
                 <th>Họ và Tên</th>
-                <th>Chức danh / Tổ đội</th>
+                <th>Tổ đội</th>
                 <th>Đội trưởng trực tiếp</th>
                 <th>Đơn giá lương ngày</th>
                 <th>Công kỳ (${formatDateRangeLabel()})</th>
-                <th>Xóa Nhân sự (Trình GĐ)</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              ${myWorkers.map(w => {
-                const pin = getAccountPinByUsernameOrCode(w.code);
+              ${myWorkers.length ? myWorkers.map(w => {
                 const scaledD = getScaledDaysWorked(w.daysMonthApproved);
                 const pendingDel = (state.deleteRequests || []).find(r => r.targetCode === w.code && r.status === 'CHO_BGD_DONG_Y');
                 return `
                   <tr>
                     <td><strong><code>${w.code}</code></strong></td>
-                    <td><strong style="color:var(--ds-primary);"><code>${pin}</code></strong></td>
                     <td><strong>${w.name}</strong></td>
                     <td>${w.roleName} · <strong>${w.teamName}</strong></td>
                     <td>${w.leaderName}</td>
@@ -2319,7 +2393,7 @@
                     </td>
                   </tr>
                 `;
-              }).join('')}
+              }).join('') : '<tr><td colspan="7" class="v2-table-empty">Chưa có công nhân trong công trình.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -2383,93 +2457,88 @@
   function renderDtCheckin() {
     const acc = getCurrentAccount();
     const tm = getTeam(acc.teamId);
+    const project = getProject(tm.projectId);
     const teamWorkers = getScopedWorkersForCurrentAccount();
-    const present = teamWorkers.filter(w => w.attendanceStatus === 'DANG_LAM' || w.attendanceStatus === 'DA_RA').length;
-    const workingNow = teamWorkers.filter(w => w.attendanceStatus === 'DANG_LAM').length;
+    const present = teamWorkers.filter(w => ['DANG_LAM', 'DA_RA'].includes(w.attendanceStatus)).length;
+    const absent = teamWorkers.length - present;
+    const overtime = teamWorkers.filter(w => Number(w.hoursOtRegistered) > 0).length;
+    const today = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'full', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+    const safe = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[char]);
+    const shortcuts = [
+      ['◷', 'Chấm công', `document.getElementById('v2TeamAttendance').scrollIntoView({block:'start',behavior:'smooth'})`],
+      ['♟', 'Nhân sự đội', `window.NPApp.selectTab('dt-members')`],
+      ['▤', 'Công việc', `window.NPApp.selectTab('dt-tasks')`],
+      ['₫', 'Ứng lương cá nhân', 'window.NPApp.openPersonalAdvanceModal()'],
+      ['▦', 'Bảng kê của tôi', `window.NPApp.selectTab('dt-my-statement')`],
+      ['▣', 'Chọn kỳ', 'window.NPApp.openDateRangeModal()']
+    ];
 
     return `
-      <div class="kpi-grid-4">
-        <div class="kpi-card">
-          <div>
-            <span class="kpi-label">QUÂN SỐ ${tm.name.toUpperCase()}</span>
-            <div class="kpi-value">${present}<span class="unit">/${teamWorkers.length} người</span></div>
+      <div class="v2-team">
+        <section class="v2-team-home" aria-label="Tổng quan đội">
+          <div class="v2-team-welcome">
+            <span class="v2-team-avatar" aria-hidden="true">${safe(acc.fullName?.trim().split(/\s+/).slice(-2).map(part => part[0]).join('').toUpperCase() || 'ĐT')}</span>
+            <div>
+              <span class="v2-team-eyebrow">ĐỘI TRƯỞNG</span>
+              <h2>Xin chào, ${safe(acc.fullName)}</h2>
+              <p>${safe(tm.name)} · ${safe(project?.name || tm.projectId)}</p>
+              <span class="v2-team-date">${safe(today)}</span>
+            </div>
           </div>
-          <div class="kpi-sub">Đội trưởng chỉ quản lý nhân sự thuộc ${tm.id}</div>
-        </div>
-        <div class="kpi-card">
-          <div>
-            <span class="kpi-label">ĐANG LÀM VIỆC TRÊN CÔNG TRÌNH</span>
-            <div class="kpi-value" style="color:var(--ds-success);">${workingNow}<span class="unit">người</span></div>
+          <div class="v2-team-shortcuts" aria-label="Lối tắt công việc">
+            ${shortcuts.map(([icon, label, action]) => `
+              <button type="button" onclick="${action}">
+                <span class="v2-team-shortcut-icon" aria-hidden="true">${icon}</span>
+                <span>${label}</span>
+              </button>
+            `).join('')}
           </div>
-          <div class="kpi-sub">Đã chụp Camera GPS Check-in hợp lệ</div>
-        </div>
-        <div class="kpi-card">
-          <div>
-            <span class="kpi-label">KỲ LỌC NGÀY ĐANG XEM</span>
-            <div class="kpi-value" style="font-size:13.5px;">${formatDateRangeLabel()}</div>
-          </div>
-          <div class="kpi-sub">Bấm nút Lịch trên Header để chọn ngày</div>
-        </div>
-        <div class="kpi-card">
-          <div>
-            <span class="kpi-label">QUẢN LÝ CÔNG TRÌNH DUYỆT</span>
-            <div class="kpi-value" style="font-size:14px;">${tm.managerName}</div>
-          </div>
-          <div class="kpi-sub">Đội trưởng nhập công → Trình ${tm.managerName} duyệt</div>
-        </div>
-      </div>
+        </section>
 
-      <div class="section-card">
-        <div class="section-header">
-          <div>
-            <span class="kicker">MỤC CHECK CHẤM CÔNG &amp; ĐIỂM DANH CAMERA GPS RIÊNG CỦA ${tm.name.toUpperCase()}</span>
-            <h3>Check &amp; Điểm Danh (Check-in / Check-out Chung 1 Menu) Cho ${teamWorkers.length} Công Nhân Đội Tôi</h3>
+        <section class="v2-team-attendance" id="v2TeamAttendance" aria-labelledby="v2TeamAttendanceTitle">
+          <header class="v2-team-attendance-head">
+            <div>
+              <span class="v2-team-eyebrow">${safe(tm.name)} · ${teamWorkers.length} công nhân</span>
+              <h2 id="v2TeamAttendanceTitle">Chấm công đội</h2>
+            </div>
+            ${renderDateRangeButtonHtml('v2-team-period')}
+          </header>
+          <div class="v2-team-metrics" aria-label="Tình hình hôm nay">
+            <div class="v2-team-metric is-present"><span aria-hidden="true">✓</span><strong>${present}</strong><small>Có mặt</small></div>
+            <div class="v2-team-metric is-absent"><span aria-hidden="true">−</span><strong>${absent}</strong><small>Chưa có mặt</small></div>
+            <div class="v2-team-metric is-overtime"><span aria-hidden="true">◷</span><strong>${overtime}</strong><small>Đăng ký tăng ca</small></div>
           </div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${renderDateRangeButtonHtml()}
-            <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu(null)">📸 Mở Menu Chấm công (Chọn Vào ca / Ra ca)</button>
+          <label class="v2-team-search">
+            <span aria-hidden="true">⌕</span>
+            <input type="search" aria-label="Tìm công nhân theo tên hoặc mã" placeholder="Tìm theo tên hoặc mã công nhân" oninput="const query = this.value.trim().toLocaleLowerCase('vi'); const list = document.getElementById('v2TeamRoster'); let count = 0; list.querySelectorAll('[data-search]').forEach(row => {row.hidden = !row.dataset.search.includes(query); if (!row.hidden) count++;}); document.getElementById('v2TeamNoResults').hidden = count !== 0;">
+          </label>
+          <div class="v2-team-roster" id="v2TeamRoster">
+            ${teamWorkers.map(w => `
+              <details class="v2-team-worker" data-search="${safe(`${w.name} ${w.code}`.toLocaleLowerCase('vi'))}">
+                <summary>
+                  <img src="${safe(getWorkerStampedPhoto(w))}" alt="" loading="lazy" />
+                  <span class="v2-team-worker-name"><strong>${safe(w.name)}</strong><small>${safe(w.code)}</small></span>
+                  <span class="v2-team-worker-status">${renderAttendanceBadge(w.attendanceStatus)}</span>
+                  <span class="v2-team-worker-chevron" aria-hidden="true">⌄</span>
+                </summary>
+                <div class="v2-team-worker-details">
+                  <p>${safe(w.roleName)} · ${safe(w.assignedTaskToday || tm.dailyTargetTask)}</p>
+                  <p>Vào ca: <strong>${safe(w.checkInTime || 'Chưa ghi nhận')}</strong> · Ra ca: <strong>${safe(w.checkOutTime || 'Chưa ghi nhận')}</strong></p>
+                  <p>Kỳ đang xem: <strong>${getScaledDaysWorked(w.daysMonthApproved)} công</strong> ${renderApprovalBadge(w.approvalStatus)}</p>
+                  <div class="v2-team-worker-actions">
+                    <button type="button" class="btn btn-soft btn-sm" data-person="${safe(w.id)}" onclick="window.NPApp.openPhotoModal(this.dataset.person)">Xem ảnh GPS</button>
+                    <button type="button" class="btn btn-primary btn-sm" data-person="${safe(w.id)}" onclick="window.NPApp.openUnifiedCheckinMenu(this.dataset.person)">Chấm công vào / ra</button>
+                  </div>
+                </div>
+              </details>
+            `).join('')}
+            <p class="v2-team-empty" id="v2TeamNoResults" ${teamWorkers.length ? 'hidden' : ''} role="status">Không tìm thấy công nhân.</p>
           </div>
-        </div>
-
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Ảnh GPS</th>
-                <th>Mã NV &amp; Họ tên</th>
-                <th>Vai trò trong đội</th>
-                <th>Việc được Đội trưởng giao</th>
-                <th>Giờ Vào - Ra hôm nay</th>
-                <th>Công kỳ (${formatDateRangeLabel()})</th>
-                <th>Trạng thái QLCT Duyệt</th>
-                <th>Chấm công (Vào/Ra)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${teamWorkers.map(w => {
-                const thumb = getWorkerStampedPhoto(w);
-                return `
-                  <tr>
-                    <td>
-                      <img src="${thumb}" class="photo-thumb" onclick="window.NPApp.openPhotoModal('${w.id}')" />
-                    </td>
-                    <td><strong>${w.name}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${w.code}</span></td>
-                    <td>${w.roleName}</td>
-                    <td><strong>${w.assignedTaskToday || tm.dailyTargetTask}</strong></td>
-                    <td>
-                      ${w.checkInTime ? `Vào: <code>${w.checkInTime}</code><br/>Ra: <code>${w.checkOutTime || 'Đang làm'}</code>` : `<span class="badge badge-danger">Chưa điểm danh</span>`}
-                    </td>
-                    <td><strong>${getScaledDaysWorked(w.daysMonthApproved)} công</strong></td>
-                    <td>${renderApprovalBadge(w.approvalStatus)}</td>
-                    <td>
-                      <button class="btn btn-primary btn-sm" onclick="window.NPApp.openUnifiedCheckinMenu('${w.id}')">📸 Chấm công (Vào/Ra)</button>
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
+          <button type="button" class="v2-team-checkin" onclick="window.NPApp.openUnifiedCheckinMenu(null)">✓ Mở chấm công đội</button>
+          <p class="v2-team-approver">Quản lý công trình duyệt công: ${safe(tm.managerName)}</p>
+        </section>
       </div>
     `;
   }
@@ -3015,6 +3084,10 @@
   }
 
   async function startHardwareCamera() {
+    if (isPreview) {
+      drawLivePreviewOnCanvas();
+      return;
+    }
     stopHardwareCamera();
     const video = document.getElementById('liveVideo');
     try {
@@ -5020,7 +5093,22 @@
 
   function init() {
     initTheme();
-    if ('serviceWorker' in navigator) {
+    if (isPreview) {
+      document.body.dataset.npPreview = 'true';
+      const demo = document.getElementById('npPreviewRoles');
+      demo.hidden = false;
+      Object.entries(ROLE_CONFIG).forEach(([role, cfg]) => {
+        const account = state.accounts.find(item => item.roleId === role && item.status === 'ACTIVE');
+        if (!account) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-soft';
+        button.textContent = cfg.shortTitle;
+        button.addEventListener('click', () => loginAsAccount(account.id));
+        demo.querySelector('.np-preview-roles').append(button);
+      });
+    }
+    if (!isPreview && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
     window.addEventListener('beforeinstallprompt', e => {
@@ -5064,7 +5152,7 @@
       openDeleteConfirmModal('WORKER', 'W1');
     }
 
-    setTimeout(refreshRealGps, 400);
+    if (!isPreview) setTimeout(refreshRealGps, 400);
   }
 
   window.NPApp = {

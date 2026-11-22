@@ -4,6 +4,7 @@
   "description": "NP ONE - Nguyên Phát Human Resources (Hệ thống Quản lý Chấm công, Nhân sự & Tính lương Công trình 5 cấp)",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:preview": "node scripts/prepare-vercel-preview.cjs --vercel"
   }
 }

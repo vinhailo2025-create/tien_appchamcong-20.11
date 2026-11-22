@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0B2D5B" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -13,17 +13,21 @@
   <link rel="apple-touch-icon" href="assets/logo-np-one-3d.png" />
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lora:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="v2-shell.css" />
+  <link rel="stylesheet" href="v2-dashboard.css" />
+  <link rel="stylesheet" href="v2-tables.css" />
+  <link rel="stylesheet" href="v2-mobile.css" />
 </head>
 <body>
   <!-- ================= MENU BÊN TRÁI TRƯỢT ĐÓNG/MỞ (TỰ ĐỘNG THAY ĐỔI THEO VỊ TRÍ ĐĂNG NHẬP) ================= -->
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="window.NPApp.toggleSidebar(false)"></div>
-  <aside class="left-sidebar" id="leftSidebar">
+  <aside class="left-sidebar" id="leftSidebar" aria-label="Điều hướng NP ONE">
     <div class="sidebar-header">
       <div class="sidebar-brand">
-        <img src="assets/logo-np-one-3d.png" alt="NP ONE" />
+        <img src="assets/logo-np-one-flat.png" alt="" />
         <div>
-          <div style="font-family:var(--ds-font-serif); font-weight:700; font-size:15px; color:#FFFFFF;">NP ONE</div>
-          <div style="font-size:10.5px; color:var(--ds-accent);">Nguyên Phát Human Resources</div>
+          <div class="np-sidebar-title">NP ONE</div>
+          <div class="np-sidebar-company">NGUYÊN PHÁT</div>
         </div>
       </div>
       <button class="btn-sidebar-close" onclick="window.NPApp.toggleSidebar(false)" aria-label="Đóng menu">✕</button>
@@ -59,14 +63,14 @@
   <header class="top-header">
     <div class="top-header-inner">
       <div class="header-left">
-        <button class="btn-menu-toggle" onclick="window.NPApp.toggleSidebar(true)" title="Mở Menu chức năng">
+        <button class="btn-menu-toggle" onclick="window.NPApp.toggleSidebar(true)" aria-label="Mở menu" aria-controls="leftSidebar" aria-expanded="false">
           ☰
         </button>
-        <div class="brand-box" onclick="window.NPApp.toggleSidebar(true)">
-          <img class="brand-logo" src="assets/logo-np-one-3d.png" alt="NP ONE" />
+        <div class="brand-box">
+          <img class="brand-logo" src="assets/logo-np-one-flat.png" alt="" />
           <div style="min-width:0;">
-            <div class="brand-title">NP ONE <span class="brand-gold" id="headerRoleBadge">· Nguyên Phát</span></div>
-            <div class="brand-sub" id="currentTabSubtitle">Hệ thống Quản lý Công 5 Cấp</div>
+            <div class="brand-title"><span class="np-brand-mobile">NP ONE</span><span class="np-brand-desktop">Công ty TNHH Nhân Lực Nguyên Phát</span></div>
+            <div class="brand-sub"><span id="headerRoleBadge">Nguyên Phát</span><span id="currentTabSubtitle"></span><span class="np-preview-badge">Demo</span></div>
           </div>
         </div>
       </div>
@@ -84,7 +88,7 @@
   <main class="main-container" id="appMain"></main>
 
   <!-- ================= THANH ĐIỀU HƯỚNG ĐÁY ĐIỆN THOẠI (ĐỘNG THEO VAI TRÒ) ================= -->
-  <nav class="mobile-bottom-nav" id="mobileBottomNav"></nav>
+  <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Chức năng trên điện thoại"></nav>
 
   <!-- ================= MÀN HÌNH ĐĂNG NHẬP ĐẦU TIÊN (BẮT BUỘC ĐĂNG NHẬP MỚI VÀO TRANG TÍNH NĂNG) ================= -->
   <div class="login-screen-overlay open" id="fullLoginOverlay">
@@ -92,25 +96,28 @@
       <div class="login-box-header">
         <img src="assets/logo-np-one-3d.png" alt="NP ONE" />
         <span class="kicker" style="margin-bottom:2px;">HỆ THỐNG QUẢN LÝ CÔNG &amp; PHÂN VIỆC 5 CẤP</span>
-        <h3 style="color:#FFFFFF; font-size:16px;">Đăng nhập NP ONE — Nguyên Phát</h3>
-        <div style="font-size:10px; color:#FFFFFF; opacity:0.85; margin-top:2px;">Mỗi vị trí (Giám đốc · Kế toán · Quản lý CT · Đội trưởng · Công nhân) có giao diện làm việc riêng</div>
+        <h1>Đăng nhập NP ONE</h1>
       </div>
       <form class="login-box-body" onsubmit="event.preventDefault(); window.NPApp.submitFullLogin();">
         <div class="form-group">
           <label for="fullLoginUser">Tên đăng nhập / Mã Nhân viên <span class="req">*</span></label>
-          <input type="text" id="fullLoginUser" placeholder="Nhập tên tài khoản hoặc Mã NV..." autocomplete="username" />
+          <input type="text" id="fullLoginUser" placeholder="Tên tài khoản hoặc mã nhân viên" autocomplete="username" required />
         </div>
         <div class="form-group">
           <label for="fullLoginPin">Mật khẩu / Mã PIN <span class="req">*</span></label>
-          <input type="password" id="fullLoginPin" placeholder="Nhập mật khẩu hoặc Mã PIN..." autocomplete="current-password" />
+          <input type="password" id="fullLoginPin" placeholder="Mật khẩu hoặc mã PIN" autocomplete="current-password" required />
           <div id="fullLoginErr" class="field-error-msg" style="display:none;">Tên đăng nhập hoặc Mã PIN không đúng, hoặc tài khoản đã bị khóa!</div>
         </div>
         <div style="margin-top:10px;">
           <button class="btn btn-primary" type="submit" style="width:100%;">
-            🔐 Đăng nhập vào Giao diện Vị trí
+            Đăng nhập
           </button>
         </div>
       </form>
+      <section id="npPreviewRoles" class="np-preview-panel" hidden aria-label="Vai trò trong bản demo">
+        <strong>Xem giao diện với dữ liệu mẫu</strong>
+        <div class="np-preview-roles"></div>
+      </section>
     </div>
   </div>
 

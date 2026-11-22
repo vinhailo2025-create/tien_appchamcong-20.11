@@ -1,8 +1,12 @@
-const CACHE_NAME = 'np-one-hr-v3';
+const CACHE_NAME = 'np-one-hr-v4';
 const ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
+  '/v2-shell.css',
+  '/v2-dashboard.css',
+  '/v2-tables.css',
+  '/v2-mobile.css',
   '/seed.js',
   '/app.js',
   '/manifest.json',

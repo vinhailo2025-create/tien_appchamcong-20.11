@@ -1,0 +1,220 @@
+.v2-table-section {
+  --v2-table-ink: #13335b;
+  --v2-table-muted: #536d86;
+  --v2-table-border: #dce6f0;
+  --v2-table-fill: #eff5fc;
+  min-width: 0;
+  padding: clamp(14px, 2vw, 24px);
+  border-color: var(--v2-table-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 18px #16395e0d;
+}
+
+.v2-table-section .v2-table-header {
+  align-items: center;
+  gap: 14px;
+  padding: 0;
+  margin-bottom: 18px;
+}
+
+.v2-table-header .kicker {
+  color: #295986;
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+
+.v2-table-section .v2-table-header h3 {
+  margin: 4px 0 5px;
+  color: var(--v2-table-ink);
+  font-family: inherit;
+  font-size: clamp(20px, 2.2vw, 27px);
+  font-weight: 750;
+}
+
+.v2-table-section .section-desc {
+  color: var(--v2-table-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.v2-table-section .v2-table-filters {
+  padding: 12px;
+  margin: 0 0 12px;
+  gap: 8px;
+  border: 1px solid var(--v2-table-border);
+  border-radius: 11px;
+  background: #f7fafe;
+}
+
+.v2-table-section .v2-table-filters > * {
+  min-height: 35px;
+  flex: 1 1 150px;
+  border-radius: 8px;
+}
+
+.v2-table-section .v2-table-filters .v2-table-search {
+  display: flex;
+  align-items: center;
+  flex-basis: 240px;
+  gap: 6px;
+}
+
+.v2-table-section .v2-table-search input {
+  min-width: 0;
+  min-height: 35px;
+  border-radius: 8px;
+}
+
+.v2-table-section .v2-table-meta {
+  margin: 0 0 10px;
+  color: var(--v2-table-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.v2-table-section .table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  border: 1px solid var(--v2-table-border);
+  border-radius: 11px;
+}
+
+.v2-table-section .data-table {
+  width: 100%;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-table-section .data-table th,
+.v2-table-section .data-table td {
+  padding: 10px 12px;
+  border-bottom-color: #e8eff6;
+  vertical-align: middle;
+}
+
+.v2-table-section .data-table th {
+  background: var(--v2-table-fill);
+  color: var(--v2-table-ink);
+}
+
+.v2-table-section .data-table tbody tr:nth-child(even) td {
+  background: #f9fbfe;
+}
+
+.v2-table-section .data-table tbody tr:hover td {
+  background: #eef6ff;
+}
+
+.v2-table-section .data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.v2-table-section .data-table .v2-table-empty {
+  padding: 25px 12px;
+  color: var(--v2-table-muted);
+  text-align: center;
+}
+
+.v2-table-summary,
+.v2-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 195px), 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.v2-table-stat {
+  --v2-stat-color: #1d63a4;
+  display: grid;
+  gap: 5px;
+  padding: 13px 15px;
+  color: var(--v2-table-muted);
+  background: #f1f7ff;
+  border: 1px solid var(--v2-table-border);
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.v2-table-stat strong {
+  color: var(--v2-stat-color);
+  font-size: clamp(18px, 2vw, 24px);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-table-stat--orange {
+  --v2-stat-color: #a34c09;
+  background: #fff5e8;
+}
+
+.v2-table-stat--green {
+  --v2-stat-color: #087650;
+  background: #eaf8f2;
+}
+
+.v2-directory-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 305px), 1fr));
+}
+
+.v2-table-section .v2-directory-card {
+  padding: 15px;
+  border-color: var(--v2-table-border);
+  border-radius: 12px;
+  background: #f7fafe;
+}
+
+.v2-directory-meta {
+  margin: 5px 0 12px;
+  color: var(--v2-table-muted);
+  font-size: 12px;
+}
+
+.v2-directory-group {
+  overflow: hidden;
+  margin-top: 8px;
+  border: 1px solid var(--v2-table-border);
+  border-radius: 9px;
+  background: white;
+}
+
+.v2-directory-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--v2-table-ink);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.v2-directory-toggle[aria-expanded="true"] {
+  background: var(--v2-table-fill);
+}
+
+.v2-directory-toggle small {
+  display: block;
+  padding-top: 3px;
+  color: var(--v2-table-muted);
+  font-size: 11px;
+}
+
+.v2-directory-toggle:focus-visible {
+  outline: 2px solid #1d63a4;
+  outline-offset: -2px;
+}
+
+.v2-directory-table {
+  max-height: 280px;
+  overflow: auto;
+}
+
+.v2-table-section .v2-directory-table .data-table th,
+.v2-table-section .v2-directory-table .data-table td {
+  padding: 7px 6px;
+  font-size: 11px;
+}
