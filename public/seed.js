@@ -1177,6 +1177,23 @@ window.NP_SEED = (function () {
     }
   ];
 
+  // Danh sách Yêu cầu Xóa Tài khoản / Nhân sự (Cần xác nhận & Được sự đồng ý phê duyệt của Tổng Giám đốc trước khi xóa)
+  const DELETE_REQUESTS = [
+    {
+      id: 'DEL-01',
+      targetType: 'WORKER',
+      targetId: 'W108',
+      targetCode: 'NV.NP-108',
+      targetName: 'LÝ HOÀNG VINH',
+      targetRole: 'Công nhân Đội 6 (CT3)',
+      requestedBy: 'KS. Đặng Văn Hùng',
+      requestedRole: 'Quản lý Công trình CT3',
+      reason: 'Công nhân đã kết thúc hợp đồng thời vụ và bàn giao đủ đồ bảo hộ lao động.',
+      createdAt: '22/11/2026 08:20',
+      status: 'CHO_BGD_DONG_Y'
+    }
+  ];
+
   return {
     projects: PROJECTS,
     teams: TEAMS,
@@ -1184,6 +1201,7 @@ window.NP_SEED = (function () {
     roles: ROLES,
     accounts: ACCOUNTS,
     staffAttendance: STAFF_ATTENDANCE,
+    deleteRequests: DELETE_REQUESTS,
     workers: buildAll108Workers(),
     advances: ADVANCES,
     auditLogs: AUDIT_LOGS,

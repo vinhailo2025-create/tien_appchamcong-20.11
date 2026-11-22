@@ -1,7 +1,7 @@
 // Ứng dụng Quản lý Chấm công, Phân việc, Quân số, Tăng ca & Tính lương 5 Cấp NP ONE — Nguyên Phát HR
 // Đầy đủ: Chọn khoảng Ngày/Tháng/Năm (Bảng Lịch), Đổi Mật khẩu đồng bộ lên các cấp, Checkin/Checkout chung 1 Menu (Mọi cấp trừ Giám đốc), Kế toán chấm công Giám đốc thấy & Bảng kê Kế toán, Mọi cấp đều được Ứng lương.
 (function () {
-  const STORAGE_KEY = 'NP_ONE_HR_STATE_V8';
+  const STORAGE_KEY = 'NP_ONE_HR_STATE_V9';
   const THEME_KEY = 'NP_ONE_THEME_V1';
 
   let state = loadState();
@@ -693,13 +693,14 @@
   // ================= DỰNG MENU, HEADER & THANH ĐÁY RIÊNG THEO VỊ TRÍ ĐĂNG NHẬP =================
   function getBadgeCounts() {
     const acc = getCurrentAccount();
-    const bgdPending = state.advances.filter(a => a.status === 'CHO_BGD_DUYET').length + (state.payrollMonthStatus === 'CHO_BGD_DUYET' ? 1 : 0);
+    const pendingDelCount = (state.deleteRequests || []).filter(r => r.status === 'CHO_BGD_DONG_Y').length;
+    const bgdPending = state.advances.filter(a => a.status === 'CHO_BGD_DUYET').length + (state.payrollMonthStatus === 'CHO_BGD_DUYET' ? 1 : 0) + pendingDelCount;
     const ktPending = state.advances.filter(a => a.status === 'CHO_KT_KIEM_TRA').length;
     let qlctPending = 0;
     if (acc && acc.roleId === 'QLCT') {
       qlctPending = getScopedWorkersForCurrentAccount().filter(w => w.approvalStatus !== 'DA_DUYET' || w.forgotCheckoutFlag).length;
     }
-    return { bgdPending, ktPending, qlctPending };
+    return { bgdPending, ktPending, qlctPending, pendingDelCount };
   }
 
   function renderRoleNavigationAndHeader() {
@@ -1502,8 +1503,68 @@
       return sum + (getScaledDaysWorked(w.daysMonthApproved) * w.dailyWage) + Math.round(w.otHoursMonthApproved * hourly * 1.5);
     }, 0);
     const totalAdv = state.advances.filter(a => a.status === 'BGD_DA_DUYET').reduce((s, a) => s + a.amount, 0);
+    const delRequests = state.deleteRequests || [];
 
     return `
+      <!-- PHÊ DUYỆT YÊU CẦU XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC ĐƯỢC SỰ ĐỒNG Ý CỦA TỔNG GIÁM ĐỐC) -->
+      <div class="section-card" style="border-color:var(--ds-danger);">
+        <div class="section-header">
+          <div>
+            <span class="kicker" style="color:var(--ds-danger);">KIỂM SOÁT AN TOÀN DỮ LIỆU · PHÊ DUYỆT XÓA TÀI KHOẢN &amp; NHÂN SỰ</span>
+            <h3>Yêu Cầu Xóa Tài Khoản / Nhân Sự Chờ Tổng Giám Đốc Đồng Ý (${delRequests.filter(r => r.status === 'CHO_BGD_DONG_Y').length} yêu cầu chờ)</h3>
+            <div class="section-desc">Nguyên tắc bảo mật: Không ai được tự ý xóa mất nhân sự hoặc tài khoản nếu chưa xác nhận lý do và được Tổng Giám đốc phê duyệt đồng ý.</div>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã YC</th>
+                <th>Thời gian gửi</th>
+                <th>Loại xóa</th>
+                <th>Tài khoản / Nhân sự cần xóa</th>
+                <th>Chức vụ / Đội</th>
+                <th>Người đề xuất xóa</th>
+                <th>Lý do xóa đã xác nhận</th>
+                <th>Trạng thái</th>
+                <th>Quyết định của Giám đốc</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${delRequests.length === 0 ? `
+                <tr><td colspan="9" style="text-align:center; padding:14px; color:var(--ds-text-muted);">Hiện không có yêu cầu xóa tài khoản hoặc nhân sự nào.</td></tr>
+              ` : delRequests.map(req => `
+                <tr>
+                  <td><strong>${req.id}</strong></td>
+                  <td>${req.createdAt}</td>
+                  <td><span class="badge ${req.targetType === 'ACCOUNT' ? 'badge-navy' : 'badge-orange'}">${req.targetType === 'ACCOUNT' ? 'Tài khoản' : 'Nhân sự'}</span></td>
+                  <td><strong style="color:var(--ds-danger);">${req.targetName}</strong><br/><code>${req.targetCode}</code></td>
+                  <td>${req.targetRole}</td>
+                  <td><strong>${req.requestedBy}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${req.requestedRole}</span></td>
+                  <td>${req.reason}</td>
+                  <td>
+                    ${req.status === 'CHO_BGD_DONG_Y'
+                      ? `<span class="badge badge-warning">⏳ Chờ Giám đốc đồng ý</span>`
+                      : req.status === 'DA_XOA'
+                        ? `<span class="badge badge-danger">✓ GĐ đã đồng ý &amp; Đã xóa</span>`
+                        : `<span class="badge badge-neutral">✕ GĐ từ chối xóa</span>`
+                    }
+                  </td>
+                  <td>
+                    ${req.status === 'CHO_BGD_DONG_Y' ? `
+                      <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                        <button class="btn btn-danger btn-sm" onclick="window.NPApp.directorApproveDeleteRequest('${req.id}')">✓ Đồng ý Xóa</button>
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.directorRejectDeleteRequest('${req.id}')">✕ Từ chối</button>
+                      </div>
+                    ` : `<span style="font-size:10px; color:var(--ds-text-muted);">Đã xử lý</span>`}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="section-card">
         <div class="section-header">
           <div>
@@ -1552,8 +1613,8 @@
                     <td><strong>${adv.workerName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${adv.workerCode} · ${person.roleName || 'Nhân sự'}</span></td>
                     <td>${adv.teamName || person.teamName}</td>
                     <td><strong style="color:var(--ds-primary);">${person.managerName || 'GĐ. Nguyễn Phát'}</strong></td>
-                    <td><strong>${adv.daysWorkedSoFar} công</strong></td>
-                    <td><strong>${formatVND(adv.accruedSalary)}</strong></td>
+                    <td><strong>${adv.daysWorkedSoFar || getScaledDaysWorked(person.daysMonthApproved)} công</strong></td>
+                    <td><strong>${formatVND(adv.accruedSalary || adv.accruedSalaryAtRequest || (getScaledDaysWorked(person.daysMonthApproved) * person.dailyWage))}</strong></td>
                     <td><strong style="color:var(--ds-primary); font-size:12.5px;">${formatVND(adv.amount)}</strong><br/><span style="font-size:10px;">${adv.reason}</span></td>
                     <td>${adv.checkedByKt ? `<span class="badge badge-navy">✓ ${adv.checkedByKt}</span>` : `<span class="badge badge-neutral">Chưa KT</span>`}</td>
                     <td>${stBadge}</td>
@@ -1734,15 +1795,17 @@
                 const w = state.workers.find(x => x.code === adv.workerCode) ||
                           (state.staffAttendance || []).find(s => s.code === adv.workerCode || s.username === adv.workerCode) ||
                           state.workers[0];
-                const ratio = Math.round((adv.amount / Math.max(1, adv.accruedSalary)) * 100);
+                const accSal = adv.accruedSalary || adv.accruedSalaryAtRequest || (getScaledDaysWorked(w.daysMonthApproved) * w.dailyWage);
+                const daysW = adv.daysWorkedSoFar || getScaledDaysWorked(w.daysMonthApproved);
+                const ratio = Math.round((adv.amount / Math.max(1, accSal)) * 100);
                 return `
                   <tr>
                     <td><strong>${adv.id}</strong><br/><span style="font-size:10px;">${adv.date}</span></td>
                     <td><strong>${adv.workerName}</strong> (${adv.workerCode})</td>
                     <td>${adv.teamName || w.teamName}</td>
                     <td><strong style="color:var(--ds-primary);">${w.managerName}</strong></td>
-                    <td><strong>${adv.daysWorkedSoFar} công</strong></td>
-                    <td><strong>${formatVND(adv.accruedSalary)}</strong></td>
+                    <td><strong>${daysW} công</strong></td>
+                    <td><strong>${formatVND(accSal)}</strong></td>
                     <td><strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong><br/><span style="font-size:10px;">${adv.reason}</span></td>
                     <td><span class="badge ${ratio <= 70 ? 'badge-success' : 'badge-warning'}">${ratio}%</span></td>
                     <td>
@@ -2097,7 +2160,7 @@
         <div class="section-header">
           <div>
             <span class="kicker">QUẢN LÝ NHÂN SỰ &amp; MẬT KHẨU CẤP DƯỚI THUỘC QUYỀN ${acc.fullName.toUpperCase()}</span>
-            <h3>Danh Sách Đội Trưởng &amp; ${myWorkers.length} Công Nhân Dưới Quyền (Tự Động Cập Nhật Khi Cấp Dưới Đổi Mật Khẩu)</h3>
+            <h3>Danh Sách Đội Trưởng &amp; ${myWorkers.length} Công Nhân Dưới Quyền (Xóa Nhân Sự Cần Giám Đốc Đồng Ý)</h3>
           </div>
           <div style="display:flex; gap:6px;">
             <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm Nhân viên / Công nhân dưới quyền tôi</button>
@@ -2113,15 +2176,16 @@
                 <th>Họ và Tên</th>
                 <th>Chức danh / Tổ đội</th>
                 <th>Đội trưởng trực tiếp</th>
-                <th>Người tạo hồ sơ</th>
                 <th>Đơn giá lương ngày</th>
                 <th>Công kỳ (${formatDateRangeLabel()})</th>
+                <th>Xóa Nhân sự (Trình GĐ)</th>
               </tr>
             </thead>
             <tbody>
               ${myWorkers.map(w => {
                 const pin = getAccountPinByUsernameOrCode(w.code);
                 const scaledD = getScaledDaysWorked(w.daysMonthApproved);
+                const pendingDel = (state.deleteRequests || []).find(r => r.targetCode === w.code && r.status === 'CHO_BGD_DONG_Y');
                 return `
                   <tr>
                     <td><strong><code>${w.code}</code></strong></td>
@@ -2129,9 +2193,14 @@
                     <td><strong>${w.name}</strong></td>
                     <td>${w.roleName} · <strong>${w.teamName}</strong></td>
                     <td>${w.leaderName}</td>
-                    <td><span class="badge badge-neutral">${w.createdBy}</span></td>
                     <td><strong>${formatVND(w.dailyWage)}</strong>/ngày</td>
                     <td><strong>${scaledD} công</strong> (+${w.otHoursMonthApproved}h OT)</td>
+                    <td>
+                      ${pendingDel
+                        ? `<span class="badge badge-warning">⏳ Chờ Giám đốc đồng ý xóa</span>`
+                        : `<button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa nhân sự</button>`
+                      }
+                    </td>
                   </tr>
                 `;
               }).join('')}
@@ -2374,7 +2443,7 @@
         <div class="section-header">
           <div>
             <span class="kicker">DANH SÁCH NHÂN SỰ &amp; MẬT KHẨU ĐỒNG BỘ CỦA ${tm.name.toUpperCase()}</span>
-            <h3>Quản Lý ${teamWorkers.length} Công Nhân Trong Đội Của Tôi (Mật Khẩu Tự Cập Nhật Khi Công Nhân Đổi)</h3>
+            <h3>Quản Lý ${teamWorkers.length} Công Nhân Trong Đội Của Tôi (Xóa Nhân Sự Phải Được Giám Đốc Đồng Ý)</h3>
           </div>
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAddWorkerModal()">+ Thêm Công nhân mới vào ${tm.name}</button>
         </div>
@@ -2390,11 +2459,13 @@
                 <th>Số điện thoại</th>
                 <th>Thuộc Quản lý CT</th>
                 <th>Công kỳ (${formatDateRangeLabel()})</th>
+                <th>Xóa Nhân sự (Trình GĐ)</th>
               </tr>
             </thead>
             <tbody>
               ${teamWorkers.map(w => {
                 const pin = getAccountPinByUsernameOrCode(w.code);
+                const pendingDel = (state.deleteRequests || []).find(r => r.targetCode === w.code && r.status === 'CHO_BGD_DONG_Y');
                 return `
                   <tr>
                     <td><strong><code>${w.code}</code></strong></td>
@@ -2404,6 +2475,12 @@
                     <td>${w.phone}</td>
                     <td><span class="badge badge-navy">${w.managerName}</span></td>
                     <td><strong style="color:var(--ds-primary);">${getScaledDaysWorked(w.daysMonthApproved)} công</strong> (+${w.otHoursMonthApproved}h OT)</td>
+                    <td>
+                      ${pendingDel
+                        ? `<span class="badge badge-warning">⏳ Chờ Giám đốc đồng ý xóa</span>`
+                        : `<button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa nhân sự</button>`
+                      }
+                    </td>
                   </tr>
                 `;
               }).join('')}
@@ -2609,8 +2686,8 @@
         <div class="section-header">
           <div>
             <span class="kicker">TRUNG TÂM QUẢN TRỊ TÀI KHOẢN &amp; ĐỒNG BỘ MẬT KHẨU 5 CẤP (CHỈ ADMIN THẤY)</span>
-            <h3>Danh Sách Tài Khoản Theo Từng Vị Trí (Mật Khẩu Đổi Ở Cấp Dưới Tự Động Cập Nhật Lên Đây)</h3>
-            <div class="section-desc">Khi bất kỳ nhân sự nào ở cấp dưới đổi mật khẩu, cột Mã PIN/Mật khẩu bên dưới sẽ tự động cập nhật ngay lập tức.</div>
+            <h3>Danh Sách Tài Khoản Theo Từng Vị Trí (Xóa Tài Khoản &amp; Nhân Sự Phải Xác Nhận &amp; Được Giám Đốc Đồng Ý)</h3>
+            <div class="section-desc">Khi bất kỳ nhân sự nào ở cấp dưới đổi mật khẩu, cột Mã PIN/Mật khẩu bên dưới tự động cập nhật. Mọi thao tác xóa đều phải qua bước xác nhận của Tổng Giám đốc.</div>
           </div>
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.openAccountFormModal(null)">
             + Tạo Tài khoản Mới cho Vị trí
@@ -2627,7 +2704,7 @@
                 <th>Vị trí / Cấp bậc</th>
                 <th>Phạm vi Công trình / Đội</th>
                 <th>Thuộc Quản lý / Người tạo</th>
-                <th>Thao tác Admin</th>
+                <th>Thao tác Admin &amp; Xóa Tài khoản</th>
               </tr>
             </thead>
             <tbody>
@@ -2652,11 +2729,55 @@
                           : `<button class="btn btn-primary btn-sm" onclick="window.NPApp.loginAsAccount('${acc.id}')">🚀 Vào giao diện này</button>`
                         }
                         <button class="btn btn-soft btn-sm" onclick="window.NPApp.openAccountFormModal('${acc.id}')">✏️ Sửa / Đổi MK</button>
+                        ${acc.username !== 'admin'
+                          ? `<button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('ACCOUNT', '${acc.id}')">🗑️ Xóa TK</button>`
+                          : ''
+                        }
                       </div>
                     </td>
                   </tr>
                 `;
               }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DANH SÁCH XÓA NHÂN SỰ TRỰC TIẾP DÀNH CHO TỔNG GIÁM ĐỐC -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">QUẢN LÝ &amp; XÓA HỒ SƠ NHÂN SỰ TOÀN CÔNG TY (${state.workers.length} CÔNG NHÂN)</span>
+            <h3>Danh Sách Nhân Sự Toàn Công Ty (Bấm Xóa Để Xác Nhận &amp; Xóa Khỏi Hệ Thống)</h3>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã NV</th>
+                <th>Mật khẩu / PIN</th>
+                <th>Họ và Tên Nhân sự</th>
+                <th>Đội thi công</th>
+                <th>Đội trưởng</th>
+                <th>Quản lý Công trình</th>
+                <th>Thao tác Xóa Nhân sự</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.workers.slice(0, 35).map(w => `
+                <tr>
+                  <td><strong><code>${w.code}</code></strong></td>
+                  <td><code>${getAccountPinByUsernameOrCode(w.code)}</code></td>
+                  <td><strong>${w.name}</strong></td>
+                  <td>${w.teamName}</td>
+                  <td>${w.leaderName}</td>
+                  <td><span class="badge badge-navy">${w.managerName}</span></td>
+                  <td>
+                    <button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️ Xóa nhân sự</button>
+                  </td>
+                </tr>
+              `).join('')}
             </tbody>
           </table>
         </div>
@@ -2965,6 +3086,223 @@
     renderMain();
   }
 
+  // ================= XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC XÁC NHẬN & ĐƯỢC TỔNG GIÁM ĐỐC ĐỒNG Ý) =================
+  function openDeleteConfirmModal(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+
+    if (targetType === 'ACCOUNT') {
+      const targetAcc = state.accounts.find(a => a.id === targetId);
+      if (!targetAcc) return;
+      if (targetAcc.username === 'admin') {
+        alert('Không thể xóa tài khoản Tổng Giám Đốc (admin)!');
+        return;
+      }
+      targetCode = targetAcc.username;
+      targetName = targetAcc.fullName;
+      targetRole = targetAcc.positionTitle;
+    } else {
+      const targetWorker = findAnyPersonById(targetId);
+      if (!targetWorker) return;
+      targetCode = targetWorker.code;
+      targetName = targetWorker.name;
+      targetRole = `${targetWorker.roleName} · ${targetWorker.teamName}`;
+    }
+
+    const isDirector = (acc.roleId === 'BGD');
+    const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
+        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
+      </div>
+
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
+        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
+        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
+        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
+      </div>
+
+      <div class="form-group">
+        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
+        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
+      </div>
+
+      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
+          <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
+          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
+        ${isDirector ? `
+          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
+          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
+        ` : `
+          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
+          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
+        `}
+        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
+        <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
+          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
+        </button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function executeHardDelete(targetType, targetId, targetCode, targetName, reason, actorLabel) {
+    // Xóa trong danh sách tài khoản
+    state.accounts = state.accounts.filter(a =>
+      a.id !== targetId &&
+      a.username.toLowerCase() !== String(targetCode).toLowerCase() &&
+      (!a.workerCode || a.workerCode.toLowerCase() !== String(targetCode).toLowerCase())
+    );
+    // Xóa trong danh sách công nhân
+    state.workers = state.workers.filter(w =>
+      w.id !== targetId &&
+      w.code.toLowerCase() !== String(targetCode).toLowerCase()
+    );
+    // Xóa trong danh sách cán bộ chấm công
+    if (state.staffAttendance) {
+      state.staffAttendance = state.staffAttendance.filter(s =>
+        s.id !== targetId &&
+        s.code.toLowerCase() !== String(targetCode).toLowerCase() &&
+        s.username.toLowerCase() !== String(targetCode).toLowerCase()
+      );
+    }
+
+    state.auditLogs.unshift({
+      id: 'LOG-DEL-' + (state.auditLogs.length + 1),
+      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      workerCode: targetCode,
+      workerName: targetName,
+      actorName: actorLabel,
+      actorRole: 'Đã được Tổng Giám đốc đồng ý xóa',
+      field: targetType === 'ACCOUNT' ? 'Xóa Tài khoản & Hồ sơ' : 'Xóa Hồ sơ Nhân sự & Tài khoản',
+      oldVal: `Đang hoạt động (${targetName})`,
+      newVal: 'ĐÃ XÓA VĨNH VIỄN (GĐ ĐỒNG Ý)',
+      reason
+    });
+  }
+
+  function submitDeleteOrRequest(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    const checked = document.getElementById('delConfirmCheckbox')?.checked;
+    const reason = (document.getElementById('delReasonInput')?.value || '').trim();
+    const enteredDirectorPin = (document.getElementById('delDirectorPinInput')?.value || '').trim();
+    const errEl = document.getElementById('delErrMsg');
+
+    if (!checked || !reason) {
+      if (errEl) {
+        errEl.textContent = 'Bắt buộc phải tích chọn ô Xác nhận xóa và nhập Lý do xóa!';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+    if (targetType === 'ACCOUNT') {
+      const tAcc = state.accounts.find(a => a.id === targetId);
+      if (!tAcc) return;
+      targetCode = tAcc.username;
+      targetName = tAcc.fullName;
+      targetRole = tAcc.positionTitle;
+    } else {
+      const tW = findAnyPersonById(targetId);
+      if (!tW) return;
+      targetCode = tW.code;
+      targetName = tW.name;
+      targetRole = `${tW.roleName} · ${tW.teamName}`;
+    }
+
+    const directorAcc = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    // Trường hợp 1: Đang là Tổng Giám đốc hoặc đã nhập đúng PIN đồng ý trực tiếp của Tổng Giám đốc
+    if (acc.roleId === 'BGD' || (enteredDirectorPin && enteredDirectorPin === directorAcc.pin)) {
+      executeHardDelete(targetType, targetId, targetCode, targetName, reason, `${acc.fullName} (Được ${directorAcc.fullName} đồng ý)`);
+      saveState();
+      closeModal('adjustModal');
+      renderRoleNavigationAndHeader();
+      renderMain();
+      alert(`Đã xác nhận đồng ý của Tổng Giám đốc và xóa hoàn tất "${targetName} (${targetCode})" khỏi hệ thống!`);
+      return;
+    }
+
+    if (enteredDirectorPin && enteredDirectorPin !== directorAcc.pin) {
+      if (errEl) {
+        errEl.textContent = 'Mã PIN Tổng Giám đốc không đúng! Hãy để trống ô PIN để gửi Yêu cầu trình Giám đốc phê duyệt.';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    // Trường hợp 2: Cấp dưới (Quản lý CT / Đội trưởng / Kế toán) gửi yêu cầu xóa trình lên Tổng Giám đốc đồng ý
+    state.deleteRequests = state.deleteRequests || [];
+    state.deleteRequests.unshift({
+      id: 'DEL-0' + (state.deleteRequests.length + 1),
+      targetType,
+      targetId,
+      targetCode,
+      targetName,
+      targetRole,
+      requestedBy: acc.fullName,
+      requestedRole: acc.positionTitle,
+      reason,
+      createdAt: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      status: 'CHO_BGD_DONG_Y'
+    });
+
+    saveState();
+    closeModal('adjustModal');
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Đã xác nhận và gửi yêu cầu xóa "${targetName} (${targetCode})" lên Tổng Giám đốc (${directorAcc.fullName}). Nhân sự/Tài khoản sẽ được xóa ngay khi Giám đốc bấm Đồng ý!`);
+  }
+
+  function directorApproveDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') {
+      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền đồng ý phê duyệt xóa tài khoản / nhân sự!');
+      return;
+    }
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+
+    executeHardDelete(req.targetType, req.targetId, req.targetCode, req.targetName, req.reason, `${req.requestedBy} (Tổng Giám đốc ${acc.fullName} đồng ý xóa)`);
+    req.status = 'DA_XOA';
+    saveState();
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Tổng Giám đốc đã đồng ý! Đã xóa "${req.targetName} (${req.targetCode})" khỏi hệ thống.`);
+  }
+
+  function directorRejectDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') return;
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+    req.status = 'TU_CHOI';
+    saveState();
+    renderRoleNavigationAndHeader();
+    renderMain();
+  }
+
   function openWorkerTaskModal(workerId) {
     const w = state.workers.find(x => x.id === workerId);
     if (!w) return;
@@ -3141,6 +3479,223 @@
     renderMain();
   }
 
+  // ================= XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC XÁC NHẬN & ĐƯỢC TỔNG GIÁM ĐỐC ĐỒNG Ý) =================
+  function openDeleteConfirmModal(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+
+    if (targetType === 'ACCOUNT') {
+      const targetAcc = state.accounts.find(a => a.id === targetId);
+      if (!targetAcc) return;
+      if (targetAcc.username === 'admin') {
+        alert('Không thể xóa tài khoản Tổng Giám Đốc (admin)!');
+        return;
+      }
+      targetCode = targetAcc.username;
+      targetName = targetAcc.fullName;
+      targetRole = targetAcc.positionTitle;
+    } else {
+      const targetWorker = findAnyPersonById(targetId);
+      if (!targetWorker) return;
+      targetCode = targetWorker.code;
+      targetName = targetWorker.name;
+      targetRole = `${targetWorker.roleName} · ${targetWorker.teamName}`;
+    }
+
+    const isDirector = (acc.roleId === 'BGD');
+    const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
+        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
+      </div>
+
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
+        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
+        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
+        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
+      </div>
+
+      <div class="form-group">
+        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
+        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
+      </div>
+
+      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
+          <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
+          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
+        ${isDirector ? `
+          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
+          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
+        ` : `
+          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
+          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
+        `}
+        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
+        <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
+          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
+        </button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function executeHardDelete(targetType, targetId, targetCode, targetName, reason, actorLabel) {
+    // Xóa trong danh sách tài khoản
+    state.accounts = state.accounts.filter(a =>
+      a.id !== targetId &&
+      a.username.toLowerCase() !== String(targetCode).toLowerCase() &&
+      (!a.workerCode || a.workerCode.toLowerCase() !== String(targetCode).toLowerCase())
+    );
+    // Xóa trong danh sách công nhân
+    state.workers = state.workers.filter(w =>
+      w.id !== targetId &&
+      w.code.toLowerCase() !== String(targetCode).toLowerCase()
+    );
+    // Xóa trong danh sách cán bộ chấm công
+    if (state.staffAttendance) {
+      state.staffAttendance = state.staffAttendance.filter(s =>
+        s.id !== targetId &&
+        s.code.toLowerCase() !== String(targetCode).toLowerCase() &&
+        s.username.toLowerCase() !== String(targetCode).toLowerCase()
+      );
+    }
+
+    state.auditLogs.unshift({
+      id: 'LOG-DEL-' + (state.auditLogs.length + 1),
+      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      workerCode: targetCode,
+      workerName: targetName,
+      actorName: actorLabel,
+      actorRole: 'Đã được Tổng Giám đốc đồng ý xóa',
+      field: targetType === 'ACCOUNT' ? 'Xóa Tài khoản & Hồ sơ' : 'Xóa Hồ sơ Nhân sự & Tài khoản',
+      oldVal: `Đang hoạt động (${targetName})`,
+      newVal: 'ĐÃ XÓA VĨNH VIỄN (GĐ ĐỒNG Ý)',
+      reason
+    });
+  }
+
+  function submitDeleteOrRequest(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    const checked = document.getElementById('delConfirmCheckbox')?.checked;
+    const reason = (document.getElementById('delReasonInput')?.value || '').trim();
+    const enteredDirectorPin = (document.getElementById('delDirectorPinInput')?.value || '').trim();
+    const errEl = document.getElementById('delErrMsg');
+
+    if (!checked || !reason) {
+      if (errEl) {
+        errEl.textContent = 'Bắt buộc phải tích chọn ô Xác nhận xóa và nhập Lý do xóa!';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+    if (targetType === 'ACCOUNT') {
+      const tAcc = state.accounts.find(a => a.id === targetId);
+      if (!tAcc) return;
+      targetCode = tAcc.username;
+      targetName = tAcc.fullName;
+      targetRole = tAcc.positionTitle;
+    } else {
+      const tW = findAnyPersonById(targetId);
+      if (!tW) return;
+      targetCode = tW.code;
+      targetName = tW.name;
+      targetRole = `${tW.roleName} · ${tW.teamName}`;
+    }
+
+    const directorAcc = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    // Trường hợp 1: Đang là Tổng Giám đốc hoặc đã nhập đúng PIN đồng ý trực tiếp của Tổng Giám đốc
+    if (acc.roleId === 'BGD' || (enteredDirectorPin && enteredDirectorPin === directorAcc.pin)) {
+      executeHardDelete(targetType, targetId, targetCode, targetName, reason, `${acc.fullName} (Được ${directorAcc.fullName} đồng ý)`);
+      saveState();
+      closeModal('adjustModal');
+      renderRoleNavigationAndHeader();
+      renderMain();
+      alert(`Đã xác nhận đồng ý của Tổng Giám đốc và xóa hoàn tất "${targetName} (${targetCode})" khỏi hệ thống!`);
+      return;
+    }
+
+    if (enteredDirectorPin && enteredDirectorPin !== directorAcc.pin) {
+      if (errEl) {
+        errEl.textContent = 'Mã PIN Tổng Giám đốc không đúng! Hãy để trống ô PIN để gửi Yêu cầu trình Giám đốc phê duyệt.';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    // Trường hợp 2: Cấp dưới (Quản lý CT / Đội trưởng / Kế toán) gửi yêu cầu xóa trình lên Tổng Giám đốc đồng ý
+    state.deleteRequests = state.deleteRequests || [];
+    state.deleteRequests.unshift({
+      id: 'DEL-0' + (state.deleteRequests.length + 1),
+      targetType,
+      targetId,
+      targetCode,
+      targetName,
+      targetRole,
+      requestedBy: acc.fullName,
+      requestedRole: acc.positionTitle,
+      reason,
+      createdAt: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      status: 'CHO_BGD_DONG_Y'
+    });
+
+    saveState();
+    closeModal('adjustModal');
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Đã xác nhận và gửi yêu cầu xóa "${targetName} (${targetCode})" lên Tổng Giám đốc (${directorAcc.fullName}). Nhân sự/Tài khoản sẽ được xóa ngay khi Giám đốc bấm Đồng ý!`);
+  }
+
+  function directorApproveDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') {
+      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền đồng ý phê duyệt xóa tài khoản / nhân sự!');
+      return;
+    }
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+
+    executeHardDelete(req.targetType, req.targetId, req.targetCode, req.targetName, req.reason, `${req.requestedBy} (Tổng Giám đốc ${acc.fullName} đồng ý xóa)`);
+    req.status = 'DA_XOA';
+    saveState();
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Tổng Giám đốc đã đồng ý! Đã xóa "${req.targetName} (${req.targetCode})" khỏi hệ thống.`);
+  }
+
+  function directorRejectDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') return;
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+    req.status = 'TU_CHOI';
+    saveState();
+    renderRoleNavigationAndHeader();
+    renderMain();
+  }
+
   // MỌI CẤP ĐỀU CÓ THỂ GỬI ĐƠN XIN ỨNG LƯƠNG (KẾ TOÁN, QUẢN LÝ CÔNG TRÌNH, ĐỘI TRƯỞNG, CÔNG NHÂN)
   function openPersonalAdvanceModal() {
     const acc = getCurrentAccount();
@@ -3291,6 +3846,223 @@
     renderMain();
   }
 
+  // ================= XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC XÁC NHẬN & ĐƯỢC TỔNG GIÁM ĐỐC ĐỒNG Ý) =================
+  function openDeleteConfirmModal(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+
+    if (targetType === 'ACCOUNT') {
+      const targetAcc = state.accounts.find(a => a.id === targetId);
+      if (!targetAcc) return;
+      if (targetAcc.username === 'admin') {
+        alert('Không thể xóa tài khoản Tổng Giám Đốc (admin)!');
+        return;
+      }
+      targetCode = targetAcc.username;
+      targetName = targetAcc.fullName;
+      targetRole = targetAcc.positionTitle;
+    } else {
+      const targetWorker = findAnyPersonById(targetId);
+      if (!targetWorker) return;
+      targetCode = targetWorker.code;
+      targetName = targetWorker.name;
+      targetRole = `${targetWorker.roleName} · ${targetWorker.teamName}`;
+    }
+
+    const isDirector = (acc.roleId === 'BGD');
+    const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
+        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
+      </div>
+
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
+        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
+        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
+        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
+      </div>
+
+      <div class="form-group">
+        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
+        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
+      </div>
+
+      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
+          <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
+          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
+        ${isDirector ? `
+          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
+          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
+        ` : `
+          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
+          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
+        `}
+        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
+        <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
+          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
+        </button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function executeHardDelete(targetType, targetId, targetCode, targetName, reason, actorLabel) {
+    // Xóa trong danh sách tài khoản
+    state.accounts = state.accounts.filter(a =>
+      a.id !== targetId &&
+      a.username.toLowerCase() !== String(targetCode).toLowerCase() &&
+      (!a.workerCode || a.workerCode.toLowerCase() !== String(targetCode).toLowerCase())
+    );
+    // Xóa trong danh sách công nhân
+    state.workers = state.workers.filter(w =>
+      w.id !== targetId &&
+      w.code.toLowerCase() !== String(targetCode).toLowerCase()
+    );
+    // Xóa trong danh sách cán bộ chấm công
+    if (state.staffAttendance) {
+      state.staffAttendance = state.staffAttendance.filter(s =>
+        s.id !== targetId &&
+        s.code.toLowerCase() !== String(targetCode).toLowerCase() &&
+        s.username.toLowerCase() !== String(targetCode).toLowerCase()
+      );
+    }
+
+    state.auditLogs.unshift({
+      id: 'LOG-DEL-' + (state.auditLogs.length + 1),
+      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      workerCode: targetCode,
+      workerName: targetName,
+      actorName: actorLabel,
+      actorRole: 'Đã được Tổng Giám đốc đồng ý xóa',
+      field: targetType === 'ACCOUNT' ? 'Xóa Tài khoản & Hồ sơ' : 'Xóa Hồ sơ Nhân sự & Tài khoản',
+      oldVal: `Đang hoạt động (${targetName})`,
+      newVal: 'ĐÃ XÓA VĨNH VIỄN (GĐ ĐỒNG Ý)',
+      reason
+    });
+  }
+
+  function submitDeleteOrRequest(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    const checked = document.getElementById('delConfirmCheckbox')?.checked;
+    const reason = (document.getElementById('delReasonInput')?.value || '').trim();
+    const enteredDirectorPin = (document.getElementById('delDirectorPinInput')?.value || '').trim();
+    const errEl = document.getElementById('delErrMsg');
+
+    if (!checked || !reason) {
+      if (errEl) {
+        errEl.textContent = 'Bắt buộc phải tích chọn ô Xác nhận xóa và nhập Lý do xóa!';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+    if (targetType === 'ACCOUNT') {
+      const tAcc = state.accounts.find(a => a.id === targetId);
+      if (!tAcc) return;
+      targetCode = tAcc.username;
+      targetName = tAcc.fullName;
+      targetRole = tAcc.positionTitle;
+    } else {
+      const tW = findAnyPersonById(targetId);
+      if (!tW) return;
+      targetCode = tW.code;
+      targetName = tW.name;
+      targetRole = `${tW.roleName} · ${tW.teamName}`;
+    }
+
+    const directorAcc = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    // Trường hợp 1: Đang là Tổng Giám đốc hoặc đã nhập đúng PIN đồng ý trực tiếp của Tổng Giám đốc
+    if (acc.roleId === 'BGD' || (enteredDirectorPin && enteredDirectorPin === directorAcc.pin)) {
+      executeHardDelete(targetType, targetId, targetCode, targetName, reason, `${acc.fullName} (Được ${directorAcc.fullName} đồng ý)`);
+      saveState();
+      closeModal('adjustModal');
+      renderRoleNavigationAndHeader();
+      renderMain();
+      alert(`Đã xác nhận đồng ý của Tổng Giám đốc và xóa hoàn tất "${targetName} (${targetCode})" khỏi hệ thống!`);
+      return;
+    }
+
+    if (enteredDirectorPin && enteredDirectorPin !== directorAcc.pin) {
+      if (errEl) {
+        errEl.textContent = 'Mã PIN Tổng Giám đốc không đúng! Hãy để trống ô PIN để gửi Yêu cầu trình Giám đốc phê duyệt.';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    // Trường hợp 2: Cấp dưới (Quản lý CT / Đội trưởng / Kế toán) gửi yêu cầu xóa trình lên Tổng Giám đốc đồng ý
+    state.deleteRequests = state.deleteRequests || [];
+    state.deleteRequests.unshift({
+      id: 'DEL-0' + (state.deleteRequests.length + 1),
+      targetType,
+      targetId,
+      targetCode,
+      targetName,
+      targetRole,
+      requestedBy: acc.fullName,
+      requestedRole: acc.positionTitle,
+      reason,
+      createdAt: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      status: 'CHO_BGD_DONG_Y'
+    });
+
+    saveState();
+    closeModal('adjustModal');
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Đã xác nhận và gửi yêu cầu xóa "${targetName} (${targetCode})" lên Tổng Giám đốc (${directorAcc.fullName}). Nhân sự/Tài khoản sẽ được xóa ngay khi Giám đốc bấm Đồng ý!`);
+  }
+
+  function directorApproveDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') {
+      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền đồng ý phê duyệt xóa tài khoản / nhân sự!');
+      return;
+    }
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+
+    executeHardDelete(req.targetType, req.targetId, req.targetCode, req.targetName, req.reason, `${req.requestedBy} (Tổng Giám đốc ${acc.fullName} đồng ý xóa)`);
+    req.status = 'DA_XOA';
+    saveState();
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Tổng Giám đốc đã đồng ý! Đã xóa "${req.targetName} (${req.targetCode})" khỏi hệ thống.`);
+  }
+
+  function directorRejectDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') return;
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+    req.status = 'TU_CHOI';
+    saveState();
+    renderRoleNavigationAndHeader();
+    renderMain();
+  }
+
   function openOtModal(workerId) {
     const w = findAnyPersonById(workerId);
     if (!w) return;
@@ -3328,6 +4100,223 @@
     w.approvalStatus = 'CHO_QL_DUYET';
     saveState();
     closeModal('adjustModal');
+    renderMain();
+  }
+
+  // ================= XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC XÁC NHẬN & ĐƯỢC TỔNG GIÁM ĐỐC ĐỒNG Ý) =================
+  function openDeleteConfirmModal(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+
+    if (targetType === 'ACCOUNT') {
+      const targetAcc = state.accounts.find(a => a.id === targetId);
+      if (!targetAcc) return;
+      if (targetAcc.username === 'admin') {
+        alert('Không thể xóa tài khoản Tổng Giám Đốc (admin)!');
+        return;
+      }
+      targetCode = targetAcc.username;
+      targetName = targetAcc.fullName;
+      targetRole = targetAcc.positionTitle;
+    } else {
+      const targetWorker = findAnyPersonById(targetId);
+      if (!targetWorker) return;
+      targetCode = targetWorker.code;
+      targetName = targetWorker.name;
+      targetRole = `${targetWorker.roleName} · ${targetWorker.teamName}`;
+    }
+
+    const isDirector = (acc.roleId === 'BGD');
+    const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
+        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
+      </div>
+
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
+        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
+        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
+        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
+      </div>
+
+      <div class="form-group">
+        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
+        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
+      </div>
+
+      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
+          <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
+          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
+        ${isDirector ? `
+          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
+          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
+        ` : `
+          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
+          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
+        `}
+        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
+        <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
+          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
+        </button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function executeHardDelete(targetType, targetId, targetCode, targetName, reason, actorLabel) {
+    // Xóa trong danh sách tài khoản
+    state.accounts = state.accounts.filter(a =>
+      a.id !== targetId &&
+      a.username.toLowerCase() !== String(targetCode).toLowerCase() &&
+      (!a.workerCode || a.workerCode.toLowerCase() !== String(targetCode).toLowerCase())
+    );
+    // Xóa trong danh sách công nhân
+    state.workers = state.workers.filter(w =>
+      w.id !== targetId &&
+      w.code.toLowerCase() !== String(targetCode).toLowerCase()
+    );
+    // Xóa trong danh sách cán bộ chấm công
+    if (state.staffAttendance) {
+      state.staffAttendance = state.staffAttendance.filter(s =>
+        s.id !== targetId &&
+        s.code.toLowerCase() !== String(targetCode).toLowerCase() &&
+        s.username.toLowerCase() !== String(targetCode).toLowerCase()
+      );
+    }
+
+    state.auditLogs.unshift({
+      id: 'LOG-DEL-' + (state.auditLogs.length + 1),
+      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      workerCode: targetCode,
+      workerName: targetName,
+      actorName: actorLabel,
+      actorRole: 'Đã được Tổng Giám đốc đồng ý xóa',
+      field: targetType === 'ACCOUNT' ? 'Xóa Tài khoản & Hồ sơ' : 'Xóa Hồ sơ Nhân sự & Tài khoản',
+      oldVal: `Đang hoạt động (${targetName})`,
+      newVal: 'ĐÃ XÓA VĨNH VIỄN (GĐ ĐỒNG Ý)',
+      reason
+    });
+  }
+
+  function submitDeleteOrRequest(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    const checked = document.getElementById('delConfirmCheckbox')?.checked;
+    const reason = (document.getElementById('delReasonInput')?.value || '').trim();
+    const enteredDirectorPin = (document.getElementById('delDirectorPinInput')?.value || '').trim();
+    const errEl = document.getElementById('delErrMsg');
+
+    if (!checked || !reason) {
+      if (errEl) {
+        errEl.textContent = 'Bắt buộc phải tích chọn ô Xác nhận xóa và nhập Lý do xóa!';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+    if (targetType === 'ACCOUNT') {
+      const tAcc = state.accounts.find(a => a.id === targetId);
+      if (!tAcc) return;
+      targetCode = tAcc.username;
+      targetName = tAcc.fullName;
+      targetRole = tAcc.positionTitle;
+    } else {
+      const tW = findAnyPersonById(targetId);
+      if (!tW) return;
+      targetCode = tW.code;
+      targetName = tW.name;
+      targetRole = `${tW.roleName} · ${tW.teamName}`;
+    }
+
+    const directorAcc = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    // Trường hợp 1: Đang là Tổng Giám đốc hoặc đã nhập đúng PIN đồng ý trực tiếp của Tổng Giám đốc
+    if (acc.roleId === 'BGD' || (enteredDirectorPin && enteredDirectorPin === directorAcc.pin)) {
+      executeHardDelete(targetType, targetId, targetCode, targetName, reason, `${acc.fullName} (Được ${directorAcc.fullName} đồng ý)`);
+      saveState();
+      closeModal('adjustModal');
+      renderRoleNavigationAndHeader();
+      renderMain();
+      alert(`Đã xác nhận đồng ý của Tổng Giám đốc và xóa hoàn tất "${targetName} (${targetCode})" khỏi hệ thống!`);
+      return;
+    }
+
+    if (enteredDirectorPin && enteredDirectorPin !== directorAcc.pin) {
+      if (errEl) {
+        errEl.textContent = 'Mã PIN Tổng Giám đốc không đúng! Hãy để trống ô PIN để gửi Yêu cầu trình Giám đốc phê duyệt.';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    // Trường hợp 2: Cấp dưới (Quản lý CT / Đội trưởng / Kế toán) gửi yêu cầu xóa trình lên Tổng Giám đốc đồng ý
+    state.deleteRequests = state.deleteRequests || [];
+    state.deleteRequests.unshift({
+      id: 'DEL-0' + (state.deleteRequests.length + 1),
+      targetType,
+      targetId,
+      targetCode,
+      targetName,
+      targetRole,
+      requestedBy: acc.fullName,
+      requestedRole: acc.positionTitle,
+      reason,
+      createdAt: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      status: 'CHO_BGD_DONG_Y'
+    });
+
+    saveState();
+    closeModal('adjustModal');
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Đã xác nhận và gửi yêu cầu xóa "${targetName} (${targetCode})" lên Tổng Giám đốc (${directorAcc.fullName}). Nhân sự/Tài khoản sẽ được xóa ngay khi Giám đốc bấm Đồng ý!`);
+  }
+
+  function directorApproveDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') {
+      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền đồng ý phê duyệt xóa tài khoản / nhân sự!');
+      return;
+    }
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+
+    executeHardDelete(req.targetType, req.targetId, req.targetCode, req.targetName, req.reason, `${req.requestedBy} (Tổng Giám đốc ${acc.fullName} đồng ý xóa)`);
+    req.status = 'DA_XOA';
+    saveState();
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Tổng Giám đốc đã đồng ý! Đã xóa "${req.targetName} (${req.targetCode})" khỏi hệ thống.`);
+  }
+
+  function directorRejectDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') return;
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+    req.status = 'TU_CHOI';
+    saveState();
+    renderRoleNavigationAndHeader();
     renderMain();
   }
 
@@ -3444,6 +4433,223 @@
 
     saveState();
     closeModal('adjustModal');
+    renderMain();
+  }
+
+  // ================= XÓA TÀI KHOẢN / NHÂN SỰ (BẮT BUỘC XÁC NHẬN & ĐƯỢC TỔNG GIÁM ĐỐC ĐỒNG Ý) =================
+  function openDeleteConfirmModal(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+
+    if (targetType === 'ACCOUNT') {
+      const targetAcc = state.accounts.find(a => a.id === targetId);
+      if (!targetAcc) return;
+      if (targetAcc.username === 'admin') {
+        alert('Không thể xóa tài khoản Tổng Giám Đốc (admin)!');
+        return;
+      }
+      targetCode = targetAcc.username;
+      targetName = targetAcc.fullName;
+      targetRole = targetAcc.positionTitle;
+    } else {
+      const targetWorker = findAnyPersonById(targetId);
+      if (!targetWorker) return;
+      targetCode = targetWorker.code;
+      targetName = targetWorker.name;
+      targetRole = `${targetWorker.roleName} · ${targetWorker.teamName}`;
+    }
+
+    const isDirector = (acc.roleId === 'BGD');
+    const directorAccount = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    document.getElementById('adjustModalTitle').textContent = `🗑️ Xác Nhận Xóa ${targetType === 'ACCOUNT' ? 'Tài Khoản' : 'Nhân Sự'} (Cần Giám Đốc Đồng Ý)`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="camera-no-gallery-alert" style="margin-bottom:10px;">
+        ⚠️ <strong>QUY ĐỊNH KIỂM SOÁT:</strong> Trước khi xóa bất kỳ tài khoản hay nhân sự nào khỏi hệ thống, bắt buộc phải xác nhận lý do và <strong>được sự đồng ý của Tổng Giám đốc (${directorAccount.fullName})</strong>.
+      </div>
+
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-radius:var(--ds-radius-sm); padding:9px 11px; margin-bottom:10px; font-size:11.5px;">
+        <div>Đối tượng cần xóa: <strong style="color:var(--ds-danger);">${targetName}</strong> (Mã / TK: <code>${targetCode}</code>)</div>
+        <div style="margin-top:2px;">Vị trí / Bộ phận: <strong>${targetRole}</strong></div>
+        <div style="margin-top:2px;">Người lập yêu cầu: <strong>${acc.fullName}</strong> (${acc.positionTitle})</div>
+      </div>
+
+      <div class="form-group">
+        <label>Lý do xóa tài khoản / nhân sự bắt buộc <span class="req">*</span></label>
+        <input type="text" id="delReasonInput" value="Nhân sự đã nghỉ việc / Kết thúc hợp đồng và bàn giao công việc" placeholder="Nhập lý do xóa..." />
+      </div>
+
+      <div class="form-group" style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm);">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; color:var(--ds-danger);">
+          <input type="checkbox" id="delConfirmCheckbox" style="width:15px; height:15px; min-height:15px;" />
+          <span>Tôi xác nhận chắc chắn muốn xóa <strong>${targetName} (${targetCode})</strong></span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Cách thức xin đồng ý của Tổng Giám Đốc (${directorAccount.fullName}):</label>
+        ${isDirector ? `
+          <input type="password" id="delDirectorPinInput" value="${directorAccount.pin}" placeholder="Nhập Mã PIN Tổng Giám đốc để xác nhận đồng ý xóa ngay..." />
+          <div style="font-size:10px; color:var(--ds-success); margin-top:2px;">✓ Bạn đang đăng nhập với quyền Tổng Giám đốc — Bấm nút bên dưới để xác nhận đồng ý và xóa ngay.</div>
+        ` : `
+          <input type="password" id="delDirectorPinInput" placeholder="Để trống để Gửi yêu cầu trình Giám đốc duyệt (Hoặc nhập PIN Giám đốc nếu GĐ duyệt trực tiếp)" />
+          <div style="font-size:10px; color:var(--ds-text-muted); margin-top:2px;">💡 Nếu để trống ô PIN Giám đốc: Hệ thống sẽ gửi yêu cầu lên mục <strong>"Phê duyệt"</strong> của Tổng Giám đốc; khi Giám đốc bấm <strong>"Đồng ý Xóa"</strong> thì nhân sự/tài khoản mới bị xóa.</div>
+        `}
+        <div id="delErrMsg" class="field-error-msg" style="display:none;">Vui lòng tích vào ô xác nhận và nhập đầy đủ lý do xóa!</div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy bỏ</button>
+        <button class="btn btn-danger" onclick="window.NPApp.submitDeleteOrRequest('${targetType}', '${targetId}')">
+          ${isDirector ? '🗑️ Giám đốc Đồng ý & Xóa ngay' : '📤 Xác nhận & Trình Giám đốc Đồng ý'}
+        </button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function executeHardDelete(targetType, targetId, targetCode, targetName, reason, actorLabel) {
+    // Xóa trong danh sách tài khoản
+    state.accounts = state.accounts.filter(a =>
+      a.id !== targetId &&
+      a.username.toLowerCase() !== String(targetCode).toLowerCase() &&
+      (!a.workerCode || a.workerCode.toLowerCase() !== String(targetCode).toLowerCase())
+    );
+    // Xóa trong danh sách công nhân
+    state.workers = state.workers.filter(w =>
+      w.id !== targetId &&
+      w.code.toLowerCase() !== String(targetCode).toLowerCase()
+    );
+    // Xóa trong danh sách cán bộ chấm công
+    if (state.staffAttendance) {
+      state.staffAttendance = state.staffAttendance.filter(s =>
+        s.id !== targetId &&
+        s.code.toLowerCase() !== String(targetCode).toLowerCase() &&
+        s.username.toLowerCase() !== String(targetCode).toLowerCase()
+      );
+    }
+
+    state.auditLogs.unshift({
+      id: 'LOG-DEL-' + (state.auditLogs.length + 1),
+      timestamp: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      workerCode: targetCode,
+      workerName: targetName,
+      actorName: actorLabel,
+      actorRole: 'Đã được Tổng Giám đốc đồng ý xóa',
+      field: targetType === 'ACCOUNT' ? 'Xóa Tài khoản & Hồ sơ' : 'Xóa Hồ sơ Nhân sự & Tài khoản',
+      oldVal: `Đang hoạt động (${targetName})`,
+      newVal: 'ĐÃ XÓA VĨNH VIỄN (GĐ ĐỒNG Ý)',
+      reason
+    });
+  }
+
+  function submitDeleteOrRequest(targetType, targetId) {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+
+    const checked = document.getElementById('delConfirmCheckbox')?.checked;
+    const reason = (document.getElementById('delReasonInput')?.value || '').trim();
+    const enteredDirectorPin = (document.getElementById('delDirectorPinInput')?.value || '').trim();
+    const errEl = document.getElementById('delErrMsg');
+
+    if (!checked || !reason) {
+      if (errEl) {
+        errEl.textContent = 'Bắt buộc phải tích chọn ô Xác nhận xóa và nhập Lý do xóa!';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    let targetCode = '';
+    let targetName = '';
+    let targetRole = '';
+    if (targetType === 'ACCOUNT') {
+      const tAcc = state.accounts.find(a => a.id === targetId);
+      if (!tAcc) return;
+      targetCode = tAcc.username;
+      targetName = tAcc.fullName;
+      targetRole = tAcc.positionTitle;
+    } else {
+      const tW = findAnyPersonById(targetId);
+      if (!tW) return;
+      targetCode = tW.code;
+      targetName = tW.name;
+      targetRole = `${tW.roleName} · ${tW.teamName}`;
+    }
+
+    const directorAcc = state.accounts.find(a => a.roleId === 'BGD') || { pin: '9999', fullName: 'GĐ. Nguyễn Phát' };
+
+    // Trường hợp 1: Đang là Tổng Giám đốc hoặc đã nhập đúng PIN đồng ý trực tiếp của Tổng Giám đốc
+    if (acc.roleId === 'BGD' || (enteredDirectorPin && enteredDirectorPin === directorAcc.pin)) {
+      executeHardDelete(targetType, targetId, targetCode, targetName, reason, `${acc.fullName} (Được ${directorAcc.fullName} đồng ý)`);
+      saveState();
+      closeModal('adjustModal');
+      renderRoleNavigationAndHeader();
+      renderMain();
+      alert(`Đã xác nhận đồng ý của Tổng Giám đốc và xóa hoàn tất "${targetName} (${targetCode})" khỏi hệ thống!`);
+      return;
+    }
+
+    if (enteredDirectorPin && enteredDirectorPin !== directorAcc.pin) {
+      if (errEl) {
+        errEl.textContent = 'Mã PIN Tổng Giám đốc không đúng! Hãy để trống ô PIN để gửi Yêu cầu trình Giám đốc phê duyệt.';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+
+    // Trường hợp 2: Cấp dưới (Quản lý CT / Đội trưởng / Kế toán) gửi yêu cầu xóa trình lên Tổng Giám đốc đồng ý
+    state.deleteRequests = state.deleteRequests || [];
+    state.deleteRequests.unshift({
+      id: 'DEL-0' + (state.deleteRequests.length + 1),
+      targetType,
+      targetId,
+      targetCode,
+      targetName,
+      targetRole,
+      requestedBy: acc.fullName,
+      requestedRole: acc.positionTitle,
+      reason,
+      createdAt: '22/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      status: 'CHO_BGD_DONG_Y'
+    });
+
+    saveState();
+    closeModal('adjustModal');
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Đã xác nhận và gửi yêu cầu xóa "${targetName} (${targetCode})" lên Tổng Giám đốc (${directorAcc.fullName}). Nhân sự/Tài khoản sẽ được xóa ngay khi Giám đốc bấm Đồng ý!`);
+  }
+
+  function directorApproveDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') {
+      alert('Chỉ Tổng Giám Đốc mới có thẩm quyền đồng ý phê duyệt xóa tài khoản / nhân sự!');
+      return;
+    }
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+
+    executeHardDelete(req.targetType, req.targetId, req.targetCode, req.targetName, req.reason, `${req.requestedBy} (Tổng Giám đốc ${acc.fullName} đồng ý xóa)`);
+    req.status = 'DA_XOA';
+    saveState();
+    renderRoleNavigationAndHeader();
+    renderMain();
+    alert(`Tổng Giám đốc đã đồng ý! Đã xóa "${req.targetName} (${req.targetCode})" khỏi hệ thống.`);
+  }
+
+  function directorRejectDeleteRequest(reqId) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.roleId !== 'BGD') return;
+    const req = (state.deleteRequests || []).find(r => r.id === reqId);
+    if (!req) return;
+    req.status = 'TU_CHOI';
+    saveState();
+    renderRoleNavigationAndHeader();
     renderMain();
   }
 
@@ -3663,6 +4869,8 @@
       openUnifiedCheckinMenu(null);
     } else if (params.get('openmodal') === 'password') {
       openChangeMyPasswordModal();
+    } else if (params.get('openmodal') === 'delete') {
+      openDeleteConfirmModal('WORKER', 'W1');
     }
 
     setTimeout(refreshRealGps, 400);
@@ -3679,6 +4887,10 @@
     applyDateRangeFilter,
     openChangeMyPasswordModal,
     submitChangeMyPassword,
+    openDeleteConfirmModal,
+    submitDeleteOrRequest,
+    directorApproveDeleteRequest,
+    directorRejectDeleteRequest,
     openUnifiedCheckinMenu,
     setCameraActionMode,
     openCameraFromSidebar,
