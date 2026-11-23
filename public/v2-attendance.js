@@ -3,7 +3,7 @@
 
   const financeTab = 'v2-finance-attendance';
   const teamTab = 'v2-team-attendance';
-  const periodLabels = { draft: 'Nháp', submitted: 'Đội trưởng đã gửi', confirmed: 'Kế toán đã đối chiếu', locked: 'Đã khóa' };
+  const periodLabels = { draft: 'Nháp', submitted: 'Đội trưởng đã gửi', returned: 'Cần bổ sung', confirmed: 'Kế toán đã đối chiếu', locked: 'Đã khóa' };
   const leaveLabels = { N: 'Nghỉ', P: 'Nghỉ phép', OM: 'Nghỉ ốm' };
   const filters = new Map();
   let feedback = '';
@@ -16,8 +16,26 @@
   const halfFor = day => day <= 15 ? 'first' : 'second';
   const cellName = (workerId, day) => `cell:${workerId}:${day}`;
   const teamMonth = '2026-11';
+  const leaveCode = leave => leave.type === 'sick' ? 'OM' : leave.type === 'unpaid' ? 'N' : 'P';
   const rangeDays = (first, last) => Array.from({ length: last - first + 1 }, (_, index) => first + index);
   const monthLength = month => new Date(Number(month.slice(0, 4)), Number(month.slice(5)), 0).getDate();
+
+  const isoDay = (month, day) => `${month}-${dayLabel(day)}`;
+  const daysFor = (month, half) => half === 'first' ? rangeDays(1, 15) : rangeDays(16, monthLength(month));
+  const people = ctx => [...ctx.state.workers, ...(ctx.data.people?.employees || [])];
+
+  function rowsFor(ctx, team, month, half) {
+    return people(ctx).flatMap(worker => {
+      const days = daysFor(month, half).flatMap(day => {
+        const date = isoDay(month, day);
+        const assignment = window.NPWorkspace.assignmentAt(ctx.data, worker, date);
+        return assignment.teamId === team.id && assignment.projectId === team.projectId
+          ? [{ day, assignmentId: assignment.id || null, leave: window.NPWorkspace.approvedLeaveAt(ctx.data, worker, date) }]
+          : [];
+      });
+      return days.length ? [{ id: worker.id, code: worker.code, name: worker.name, dailyWage: worker.dailyWage, days }] : [];
+    });
+  }
 
   function scopedTeams(ctx) {
     const { projectId, teamId } = ctx.account || {};
@@ -40,19 +58,34 @@
     const days = role === 'DT1' ? [day] : rangeDays(half === 'second' ? 16 : 1, half === 'first' ? 15 : lastDay);
     const projectId = team?.projectId || '';
     const projects = (ctx.state.projects || []).filter(project => teams.some(item => item.projectId === project.id));
-    const workers = team ? (ctx.state.workers || []).filter(worker => worker.teamId === team.id && worker.projectId === team.projectId) : [];
+    const periods = team ? Object.fromEntries(['first', 'second'].map(key => {
+      const period = ctx.data.attendance?.periods?.[periodKey(month, team.id, key)];
+      return [key, period?.snapshot?.rows || rowsFor(ctx, team, month, key)];
+    })) : {};
+    const eligible = new Map();
+    for (const currentDay of days) {
+      for (const row of periods[halfFor(currentDay)] || []) {
+        const match = row.days.find(item => item.day === currentDay);
+        if (!match) continue;
+        if (!eligible.has(row.id)) eligible.set(row.id, { ...row, perDay: new Map() });
+        eligible.get(row.id).perDay.set(currentDay, match);
+      }
+    }
+    const workers = [...eligible.values()];
     const query = role === 'DT1' ? '' : (saved.query || '').toLocaleLowerCase('vi');
     const visible = workers.filter(worker => `${worker.code} ${worker.name}`.toLocaleLowerCase('vi').includes(query));
-    return { month, lastDay, half, day, today, days, projectId, team, teams, projects, workers, visible, role, mode, query: saved.query || '' };
+    return { month, lastDay, half, day, today, days, projectId, team, teams, projects, workers, visible, role, mode, periods, query: saved.query || '' };
   }
 
   function storedPeriod(ctx, selected, half, create = false) {
     const key = periodKey(selected.month, selected.team.id, half);
-    if (ctx.data.attendance?.periods?.[key]) return ctx.data.attendance.periods[key];
+    const existing = ctx.data.attendance?.periods?.[key];
+    if (existing) return existing;
     const period = { status: 'draft', cells: {}, events: [] };
     if (selected.month === teamMonth) {
-      for (const [index, worker] of selected.workers.entries()) {
-        for (const day of half === 'first' ? rangeDays(1, 15) : rangeDays(16, 22)) {
+      for (const [index, worker] of selected.periods[half].entries()) {
+        for (const { day } of worker.days) {
+          if (day > 22) continue;
           const code = (index + day) % 13 === 0 ? 'N' : (index + day) % 11 === 0 ? '8+2' : '8';
           period.cells[cellName(worker.id, day)] = code;
         }
@@ -77,7 +110,7 @@
   }
 
   function canEdit(period, role) {
-    return (role === 'DT1' && period.status === 'draft') || (role === 'KT' && ['submitted', 'confirmed'].includes(period.status));
+    return (role === 'DT1' && ['draft', 'returned'].includes(period.status)) || (role === 'KT' && period.status === 'submitted');
   }
 
   function say(message) {
@@ -99,12 +132,18 @@
 
   function periodStatus(selected, half, period, esc) {
     const actions = [];
-    if (selected.role === 'DT1' && period.status === 'draft') actions.push(workflowButton('submit', 'Gửi Kế toán', half));
+    if (selected.role === 'DT1' && ['draft', 'returned'].includes(period.status)) actions.push(workflowButton('submit', 'Gửi Kế toán', half));
     if (selected.role === 'KT' && period.status === 'submitted') actions.push(workflowButton('confirm', 'Xác nhận đối chiếu', half));
+    if (selected.role === 'KT' && period.status === 'submitted') actions.push(`<details><summary>Trả bổ sung</summary>
+      <form data-np-module="attendance" data-np-action="return">
+        <input type="hidden" name="id" value="${half}">
+        <label>Lý do<input name="reason" required maxlength="240"></label>
+        <button type="submit">Trả bảng công</button>
+      </form></details>`);
     if (selected.role === 'KT' && period.status === 'confirmed') actions.push(workflowButton('lock', 'Khóa kỳ', half));
     const label = half === 'first' ? '01–15' : `16–${selected.lastDay}`;
     const history = [...period.events].reverse().map(event => `<li>${esc(event.label)} · ${esc(event.actor)}${event.at ? ` · ${esc(new Date(event.at).toLocaleString('vi-VN'))}` : ''}</li>`).join('');
-    return `<div class="np-attendance-period"><strong>Kỳ ${label}</strong><span data-status="${period.status}">${periodLabels[period.status]}</span>${actions.join('')}${history ? `<details><summary>Lịch sử</summary><ul>${history}</ul></details>` : ''}</div>`;
+    return `<div class="np-attendance-period"><strong>Kỳ ${label}</strong><span data-status="${period.status}">${periodLabels[period.status]}</span>${period.snapshot ? `<small>${esc(period.snapshot.version)}</small>` : ''}${actions.join('')}${history ? `<details><summary>Lịch sử</summary><ul>${history}</ul></details>` : ''}</div>`;
   }
 
   function fieldOptions(items, selected, escape) {
@@ -123,11 +162,21 @@
     </form>`;
   }
 
+  function valueFor(worker, day, period) {
+    const use = worker.perDay.get(day);
+    if (!use) return '';
+    const values = period.snapshot?.cells || period.cells;
+    if (period.status === 'locked') return values[cellName(worker.id, day)] || '';
+    return use.leave ? leaveCode(use.leave) : values[cellName(worker.id, day)] || '';
+  }
+
   function cell(worker, day, periods, selected, escape, row, column) {
     const period = periods[halfFor(day)];
     const name = cellName(worker.id, day);
-    const value = period.cells[name] || '';
-    const edit = canEdit(period, selected.role);
+    const use = worker.perDay.get(day);
+    if (!use) return { input: '<span title="Ngoài phân công">—</span>', tone: '', value: '' };
+    const value = valueFor(worker, day, period);
+    const edit = !use.leave && canEdit(period, selected.role);
     const tone = Object.hasOwn(leaveLabels, value) ? `leave-${value}` : value.includes('+') ? 'ot' : '';
     const input = edit ? `<input name="${escape(name)}" aria-label="${escape(worker.name)}, ngày ${dayLabel(day)}" value="${escape(value)}" maxlength="14" data-grid-row="${row}" data-grid-col="${column}" autocomplete="off" spellcheck="false" />` : `<span>${escape(value || '—')}</span>`;
     return { input, tone, value };
@@ -152,7 +201,7 @@
       ${selected.visible.map((worker, row) => {
         const cells = selected.days.map((day, col) => cell(worker, day, periods, selected, esc, row, col));
         const hours = totals(cells.map(item => item.value));
-        return `<tr><td>${row + 1}</td><td>${esc(worker.code)}</td><td>${esc(worker.name)}</td><td>${esc(worker.teamName || selected.team.name)}</td><td>${esc(worker.projectName || worker.projectId)}</td>
+        return `<tr><td>${row + 1}</td><td>${esc(worker.code)}</td><td>${esc(worker.name)}</td><td>${esc(selected.team.name)}</td><td>${esc(selected.team.projectId)}</td>
           ${cells.map(item => `<td class="np-attendance-cell" data-tone="${item.tone}">${item.input}</td>`).join('')}<td>${hours.regular.toLocaleString('vi-VN')}</td><td>${hours.ot.toLocaleString('vi-VN')}</td></tr>`;
       }).join('') || `<tr><td colspan="${selected.days.length + 7}">Không tìm thấy công nhân.</td></tr>`}</tbody></table></div>`;
   }
@@ -198,8 +247,105 @@
     </section>`;
   }
 
+  const correctionTabs = { 'v2-director-corrections': 'BGD', 'v2-worker-corrections': 'CN', 'v2-finance-corrections': 'KT' };
+  const corrections = ctx => ctx.data.attendance?.corrections || [];
+
+  function correctionWorkers(ctx, snapshot) {
+    const role = roleOf(ctx);
+    const projectId = ctx.account.projectId;
+    if (role === 'CN') return snapshot.rows.filter(worker => worker.code === ctx.account.workerCode);
+    if (!['BGD', 'KT'].includes(role) || (projectId && projectId !== 'ALL' && projectId !== snapshot.projectId)) return [];
+    return snapshot.rows;
+  }
+
+  function lockedPeriods(ctx) {
+    return Object.values(ctx.data.attendance?.periods || {}).filter(period => period.status === 'locked' && period.snapshot && correctionWorkers(ctx, period.snapshot).length);
+  }
+
+  function correctionForm(period, ctx) {
+    const { esc } = ctx;
+    const shot = period.snapshot;
+    return `<details class="np-work-card"><summary>${esc(shot.version)}</summary>
+      <form class="np-admin-form" data-np-module="attendance" data-np-action="propose-correction">
+        <input type="hidden" name="version" value="${esc(shot.version)}">
+        <label>Nhân sự<select name="workerId" required>${fieldOptions(correctionWorkers(ctx,shot),'',esc)}</select></label>
+        <label>Ngày<select name="day" required>${daysFor(shot.month,shot.half).map(day => `<option>${day}</option>`).join('')}</select></label>
+        <label>Công đề nghị<input name="code" placeholder="8, 8+2, N…" maxlength="14" required></label>
+        <label>Lý do<input name="reason" maxlength="240" required></label>
+        <label>Mã bằng chứng<input name="evidence" maxlength="100" required></label>
+        <button type="submit" class="btn btn-primary">Gửi đề nghị</button>
+      </form></details>`;
+  }
+
+  function renderCorrections(ctx) {
+    const role = roleOf(ctx);
+    const { esc } = ctx;
+    const periods = lockedPeriods(ctx);
+    const allowed = new Set(periods.map(period => period.snapshot.version));
+    const items = corrections(ctx).filter(item => allowed.has(item.version) && (role !== 'CN' || item.workerCode === ctx.account.workerCode));
+    const statuses = { proposed: 'Chờ đối chiếu', reviewed: 'Chờ Giám đốc', approved: 'Đã duyệt', rejected: 'Từ chối' };
+    return `<section class="np-work-card np-attendance"><h2>Điều chỉnh công sau khóa</h2>
+      <p data-attendance-feedback role="status">${esc(feedback)}</p>
+      ${role !== 'BGD' ? periods.map(period => correctionForm(period, ctx)).join('') : ''}
+      <div class="table-scroll"><table class="data-table"><thead><tr><th>Phiên bản bảng công</th><th>Nhân sự</th><th>Ngày</th><th>Công cũ → mới</th><th>Lý do / Bằng chứng</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody>${items.map(item => `<tr><td>${esc(item.version)}</td><td>${esc(item.workerCode)}</td><td>${item.day}</td>
+        <td>${esc(item.before || '—')} → ${esc(item.after)}</td><td>${esc(item.reason)}<br>${esc(item.evidence)}</td>
+        <td>${statuses[item.status]}</td><td>
+        ${role === 'KT' && item.status === 'proposed' && item.requestedBy !== actorOf(ctx) ? workflowButton('review-correction','Đối chiếu',item.id) : ''}
+        ${role === 'BGD' && item.status === 'reviewed' && ![item.requestedBy,item.reviewedBy].includes(actorOf(ctx))
+          ? workflowButton('approve-correction','Duyệt',item.id) + workflowButton('reject-correction','Từ chối',item.id) : ''}
+        </td></tr>`).join('') || '<tr><td colspan="7">Chưa có phiếu điều chỉnh.</td></tr>'}</tbody></table></div>
+    </section>`;
+  }
+
+  function handleCorrection(action, form, ctx) {
+    const role = roleOf(ctx);
+    const actor = actorOf(ctx);
+    if (!actor) return;
+    if (action === 'propose-correction' && ['CN', 'KT'].includes(role)) {
+      const version = get(form, 'version');
+      const shot = lockedPeriods(ctx).find(period => period.snapshot.version === version)?.snapshot;
+      const worker = shot && correctionWorkers(ctx, shot).find(item => item.id === get(form, 'workerId'));
+      const day = Number(get(form, 'day'));
+      const code = parseCode(get(form, 'code'))?.code;
+      const reason = get(form, 'reason');
+      const evidence = get(form, 'evidence');
+      if (!worker?.days.some(item => item.day === day) || !code || !reason || reason.length > 240 || !evidence || evidence.length > 100) {
+        return say('Chọn ngày đã phân công, nhập công, lý do và mã bằng chứng hợp lệ.');
+      }
+      const related = corrections(ctx).filter(item => item.version === version && item.workerId === worker.id && item.day === day);
+      const before = related.findLast(item => item.status === 'approved')?.after ?? shot.cells[cellName(worker.id, day)] ?? '';
+      if (before === code || related.some(item => ['proposed', 'reviewed'].includes(item.status))) {
+        return say('Công đề nghị phải có thay đổi và mỗi ô chỉ được có một phiếu đang chờ.');
+      }
+      (ctx.data.attendance.corrections ||= []).push({
+        id: crypto.randomUUID(), version, workerId: worker.id, workerCode: worker.code, day, before, after: code,
+        reason, evidence, status: 'proposed', requestedBy: actor, requestedAt: new Date().toISOString()
+      });
+      return save(ctx, 'Đã gửi phiếu điều chỉnh. Bảng công chốt gốc được giữ nguyên.');
+    }
+    const item = corrections(ctx).find(entry => entry.id === get(form, 'id'));
+    if (!item || !lockedPeriods(ctx).some(period => period.snapshot.version === item.version) || item.requestedBy === actor) {
+      return say('Phiếu ngoài phạm vi hoặc không thể tự xử lý phiếu đã lập.');
+    }
+    if (action === 'review-correction' && role === 'KT' && item.status === 'proposed') {
+      item.status = 'reviewed';
+      item.reviewedBy = actor;
+      item.reviewedAt = new Date().toISOString();
+    } else if (['approve-correction', 'reject-correction'].includes(action) && role === 'BGD'
+      && item.status === 'reviewed' && item.reviewedBy !== actor) {
+      item.status = action === 'approve-correction' ? 'approved' : 'rejected';
+      item.decidedBy = actor;
+      item.decidedAt = new Date().toISOString();
+    } else {
+      return say('Phiếu chưa đến bước này hoặc vai trò không được thực hiện.');
+    }
+    return save(ctx, 'Đã cập nhật phiếu điều chỉnh.');
+  }
+
   function render(tab, ctx) {
     const role = roleOf(ctx);
+    if (Object.hasOwn(correctionTabs, tab)) return correctionTabs[tab] === role ? renderCorrections(ctx) : '<p>Bạn không có quyền xem phiếu điều chỉnh.</p>';
     if ((tab === financeTab && role !== 'KT') || (tab === teamTab && role !== 'DT1')) return '<p>Bạn không có quyền xem bảng công này.</p>';
     if (![teamTab, financeTab].includes(tab)) return '';
     const selected = model(ctx);
@@ -210,7 +356,7 @@
     const hasEdits = halves.some(half => canEdit(periods[half], role));
     if (role === 'DT1') return renderTeam(selected, periods, halves, hasEdits, esc);
     return `<section class="np-attendance" ${role === 'DT1' ? 'data-attendance-mobile' : ''}>
-      <header class="np-attendance-heading"><div><h1>${role === 'KT' ? 'Bảng công Excel Pro' : 'Chấm công đội'}</h1><p>${esc(selected.team.name)} · ${selected.month.slice(5)}/${selected.month.slice(0, 4)}</p></div>${role === 'KT' ? workflowButton('export', 'Xuất Excel (.CSV)', '') : ''}</header>
+      <header class="np-attendance-heading"><div><h1>${role === 'KT' ? 'Bảng công Excel Pro' : 'Chấm công đội'}</h1><p>${esc(selected.team.name)} · ${selected.month.slice(5)}/${selected.month.slice(0, 4)}</p></div>${role === 'KT' ? workflowButton('export', 'Xuất Excel', '') + workflowButton('print', 'In / PDF', '') : ''}</header>
       ${filtersForm(selected, esc)}
       <div class="np-attendance-periods">${halves.map(half => periodStatus(selected, half, periods[half], esc)).join('')}</div>
       <p data-attendance-feedback class="np-attendance-feedback" role="status">${esc(feedback)}</p>
@@ -223,28 +369,15 @@
     </section>`;
   }
 
-  function exportCSV(selected, periods) {
+  function exportAttendance(selected, periods, action) {
     const rows = [['STT', 'Mã NV', 'Họ và tên', 'Đội', 'Công trình', ...selected.days.map(dayLabel), 'Giờ công', 'Tăng ca (giờ)']];
     for (const [index, worker] of selected.visible.entries()) {
-      const values = selected.days.map(day => periods[halfFor(day)].cells[cellName(worker.id, day)] || '');
+      const values = selected.days.map(day => valueFor(worker, day, periods[halfFor(day)]));
       const hours = totals(values);
-      rows.push([index + 1, worker.code, worker.name, worker.teamId, worker.projectId, ...values, hours.regular, hours.ot]);
+      rows.push([index + 1, worker.code, worker.name, selected.team.id, selected.team.projectId, ...values, hours.regular, hours.ot]);
     }
-    const quote = value => {
-      let field = String(value);
-      if (/^[=+\-@\t\r]/.test(field)) field = `'${field}`;
-      return `"${field.replaceAll('"', '""')}"`;
-    };
-    const content = `\uFEFF${rows.map(row => row.map(quote).join(',')).join('\r\n')}`;
-    const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `Bang-cong-${selected.team.id}-${selected.month}-${selected.half}.csv`;
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    return true;
+    const name = `Bang-cong-${selected.team.id}-${selected.month}-${selected.half}`;
+    return action === 'print' ? window.NPReport.print(rows, name) : window.NPReport.download(rows, name);
   }
 
   function saveGrid(form, ctx, selected, periods) {
@@ -252,7 +385,7 @@
     for (const worker of selected.visible) {
       for (const day of selected.days) {
         const half = halfFor(day);
-        if (canEdit(periods[half], selected.role)) writable.set(cellName(worker.id, day), half);
+        if (worker.perDay.has(day) && !worker.perDay.get(day).leave && canEdit(periods[half], selected.role)) writable.set(cellName(worker.id, day), half);
       }
     }
     const changes = [];
@@ -284,6 +417,7 @@
   }
 
   function handle(action, form, ctx) {
+    if (action.endsWith('-correction')) return handleCorrection(action, form, ctx);
     const actor = actorOf(ctx);
     const selected = model(ctx);
     if (!['KT', 'DT1'].includes(selected.role) || !actor || !selected.team) return say('Bạn không có quyền thực hiện thao tác này.');
@@ -309,18 +443,40 @@
     }
 
     const periods = { first: storedPeriod(ctx, selected, 'first'), second: storedPeriod(ctx, selected, 'second') };
-    if (action === 'export' && selected.role === 'KT') return exportCSV(selected, periods);
+    if (['export', 'print'].includes(action) && selected.role === 'KT') return exportAttendance(selected, periods, action);
     if (action === 'save') return saveGrid(form, ctx, selected, periods);
 
-    const stage = { submit: ['DT1', 'draft', 'submitted'], confirm: ['KT', 'submitted', 'confirmed'], lock: ['KT', 'confirmed', 'locked'] };
+    const stage = {
+      submit: ['DT1', ['draft', 'returned'], 'submitted'],
+      return: ['KT', ['submitted'], 'returned'],
+      confirm: ['KT', ['submitted'], 'confirmed'],
+      lock: ['KT', ['confirmed'], 'locked']
+    };
     const half = get(form, 'id');
     if (!Object.hasOwn(stage, action) || !selected.days.some(day => halfFor(day) === half)) return say('Thao tác không thuộc kỳ đang mở.');
     const [role, from, to] = stage[action];
-    if (selected.role !== role || periods[half].status !== from) return say('Kỳ đã đổi trạng thái hoặc bạn không có quyền thực hiện.');
-    if (action === 'submit' && !Object.keys(periods[half].cells).length) return say('Cần ghi công trước khi gửi Kế toán.');
+    const current = periods[half];
+    if (selected.role !== role || !from.includes(current.status)) return say('Kỳ đã đổi trạng thái hoặc bạn không có quyền thực hiện.');
+    const reason = get(form, 'reason');
+    if (action === 'return' && (!reason || reason.length > 240)) return say('Nhập lý do trả bảng công.');
+    const rows = selected.periods[half];
+    const eligibleCells = Object.fromEntries(rows.flatMap(worker => worker.days.map(({day, leave}) => {
+      const key = cellName(worker.id, day);
+      return [key, leave ? leaveCode(leave) : current.cells[key] || ''];
+    })));
+    if (action === 'submit' && (!Object.keys(eligibleCells).length || Object.values(eligibleCells).some(value => !value))) {
+      return say('Cần ghi đủ công hoặc mã nghỉ cho các ngày đã phân công trước khi gửi.');
+    }
     const period = storedPeriod(ctx, selected, half, true);
+    if (action === 'lock') {
+      const key = periodKey(selected.month, selected.team.id, half);
+      period.snapshot = {
+        version: key + '/v1', teamId: selected.team.id, projectId: selected.team.projectId, month: selected.month,
+        half, rows: structuredClone(rows), cells: eligibleCells, lockedBy: actor, lockedAt: new Date().toISOString()
+      };
+    }
     period.status = to;
-    record(period, ctx, periodLabels[to]);
+    record(period, ctx, reason ? periodLabels[to] + ' · ' + reason : periodLabels[to]);
     return save(ctx, `${periodLabels[to]}.`);
   }
 
@@ -376,5 +532,5 @@
     next.select();
   });
 
-  window.NPAttendance = { render, handle };
+  window.NPAttendance = { render, handle, parseCode };
 })();

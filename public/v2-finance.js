@@ -36,6 +36,8 @@
     return (context.state?.projects || []).filter(project => !scope || scope === 'ALL' || project.id === scope);
   }
 
+  const sameText = value => String(value || '').trim().toLocaleLowerCase('vi');
+
   function ledger(context) {
     if (context.data.finance) return context.data.finance;
     const project = (context.state?.projects || [])[0];
@@ -125,10 +127,26 @@
         <label>Hồ sơ nguồn<input name="source" maxlength="80" placeholder="Hợp đồng, nghiệm thu hoặc hóa đơn" required /></label>
         <label>Diễn giải<input name="description" maxlength="150" required /></label>
         <label>Số tiền (đ)<input name="amount" type="number" min="1" max="999999999999" step="1" required /></label>
+        <label>Kỳ chứng từ<input name="period" type="month" required /></label>
         <label>Hạn thanh toán<input name="due" type="date" required /></label>
         <button type="submit">Lưu chứng từ</button>
       </form>
     </details>`;
+  }
+
+  function createPayrollPayment(context, run, net, due) {
+    if (roleOf(context) !== ACCOUNTANT || !accessibleProjects(context).some(item => item.id === run.projectId)) throw new Error('Bảng lương ngoài phạm vi.');
+    const rows = ledger(context).rows;
+    if (rows.some(row => row.payrollRunId === run.id)) throw new Error('Bảng lương đã có đề nghị thanh toán.');
+    const team = context.state.teams.find(item => item.id === run.teamId);
+    const row = {
+      id: 'LUONG-' + run.id.toUpperCase(), kind: 'payable', status: 'draft', projectId: run.projectId,
+      party: team?.name || 'Nhân sự', source: run.source, period: run.periodEnd, description: 'Thanh toán bảng lương',
+      amount: net, due, costCategory: 'labor', payrollRunId: run.id, createdBy: actorOf(context), transactions: [], events: []
+    };
+    recordEvent(row, context, 'Lập chứng từ từ bảng lương');
+    rows.push(row);
+    return row.id;
   }
 
   function openDetail(row, context, project) {
@@ -140,6 +158,7 @@
       ['Công trình', project.name],
       ['Loại chứng từ', row.kind === 'payable' ? 'Phải trả' : 'Phải thu'],
       ['Hồ sơ nguồn', row.source],
+      ['Kỳ', row.period],
       ['Nội dung', row.description],
       ['Ngày đến hạn', dateLabel(row.due)]
     ];
@@ -155,7 +174,7 @@
           <div><span>Số tiền</span><strong>${money(row.amount)}</strong></div>
           <div><span>Còn lại</span><strong>${isActive(row) ? money(balance(row)) : '—'}</strong></div>
         </div>
-        <dl class="np-finance-detail-fields">${fields.map(([label, value]) => `<div><dt>${label}</dt><dd>${esc(value || '—')}</dd></div>`).join('')}</dl>
+        <dl class="np-finance-detail-fields">${fields.filter(([, value]) => value).map(([label, value]) => `<div><dt>${label}</dt><dd>${esc(value || '—')}</dd></div>`).join('')}</dl>
         <section class="np-finance-detail-history"><h3>Giao dịch và xử lý</h3>${transactionHistory(row, context, true) || '<p>Chưa có giao dịch hoặc nhật ký.</p>'}</section>
         ${actions ? `<section class="np-finance-detail-actions"><h3>Thao tác</h3><div class="np-finance-actions">${actions}</div></section>` : ''}
       </div>`;
@@ -276,16 +295,22 @@
       const description = value('description');
       const amount = positiveInteger(value('amount'));
       const due = value('due');
+      const period = value('period');
       const parsedDue = new Date(`${due}T00:00:00`);
       if (!/^[A-Z0-9][A-Z0-9._/-]{0,39}$/.test(id) || !['payable', 'receivable'].includes(kind)
         || !projects.some(project => project.id === projectId) || !party || party.length > 100 || !source || source.length > 80
         || !description || description.length > 150 || !amount || !/^\d{4}-\d{2}-\d{2}$/.test(due) || isoDay(parsedDue) !== due) {
         return fail('Vui lòng kiểm tra lại thông tin bắt buộc, mã chứng từ, hạn và số tiền.');
       }
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(period)) return fail('Chọn kỳ của chứng từ.');
       if (rows.some(row => row.id === id)) return fail('Mã chứng từ này đã tồn tại.');
+      if (rows.some(row => isActive(row) && row.kind === kind && row.projectId === projectId && sameText(row.source) === sameText(source)
+        && sameText(row.party) === sameText(party) && row.period === period && row.amount === amount)) {
+        return fail('Đã có chứng từ cùng hồ sơ, đối tượng, kỳ và số tiền.');
+      }
       const group = value('costCategory');
       const costCategory = kind === 'payable' && ['labor', 'team', 'materials', 'other'].includes(group) ? group : null;
-      const row = { id, kind, projectId, party, source, description, amount, due, costCategory, createdBy: actor,
+      const row = { id, kind, projectId, party, source, description, amount, due, period, costCategory, createdBy: actor,
         status: kind === 'payable' ? 'draft' : 'open', transactions: [], events: [] };
       recordEvent(row, context, 'Lập chứng từ');
       rows.push(row);
@@ -342,5 +367,5 @@
     return fail('Chứng từ đã thay đổi trạng thái. Vui lòng kiểm tra lại.');
   }
 
-  window.NPFinance = { render, handle, summary };
+  window.NPFinance = { render, handle, summary, createPayrollPayment };
 })();

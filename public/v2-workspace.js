@@ -72,7 +72,21 @@
   const delegable = ['KD', 'NS', 'KT', 'DT1'];
   const profileTab = tab('v2-profile', 'Tài khoản', 'user');
   for (const role of Object.values(roles)) role.tabs.push(profileTab);
+  roles.DT1.tabs.push(tab('v2-team-assignments', 'Phân công của đội', 'calendar'));
+  roles.BGD.tabs.push(tab('v2-director-corrections', 'Duyệt sửa công', 'calendar'));
+  roles.KT.tabs.push(tab('v2-finance-corrections', 'Điều chỉnh công', 'calendar'), tab('v2-payroll-runs', 'Chốt lương theo bảng công', 'money'));
+  roles.CN.tabs.push(tab('v2-worker-corrections', 'Yêu cầu sửa công', 'calendar'), tab('v2-worker-payroll-runs', 'Phiếu lương đã chốt', 'money'));
   roles.BGD.tabs.push(tab('bgd-approvals', 'Phê duyệt nội bộ', 'shield', 'Phê duyệt'));
+
+  function assignmentAt(data, worker, day) {
+    return (data.people?.assignments || []).find(item => (!item.status || item.status === 'confirmed') && item.workerCode === worker.code && item.start <= day && day <= item.end)
+      || { teamId: worker.teamId, projectId: worker.projectId };
+  }
+
+  function approvedLeaveAt(data, worker, day) {
+    return (data.people?.leave || []).find(item => item.workerCode === worker.code && item.status === 'approved'
+      && item.start <= day && day <= item.end);
+  }
 
   function adminStore(context) {
     return context.data.admin ||= { grants: [], log: [] };
@@ -167,7 +181,11 @@
   function admin(tabId, context) {
     const { account, state } = context;
     if (tabId === 'dt-members' && context.role === 'DT1') {
-      const rows = state.workers.filter(worker => worker.teamId === account.teamId).map(worker => `<tr><td>${esc(worker.code)}</td><td><strong>${esc(worker.name)}</strong></td><td>${esc(worker.roleName)}</td><td>${esc(worker.teamName)}</td><td>${esc(worker.projectName)}</td></tr>`).join('');
+      const team = state.teams.find(item => item.id === account.teamId);
+      const project = state.projects.find(item => item.id === team?.projectId);
+      const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+      const workers = [...state.workers, ...(context.data.people?.employees || [])].filter(worker => assignmentAt(context.data, worker, today).teamId === account.teamId);
+      const rows = workers.map(worker => `<tr><td>${esc(worker.code)}</td><td><strong>${esc(worker.name)}</strong></td><td>${esc(worker.roleName || '—')}</td><td>${esc(team?.name)}</td><td>${esc(project?.name)}</td></tr>`).join('');
       return `<section class="np-work-card"><h2>Nhân sự đội</h2><div class="table-scroll"><table class="data-table"><thead><tr><th>Mã NV</th><th>Họ và tên</th><th>Vị trí</th><th>Đội</th><th>Công trình</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Đội chưa có nhân sự.</td></tr>'}</tbody></table></div></section>`;
     }
     if (context.role !== 'BGD') return '';
@@ -325,6 +343,7 @@
     const add = (count, label, target, iconName) => { if (count) items.push({ count, label, target, iconName }); };
 
     if (roleId === 'BGD') {
+      add((workspace.attendance?.corrections || []).filter(item => item.status === 'reviewed').length, 'phiếu sửa công chờ duyệt', 'v2-director-corrections', 'calendar');
       add(badges.advances, 'đơn tạm ứng chờ duyệt', 'bgd-approvals', 'money');
       add(badges.payroll, 'bảng lương chờ duyệt', 'bgd-approvals', 'calendar');
       add(badges.pendingDelCount, 'yêu cầu xóa chờ duyệt', 'bgd-approvals', 'shield');
@@ -332,10 +351,13 @@
       add(workspace.finance?.rows.filter(item => item.status === 'pending').length, 'đề nghị thanh toán chờ duyệt', 'v2-director-payments', 'money');
     }
     if (roleId === 'KT') {
+      add(leave.filter(item => item.status === 'approved').length, 'đơn nghỉ đã duyệt', 'v2-finance-attendance', 'calendar');
+      add((workspace.attendance?.corrections || []).filter(item => item.status === 'proposed').length, 'phiếu sửa công cần đối chiếu', 'v2-finance-corrections', 'calendar');
       add(badges.ktPending, 'đơn tạm ứng cần đối chiếu', 'kt-advances', 'money');
       add(Object.values(workspace.attendance?.periods || {}).filter(item => item.status === 'submitted').length, 'bảng công cần đối chiếu', 'v2-finance-attendance', 'calendar');
     }
     if (roleId === 'NS') add(leave.filter(item => item.status === 'confirmed').length, 'đơn nghỉ chờ duyệt', 'ns-leave', 'calendar');
+    if (roleId === 'DT1') add((workspace.people?.assignments || []).filter(item => item.status === 'pending' && item.teamId === teamId).length, 'phân công chờ xác nhận', 'v2-team-assignments', 'calendar');
     if (roleId === 'DT1') add(leave.filter(item => item.status === 'submitted' && item.teamId === teamId).length, 'đơn nghỉ cần xác nhận', 'v2-team-leave', 'calendar');
     return items;
   }
@@ -374,7 +396,7 @@
     const picture = '<img class="np-crew-avatar" src="assets/np-demo-crew.webp" width="52" height="52" alt="" decoding="async">';
     const now = new Date();
     const day = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).format(now);
-    const workers = state.workers.filter(worker => worker.teamId === team.id);
+    const workers = [...state.workers, ...(data.people?.employees || [])].filter(worker => assignmentAt(data,worker,day).teamId === team.id);
     const absent = workers.filter(worker => !['DANG_LAM', 'DA_RA'].includes(worker.attendanceStatus)).length;
     const overtime = workers.filter(worker => Number(worker.hoursOtRegistered) > 0).length;
     const shortcuts = [
@@ -407,6 +429,7 @@
     people: () => window.NPPeople,
     finance: () => window.NPFinance,
     attendance: () => window.NPAttendance,
+    payroll: () => window.NPPayroll,
     director: () => window.NPDirector && window.NPBusiness && window.NPFinance && {
       render: (_tab, context) => {
         if (!context.data.business) window.NPBusiness.render('v2-director-quotes', context);
@@ -445,6 +468,8 @@
       loadAsset('v2-' + key + '.css', 'link'),
       loadAsset('v2-' + key + '.js', 'script'),
       ...(key === 'projects' ? [loadModule('people')] : []),
+      ...(['attendance', 'payroll', 'people'].includes(key) ? [loadAsset('v2-report.js', 'script')] : []),
+      ...(key === 'payroll' ? ['attendance', 'finance'].map(name => loadAsset('v2-' + name + '.js', 'script')) : []),
       ...(key === 'director' ? ['business', 'finance'].map(name => loadAsset('v2-' + name + '.js', 'script')) : [])
     ]);
   }
@@ -462,9 +487,10 @@
     if (tabId === 'bgd-overview') return 'director';
     if (['v2-admin-roles', 'v2-director-assignments', 'v2-director-acceptance', 'bgd-audit', 'dt-members'].includes(tabId)) return 'admin';
     if (tabId.startsWith('kd-') || tabId === 'v2-director-quotes') return 'business';
-    if (tabId.startsWith('ns-') || tabId.endsWith('-leave')) return 'people';
+    if (tabId.startsWith('ns-') || tabId.endsWith('-leave') || tabId === 'v2-team-assignments') return 'people';
     if (tabId.endsWith('-payments')) return 'finance';
-    if (tabId.startsWith('v2-') && tabId.endsWith('-attendance')) return 'attendance';
+    if (tabId.endsWith('-payroll-runs')) return 'payroll';
+    if (tabId.startsWith('v2-') && (tabId.endsWith('-attendance') || tabId.endsWith('-corrections'))) return 'attendance';
     return null;
   }
 
@@ -562,5 +588,5 @@
     });
   }
 
-  window.NPWorkspace = { roles, icon, esc, navigation, notifications, toggleNotifications, decorateMobileTables, moduleForTab, moduleNamed, loadModule, isReady };
+  window.NPWorkspace = { roles, icon, esc, assignmentAt, approvedLeaveAt, navigation, notifications, toggleNotifications, decorateMobileTables, moduleForTab, moduleNamed, loadModule, isReady };
 })();
