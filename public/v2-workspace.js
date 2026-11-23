@@ -78,6 +78,92 @@
     return context.data.admin ||= { grants: [], log: [] };
   }
 
+  const accountPageSize = 50;
+  const accountPages = new Map();
+  const accountLevels = { BGD: 1, KD: 2, NS: 2, KT: 2, DT1: 4, CN: 5 };
+
+  function availableWorkers(state) {
+    const linked = new Set(state.accounts.filter(item => item.demoLogin && item.roleId === 'CN').map(item => item.workerCode));
+    return state.workers.filter(worker => !linked.has(worker.code));
+  }
+
+  function accountForm(state) {
+    const projects = new Map(state.projects.map(project => [project.id, project.name]));
+    return `<details class="np-admin-create">
+      <summary class="btn btn-primary">+ Tạo tài khoản</summary>
+      <form class="np-admin-form np-admin-create-form" data-np-module="admin" data-np-action="create-account">
+        <label>Vai trò<select name="roleId" required>
+          <option value="">Chọn vai trò</option>
+          ${Object.entries(roles).map(([id, role]) => `<option value="${id}">${esc(role.shortTitle)}</option>`).join('')}
+        </select></label>
+        <label>Tên đăng nhập<input name="username" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" minlength="3" maxlength="40" required></label>
+        <label data-account-field="name">Họ và tên<input name="fullName" autocomplete="off" maxlength="80" required></label>
+        <label>Mã PIN demo<input name="pin" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{4,8}" maxlength="8" title="Nhập từ 4 đến 8 chữ số" required></label>
+        <label data-account-field="team" hidden>Đội thi công<select name="teamId" disabled>
+          <option value="">Chọn đội</option>
+          ${state.teams.map(team => `<option value="${esc(team.id)}">${esc(team.name)} · ${esc(projects.get(team.projectId))}</option>`).join('')}
+        </select></label>
+        <label data-account-field="worker" hidden>Hồ sơ công nhân<select name="workerCode" disabled>
+          <option value="">Chọn công nhân</option>
+          ${availableWorkers(state).map(worker => `<option value="${esc(worker.code)}">${esc(worker.code)} · ${esc(worker.name)}</option>`).join('')}
+        </select></label>
+        <p class="np-admin-create-note">Tài khoản demo chỉ lưu trong trình duyệt này.</p>
+        <button class="btn btn-primary" type="submit">Lưu tài khoản</button>
+      </form>
+    </details>`;
+  }
+
+  document.addEventListener('change', event => {
+    if (!event.target.matches('.np-admin-create-form [name="roleId"]')) return;
+    const select = event.target;
+    const role = select.value;
+    for (const [field, show] of Object.entries({ name: role !== 'CN', team: role === 'DT1', worker: role === 'CN' })) {
+      const label = select.form.querySelector(`[data-account-field="${field}"]`);
+      label.hidden = !show;
+      const input = label.querySelector('input, select');
+      input.disabled = !show;
+      input.required = show;
+    }
+  });
+
+  function createDemoAccount(values, context) {
+    const { state, account } = context;
+    const read = name => String(values.get(name) || '').trim();
+    const roleId = read('roleId');
+    const username = read('username').toLowerCase();
+    const pin = read('pin');
+    const worker = roleId === 'CN' ? availableWorkers(state).find(item => item.code === read('workerCode')) : null;
+    const teamId = roleId === 'DT1' ? read('teamId') : worker?.teamId;
+    const team = state.teams.find(item => item.id === teamId);
+    const fullName = worker?.name || read('fullName');
+    if (!Object.hasOwn(accountLevels, roleId)) throw new Error('Chọn vai trò hợp lệ.');
+    if (!/^[a-z0-9][a-z0-9._-]{2,39}$/.test(username)) throw new Error('Tên đăng nhập cần từ 3 đến 40 ký tự, gồm chữ không dấu, số, dấu chấm, gạch ngang hoặc gạch dưới.');
+    if (state.accounts.some(item => [item.username, item.demoLogin].some(login => login?.toLowerCase() === username))) {
+      throw new Error('Tên đăng nhập đã được sử dụng.');
+    }
+    if (!/^\d{4,8}$/.test(pin)) throw new Error('Mã PIN demo cần từ 4 đến 8 chữ số.');
+    if (!worker && roleId === 'CN') throw new Error('Chọn hồ sơ công nhân chưa có tài khoản demo.');
+    if (!team && roleId === 'DT1') throw new Error('Chọn đội thi công cho tài khoản quản lý đội.');
+    if (!fullName || fullName.length > 80 || /[<>]/.test(fullName)) throw new Error('Nhập họ và tên hợp lệ, tối đa 80 ký tự.');
+    const projectId = team?.projectId || worker?.projectId || 'ALL';
+    const project = state.projects.find(item => item.id === projectId);
+    const isDirector = roleId === 'BGD';
+    const positionTitle = roles[roleId].shortTitle;
+    return {
+      id: crypto.randomUUID(), username, demoLogin: username, pin, fullName, roleId, positionTitle,
+      level: accountLevels[roleId], projectId, teamId: team?.id || 'ALL',
+      workerCode: worker?.code || 'NV.' + username.toUpperCase(),
+      managerName: worker?.managerName || project?.manager || account.fullName,
+      leaderName: worker?.leaderName,
+      dailyWage: worker?.dailyWage,
+      createdBy: account.fullName, status: 'ACTIVE',
+      perms: {
+        checkin: !isDirector, inputTeam: roleId === 'DT1', approveWork: isDirector,
+        accounting: isDirector || roleId === 'KT', approveDirector: isDirector, adminUsers: isDirector
+      }
+    };
+  }
+
   function admin(tabId, context) {
     const { account, state } = context;
     if (tabId === 'dt-members' && context.role === 'DT1') {
@@ -111,7 +197,15 @@
       return `<section class="np-work-card"><h2>Báo cáo & kiểm toán</h2><div class="table-scroll"><table class="data-table"><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Nội dung</th></tr></thead><tbody>${auditRows || '<tr><td colspan="3">Chưa phát sinh sự kiện phân quyền.</td></tr>'}</tbody></table></div></section>`;
     }
     const accounts = state.accounts.filter(item => item.demoLogin);
-    const rows = accounts.map(item => `<tr><td><strong>${esc(item.fullName)}</strong></td><td>${esc(item.demoLogin)}</td><td>${esc(department[item.roleId])}</td><td>${esc(roles[item.roleId].shortTitle)}</td><td>${esc(item.projectId === 'ALL' ? 'Toàn công ty' : state.projects.find(project => project.id === item.projectId)?.name)}</td><td><span class="badge badge-success">Đang hoạt động</span></td></tr>`).join('');
+    const pageCount = Math.max(1, Math.ceil(accounts.length / accountPageSize));
+    const page = Math.min(accountPages.get(account.id) || 1, pageCount);
+    const start = (page - 1) * accountPageSize;
+    const pager = pageCount > 1 ? `<nav class="np-admin-account-pages" aria-label="Phân trang tài khoản">
+      <span role="status">${start + 1}–${Math.min(start + accountPageSize, accounts.length)} / ${accounts.length}</span>
+      <button type="button" class="btn btn-soft" data-np-module="admin" data-np-action="account-page" data-np-id="${page - 1}" ${page <= 1 ? 'disabled' : ''}>Trước</button>
+      <button type="button" class="btn btn-soft" data-np-module="admin" data-np-action="account-page" data-np-id="${page + 1}" ${page >= pageCount ? 'disabled' : ''}>Sau</button>
+    </nav>` : '';
+    const rows = [...accounts].reverse().slice(start, start + accountPageSize).map(item => `<tr><td><strong>${esc(item.fullName)}</strong></td><td>${esc(item.demoLogin)}</td><td>${esc(department[item.roleId])}</td><td>${esc(roles[item.roleId].shortTitle)}</td><td>${esc(item.projectId === 'ALL' ? 'Toàn công ty' : state.projects.find(project => project.id === item.projectId)?.name)}</td><td><span class="badge badge-success">Đang hoạt động</span></td></tr>`).join('');
     const now = new Date();
     const grants = access.grants.map(grant => {
       const assignee = accounts.find(item => item.id === grant.accountId);
@@ -120,9 +214,9 @@
     }).join('');
     const history = access.log.map(entry => `<li><strong>${esc(entry.actor)}</strong> ${esc(entry.event)} <small>${esc(new Date(entry.at).toLocaleString('vi-VN'))}</small></li>`).join('');
     return `<div class="np-admin">
-      <section class="np-work-card"><h2>Tổ chức & phân quyền</h2><div class="table-scroll"><table class="data-table"><thead><tr><th>Người dùng</th><th>Tài khoản</th><th>Phòng ban</th><th>Vai trò</th><th>Phạm vi</th><th>Trạng thái</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+      <section class="np-work-card"><h2>Tổ chức & phân quyền</h2>${accountForm(state)}<p role="status" id="npAdminAccountFeedback" tabindex="-1"></p><div class="table-scroll"><table class="data-table"><thead><tr><th>Người dùng</th><th>Tài khoản</th><th>Phòng ban</th><th>Vai trò</th><th>Phạm vi</th><th>Trạng thái</th></tr></thead><tbody>${rows}</tbody></table></div>${pager}</section>
       <section class="np-work-card"><h2>Ủy quyền theo công trình</h2><form class="np-admin-form" data-np-module="admin" data-np-action="grant">
-        <label>Người nhận<select name="accountId" required>${accounts.filter(item => item.id !== account.id).map(item => `<option value="${esc(item.id)}">${esc(item.fullName)}</option>`).join('')}</select></label>
+        <label>Người nhận<select name="accountId" required>${accounts.filter(item => item.roleId !== 'BGD').map(item => `<option value="${esc(item.id)}">${esc(item.fullName)}</option>`).join('')}</select></label>
         <label>Vai trò<select name="role" required>${delegable.map(role => `<option value="${role}">${roles[role].shortTitle}</option>`).join('')}</select></label>
         <label>Công trình<select name="projectId" required>${state.projects.map(project => `<option value="${esc(project.id)}">${esc(project.name)}</option>`).join('')}</select></label>
         <label>Có hiệu lực đến<input type="date" name="until" required></label>
@@ -136,6 +230,26 @@
     if (context.role !== 'BGD') throw new Error('Tài khoản này chưa được cấp quyền quản trị.');
     const access = adminStore(context);
     const record = (event) => access.log.unshift({ event, actor: context.account.fullName, at: new Date().toISOString() });
+    if (action === 'account-page') {
+      const page = Number(values.get('id'));
+      if (!Number.isSafeInteger(page) || page < 1) return;
+      accountPages.set(context.account.id, page);
+      context.refresh();
+      return;
+    }
+    if (action === 'create-account') {
+      const created = createDemoAccount(values, context);
+      context.state.accounts.push(created);
+      accountPages.delete(context.account.id);
+      record('tạo tài khoản ' + created.username + ' với vai trò ' + created.positionTitle + '.');
+      context.save();
+      const feedback = document.getElementById('npAdminAccountFeedback');
+      if (feedback) {
+        feedback.textContent = 'Đã tạo tài khoản ' + created.username + ' · ' + created.positionTitle + '.';
+        feedback.focus();
+      }
+      return;
+    }
     if (action === 'grant') {
       const account = context.state.accounts.find(item => item.id === values.get('accountId') && item.demoLogin && item.roleId !== 'BGD');
       const project = context.state.projects.find(item => item.id === values.get('projectId'));

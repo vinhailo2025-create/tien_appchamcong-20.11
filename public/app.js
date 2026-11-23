@@ -240,6 +240,12 @@
       return stf;
     }
 
+    if (isPreview && acc.roleId === 'CN') {
+      const code = (acc.workerCode || '').toLowerCase();
+      const record = state.workers.find(worker => worker.code.toLowerCase() === code);
+      if (record) return record;
+    }
+
     // Nếu là Công nhân (CN)
     return state.workers.find(w =>
       w.code.toLowerCase() === (acc.workerCode || acc.username || '').toLowerCase() ||
