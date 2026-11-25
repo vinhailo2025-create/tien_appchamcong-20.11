@@ -267,6 +267,8 @@ window.NP_SEED = (function () {
     if (!w.assignedTaskToday) {
       w.assignedTaskToday = team.dailyTargetTask;
     }
+    w.joinDate = w.joinDate || `${String(1 + (w.seq % 12)).padStart(2, '0')}/11/2026`;
+    w.partnerRate = w.partnerRate || 700000;
     w.daysPendingMonth = w.approvalStatus === 'DA_DUYET' ? 1 : 2;
     return w;
   }
@@ -501,6 +503,7 @@ window.NP_SEED = (function () {
       date: '15/11/2026',
       amount: 3000000,
       reason: 'Ứng lương giữa tháng gửi về gia đình',
+      approvalTier: 'BGD',
       accruedSalaryAtRequest: 9500000,
       status: 'BGD_DA_DUYET',
       checkedByKt: 'KTT. Lê Thị Thu Thảo',
@@ -515,12 +518,13 @@ window.NP_SEED = (function () {
       managerName: 'KS. Trần Minh Hoàng',
       leaderName: 'ĐT1. Nguyễn Văn Sơn',
       date: '16/11/2026',
-      amount: 2500000,
-      reason: 'Ứng tiền sinh hoạt tổ đội',
+      amount: 1500000,
+      reason: 'Ứng tiền sinh hoạt tổ đội (≤ 2tr Đội trưởng duyệt)',
+      approvalTier: 'DT',
       accruedSalaryAtRequest: 8800000,
-      status: 'BGD_DA_DUYET',
+      status: 'DT_DA_DUYET',
       checkedByKt: 'KTT. Lê Thị Thu Thảo',
-      approvedByBgd: 'GĐ. Nguyễn Phát'
+      approvedByBgd: 'ĐT1. Nguyễn Văn Sơn'
     },
     {
       id: 'ADV-03',
@@ -532,10 +536,11 @@ window.NP_SEED = (function () {
       leaderName: 'ĐT3. Vũ Đình Trọng',
       date: '22/11/2026',
       amount: 4000000,
-      reason: 'Xin ứng lương đợt 2 tháng 11',
+      reason: 'Xin ứng lương đợt 2 tháng 11 (> 2tr trình Giám đốc)',
+      approvalTier: 'BGD',
       accruedSalaryAtRequest: 10400000,
       status: 'CHO_BGD_DUYET',
-      checkedByKt: 'KTT. Lê Thị Thu Thảo (Đã đối chiếu 20 công đã duyệt)',
+      checkedByKt: 'KTT. Lê Thị Thu Thảo',
       approvedByBgd: null
     },
     {
@@ -547,10 +552,11 @@ window.NP_SEED = (function () {
       managerName: 'KS. Trần Minh Hoàng',
       leaderName: 'ĐT2. Lê Hoàng Nam',
       date: '22/11/2026',
-      amount: 2000000,
-      reason: 'Xin ứng tiền sửa xe đi làm',
+      amount: 1800000,
+      reason: 'Xin ứng tiền sửa xe đi làm (≤ 2tr Đội trưởng duyệt)',
+      approvalTier: 'DT',
       accruedSalaryAtRequest: 8100000,
-      status: 'CHO_KT_KIEM_TRA',
+      status: 'CHO_DT_DUYET',
       checkedByKt: null,
       approvedByBgd: null
     },
@@ -564,11 +570,67 @@ window.NP_SEED = (function () {
       leaderName: 'ĐT5. Bùi Văn Kiên',
       date: '14/11/2026',
       amount: 3500000,
-      reason: 'Ứng lương tuần 2',
+      reason: 'Ứng lương tuần 2 (> 2tr Giám đốc duyệt)',
+      approvalTier: 'BGD',
       accruedSalaryAtRequest: 9200000,
       status: 'BGD_DA_DUYET',
       checkedByKt: 'KTT. Lê Thị Thu Thảo',
       approvedByBgd: 'GĐ. Nguyễn Phát'
+    }
+  ];
+
+  // Danh sách Đơn Xin Nghỉ / Xếp Nghỉ (1 ngày = 0 công, Nửa ngày = 0.5 công, có lý do, Quản lý CT hoặc Giám đốc duyệt)
+  const LEAVE_REQUESTS = [
+    {
+      id: 'NP-01',
+      workerId: 'W2',
+      workerCode: 'NV.SME-30',
+      workerName: 'CÁI VĂN TIN',
+      teamId: 'D1',
+      teamName: 'Đội 1 (Kết cấu Bê tông)',
+      projectId: 'CT1',
+      managerName: 'KS. Trần Minh Hoàng',
+      date: '23/11/2026',
+      leaveType: 'NGHI_1_NGAY',
+      leaveTypeLabel: 'Nghỉ 1 ngày (0 công)',
+      workCredit: 0,
+      reason: 'Về quê giải quyết việc gia đình',
+      status: 'CHO_DUYET',
+      approvedBy: ''
+    },
+    {
+      id: 'NP-02',
+      workerId: 'W3',
+      workerCode: 'NV.SME-26',
+      workerName: 'LƯU THANH TUẤN',
+      teamId: 'D1',
+      teamName: 'Đội 1 (Kết cấu Bê tông)',
+      projectId: 'CT1',
+      managerName: 'KS. Trần Minh Hoàng',
+      date: '22/11/2026',
+      leaveType: 'NGHI_NUA_NGAY',
+      leaveTypeLabel: 'Nghỉ nửa ngày (0.5 công)',
+      workCredit: 0.5,
+      reason: 'Đi khám răng buổi chiều, sáng vẫn làm đủ',
+      status: 'DA_DUYET',
+      approvedBy: 'KS. Trần Minh Hoàng'
+    },
+    {
+      id: 'NP-03',
+      workerId: 'W7',
+      workerCode: 'NV.SME-35',
+      workerName: 'NGUYỄN QUỐC TUẤN',
+      teamId: 'D3',
+      teamName: 'Đội 3 (Cơ điện M&E)',
+      projectId: 'CT2',
+      managerName: 'KS. Phạm Quốc Bảo',
+      date: '23/11/2026',
+      leaveType: 'NGHI_1_NGAY',
+      leaveTypeLabel: 'Nghỉ 1 ngày (0 công)',
+      workCredit: 0,
+      reason: 'Đưa con đi khám bệnh',
+      status: 'CHO_DUYET',
+      approvedBy: ''
     }
   ];
 
@@ -1194,6 +1256,11 @@ window.NP_SEED = (function () {
     }
   ];
 
+  ACCOUNTS.forEach((a, idx) => {
+    a.joinDate = a.joinDate || `0${1 + (idx % 8)}/11/2026`;
+    a.partnerRate = a.partnerRate || (a.roleId === 'QLCT' ? 950000 : (a.roleId === 'DT1' ? 800000 : 700000));
+  });
+
   return {
     projects: PROJECTS,
     teams: TEAMS,
@@ -1202,6 +1269,8 @@ window.NP_SEED = (function () {
     accounts: ACCOUNTS,
     staffAttendance: STAFF_ATTENDANCE,
     deleteRequests: DELETE_REQUESTS,
+    leaveRequests: LEAVE_REQUESTS,
+    allowAccountantSeePartnerPrice: false,
     workers: buildAll108Workers(),
     advances: ADVANCES,
     auditLogs: AUDIT_LOGS,

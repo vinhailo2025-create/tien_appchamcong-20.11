@@ -1,7 +1,7 @@
 // Ứng dụng Quản lý Chấm công, Phân việc, Quân số, Tăng ca & Tính lương 5 Cấp NP ONE — Nguyên Phát HR
 // Đầy đủ: Chọn khoảng Ngày/Tháng/Năm (Bảng Lịch), Đổi Mật khẩu đồng bộ lên các cấp, Checkin/Checkout chung 1 Menu (Mọi cấp trừ Giám đốc), Kế toán chấm công Giám đốc thấy & Bảng kê Kế toán, Mọi cấp đều được Ứng lương.
 (function () {
-  const STORAGE_KEY = 'NP_ONE_HR_STATE_V9';
+  const STORAGE_KEY = 'NP_ONE_HR_STATE_V10';
   const THEME_KEY = 'NP_ONE_THEME_V1';
 
   let state = loadState();
@@ -26,8 +26,8 @@
   let filterStatus = 'ALL';
   let searchQuery = '';
 
-  // Trạng thái đóng/mở Cây Nhân sự (Click vào Đội trưởng sẽ xổ ra toàn bộ nhân sự dưới quyền Đội trưởng đó)
-  let expandedTeams = { D1: true };
+  // Mặc định Cây Nhân sự thu gọn gọn gàng theo đúng ý khách hàng (Click mới xổ ra)
+  let expandedTeams = {};
 
   let liveStream = null;
   let cameraFacingMode = 'user';
@@ -1548,11 +1548,13 @@
               <tr>
                 <th><input type="checkbox" /></th>
                 <th>Mã NV</th>
-                <th>Mật khẩu / PIN</th>
+                <th>PIN</th>
                 <th>Họ và tên</th>
+                <th>Ngày vào</th>
                 <th>Đội</th>
                 <th>Công trình</th>
-                <th>Quản lý CT phụ trách</th>
+                <th>Đơn giá thực trả</th>
+                ${currentRoleId === 'BGD' || state.allowAccountantSeePartnerPrice ? `<th>Giá đối tác</th>` : ''}
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
@@ -1575,19 +1577,22 @@
                         </div>
                       </div>
                     </td>
+                    <td><code>${w.joinDate || '01/11/2026'}</code></td>
                     <td><strong>${w.teamName}</strong><br/><span style="font-size:9.5px; color:var(--ds-text-muted);">${w.leaderName}</span></td>
                     <td><strong>${w.projectId}</strong></td>
-                    <td><span class="badge badge-navy">${w.managerName}</span></td>
+                    <td><strong style="color:var(--ds-primary);">${formatVND(w.dailyWage)}</strong>/ngày</td>
+                    ${currentRoleId === 'BGD' || state.allowAccountantSeePartnerPrice ? `<td><strong style="color:#1E8E3E;">${formatVND(w.partnerRate || 700000)}</strong>/ngày</td>` : ''}
                     <td>
                       ${isWorking
                         ? `<span class="badge badge-success">Đang làm</span>`
-                        : `<span class="badge badge-danger">Nghỉ việc</span>`
+                        : `<span class="badge badge-danger">Nghỉ</span>`
                       }
                     </td>
                     <td>
                       <div style="display:flex; gap:4px;">
-                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPhotoModal('${w.id}')">👁️</button>
-                        <button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')">🗑️</button>
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openTransferWorkerModal('${w.id}')" title="Điều chuyển công trình / đội">🔄</button>
+                        <button class="btn btn-soft btn-sm" onclick="window.NPApp.openPhotoModal('${w.id}')" title="Xem ảnh GPS">👁️</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.NPApp.openDeleteConfirmModal('WORKER', '${w.id}')" title="Xóa">🗑️</button>
                       </div>
                     </td>
                   </tr>
@@ -1611,17 +1616,57 @@
       return true;
     });
 
+    const canSeePartner = (currentRoleId === 'BGD' || (currentRoleId === 'KT' && state.allowAccountantSeePartnerPrice));
+    const totalDaysWork = filtered.reduce((s, w) => s + getScaledDaysWorked(w.daysMonthApproved), 0);
+    const totalPartnerAmount = filtered.reduce((s, w) => s + getScaledDaysWorked(w.daysMonthApproved) * (w.partnerRate || 700000), 0);
+    const totalActualAmount = filtered.reduce((s, w) => s + getScaledDaysWorked(w.daysMonthApproved) * (w.dailyWage || 480000), 0);
+    const totalProfitMargin = totalPartnerAmount - totalActualAmount;
+
     const daysCols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
     return `
+      <!-- KHỐI ĐỐI CHIẾU TỔNG CÔNG · GIÁ ĐỐI TÁC (700K/CÔNG) · GIÁ THỰC TẾ TRẢ CÔNG NHÂN -->
+      <div class="kpi-grid-4" style="margin-bottom:10px;">
+        <div class="kpi-card" style="background:#EAF4FF; border-color:#C2DDFB;">
+          <span class="kpi-label" style="color:#1976D2;">TỔNG NGÀY CÔNG KỲ</span>
+          <div class="kpi-value" style="color:#1976D2;">${totalDaysWork} <span class="unit">công</span></div>
+          <div class="kpi-sub">${filtered.length} nhân sự</div>
+        </div>
+        ${canSeePartner ? `
+          <div class="kpi-card" style="background:#EBF7EE; border-color:#C6E9CE;">
+            <span class="kpi-label" style="color:#1E8E3E;">THANH TOÁN GIÁ ĐỐI TÁC</span>
+            <div class="kpi-value" style="color:#1E8E3E;">${formatVND(totalPartnerAmount)}</div>
+            <div class="kpi-sub">Đơn giá thầu ~700.000đ/công</div>
+          </div>
+        ` : ''}
+        <div class="kpi-card" style="background:#FFF3E0; border-color:#FFE0B2;">
+          <span class="kpi-label" style="color:#E65100;">GIÁ THỰC TẾ TRẢ CÔNG NHÂN</span>
+          <div class="kpi-value" style="color:#E65100;">${formatVND(totalActualAmount)}</div>
+          <div class="kpi-sub">Thợ ~550k · Phụ ~450k/công</div>
+        </div>
+        ${canSeePartner ? `
+          <div class="kpi-card" style="background:#F3E8FF; border-color:#E9D5FF;">
+            <span class="kpi-label" style="color:#6B21A8;">CHÊNH LỆCH / LỢI NHUẬN GỘP</span>
+            <div class="kpi-value" style="color:#6B21A8;">+${formatVND(totalProfitMargin)}</div>
+            <div class="kpi-sub">Giá đối tác − Giá thực trả</div>
+          </div>
+        ` : ''}
+      </div>
+
       <div class="section-card">
         <div class="section-header">
           <div>
             <span class="kicker">CHẤM CÔNG EXCEL PRO</span>
             <h3>Bảng Công Kỳ (${formatDateRangeLabel()})</h3>
           </div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-soft btn-sm" onclick="alert('Sẵn sàng nhận dữ liệu bảng công Excel!')">📥 Nhập Excel</button>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            ${currentRoleId === 'BGD' ? `
+              <label style="display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; color:var(--ds-primary); background:var(--ds-bg-soft); padding:4px 9px; border-radius:999px; border:1px solid var(--ds-line); cursor:pointer;">
+                <input type="checkbox" ${state.allowAccountantSeePartnerPrice ? 'checked' : ''} onchange="window.NPApp.toggleAccountantPartnerPrice(this.checked)" />
+                Cho Kế toán xem Giá đối tác
+              </label>
+            ` : ''}
+            <button class="btn btn-soft btn-sm" onclick="window.NPApp.openLeaveScheduleModal(null)">📅 + Xếp nghỉ (0 / 0.5 công)</button>
             <button class="btn btn-soft btn-sm" onclick="window.NPApp.exportAttendanceCsv()">📤 Xuất Excel</button>
             <button class="btn btn-primary btn-sm" onclick="alert('Đã Khóa kỳ công ${formatDateRangeLabel()}!')">🔒 Khóa kỳ</button>
           </div>
@@ -1646,32 +1691,45 @@
                 <th>STT</th>
                 <th>Mã NV</th>
                 <th>Họ và tên</th>
+                <th>Ngày vào</th>
                 <th>Đội</th>
                 ${daysCols.map(d => `<th style="text-align:center;">${String(d).padStart(2, '0')}</th>`).join('')}
-                <th style="text-align:center;">Tổng giờ HC</th>
-                <th style="text-align:center;">TC (giờ)</th>
+                <th style="text-align:center;">Tổng Công</th>
+                <th>Đơn giá thực trả</th>
+                <th>Thành tiền thực trả</th>
+                ${canSeePartner ? `<th>Giá đối tác</th><th>Thành tiền đối tác</th>` : ''}
               </tr>
             </thead>
             <tbody>
               ${filtered.slice(0, 25).map((w, idx) => {
-                let totalHours = 0;
+                let workDaysCount = 0;
                 const cells = daysCols.map(d => {
                   const seed = (idx + d * 3) % 13;
-                  if (seed === 5) return `<td class="excel-cell excel-N">N</td>`;
-                  if (seed === 9) { totalHours += 8; return `<td class="excel-cell excel-TC">TC</td>`; }
-                  if (seed === 11) return `<td class="excel-cell excel-P">P</td>`;
-                  totalHours += 8;
-                  return `<td class="excel-cell excel-8">8</td>`;
+                  if (seed === 5) return `<td class="excel-cell excel-N" title="Nghỉ 1 ngày = 0 công">0</td>`;
+                  if (seed === 9) { workDaysCount += 1; return `<td class="excel-cell excel-TC" title="Tăng ca">TC</td>`; }
+                  if (seed === 11) { workDaysCount += 0.5; return `<td class="excel-cell excel-P" title="Nghỉ nửa ngày = 0.5 công">0.5</td>`; }
+                  workDaysCount += 1;
+                  return `<td class="excel-cell excel-8" title="Đủ 1 công (8h)">1</td>`;
                 }).join('');
+                const scaledD = getScaledDaysWorked(w.daysMonthApproved);
+                const actualPay = scaledD * (w.dailyWage || 480000);
+                const pRate = w.partnerRate || 700000;
+                const partnerPay = scaledD * pRate;
                 return `
                   <tr>
                     <td>${idx + 1}</td>
                     <td><strong><code>${w.code}</code></strong></td>
                     <td><strong>${w.name}</strong></td>
+                    <td><code>${w.joinDate || '01/11/2026'}</code></td>
                     <td>${w.teamId}</td>
                     ${cells}
-                    <td style="text-align:center; font-weight:800; color:#102D54;">${totalHours}</td>
-                    <td style="text-align:center; font-weight:800; color:#F7931E;">${w.otHoursMonthApproved || 8}</td>
+                    <td style="text-align:center; font-weight:800; color:#102D54;">${scaledD}c</td>
+                    <td>${formatVND(w.dailyWage)}</td>
+                    <td><strong style="color:#E65100;">${formatVND(actualPay)}</strong></td>
+                    ${canSeePartner ? `
+                      <td>${formatVND(pRate)}</td>
+                      <td><strong style="color:#1E8E3E;">${formatVND(partnerPay)}</strong></td>
+                    ` : ''}
                   </tr>
                 `;
               }).join('')}
@@ -1680,11 +1738,10 @@
         </div>
 
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; padding-top:8px; border-top:1px solid var(--ds-line); font-size:10.5px;">
-          <span><strong class="excel-cell excel-8" style="display:inline-block; padding:1px 6px;">8</strong> : Công thường (8h)</span>
-          <span><strong class="excel-cell excel-TC" style="display:inline-block; padding:1px 6px;">TC</strong> : Tăng ca</span>
-          <span><strong class="excel-cell excel-N" style="display:inline-block; padding:1px 6px;">N</strong> : Nghỉ</span>
-          <span><strong class="excel-cell excel-P" style="display:inline-block; padding:1px 6px;">P</strong> : Nghỉ phép</span>
-          <span><strong class="excel-cell excel-Om" style="display:inline-block; padding:1px 6px;">Ôm</strong> : Nghỉ ốm</span>
+          <span><strong class="excel-cell excel-8" style="display:inline-block; padding:1px 6px;">1</strong> : Làm đủ ngày (1.0 công)</span>
+          <span><strong class="excel-cell excel-P" style="display:inline-block; padding:1px 6px;">0.5</strong> : Nghỉ nửa ngày (0.5 công)</span>
+          <span><strong class="excel-cell excel-N" style="display:inline-block; padding:1px 6px;">0</strong> : Nghỉ 1 ngày (0 công)</span>
+          <span><strong class="excel-cell excel-TC" style="display:inline-block; padding:1px 6px;">TC</strong> : Có tăng ca</span>
         </div>
       </div>
     `;
@@ -1839,11 +1896,69 @@
       const hourly = w.dailyWage / 8;
       return sum + (getScaledDaysWorked(w.daysMonthApproved) * w.dailyWage) + Math.round(w.otHoursMonthApproved * hourly * 1.5);
     }, 0);
-    const totalAdv = state.advances.filter(a => a.status === 'BGD_DA_DUYET').reduce((s, a) => s + a.amount, 0);
+    const totalAdv = state.advances.filter(a => a.status === 'BGD_DA_DUYET' || a.status === 'DT_DA_DUYET').reduce((s, a) => s + a.amount, 0);
     const delRequests = state.deleteRequests || [];
+    const leaveReqs = state.leaveRequests || [];
 
     return `
-      <!-- PHÊ DUYỆT YÊU CẦU XÓA TÀI KHOẢN / NHÂN SỰ -->
+      <!-- 1. PHÊ DUYỆT ĐƠN XIN NGHỈ / XẾP NGHỈ (NGHỈ 1 NGÀY = 0 CÔNG, NỬA NGÀY = 0.5 CÔNG, CÓ LÝ DO) -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">QUẢN LÝ &amp; GIÁM ĐỐC DUYỆT NGHỈ PHÉP</span>
+            <h3>Danh Sách Xếp Nghỉ / Xin Nghỉ (${leaveReqs.filter(l => l.status === 'CHO_DUYET').length} chờ duyệt)</h3>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openLeaveScheduleModal(null)">📅 + Xếp nghỉ (0 / 0.5 công)</button>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Ngày nghỉ</th>
+                <th>Nhân sự</th>
+                <th>Đội / Công trình</th>
+                <th>Mức nghỉ &amp; Tính công</th>
+                <th>Lý do nghỉ</th>
+                <th>Trạng thái</th>
+                <th>Duyệt (QLCT / Giám đốc)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${leaveReqs.length === 0 ? `
+                <tr><td colspan="8" style="text-align:center; padding:12px; color:var(--ds-text-muted);">Chưa có đơn xin nghỉ.</td></tr>
+              ` : leaveReqs.map(lv => `
+                <tr>
+                  <td><strong>${lv.id}</strong></td>
+                  <td><strong>${lv.date}</strong></td>
+                  <td><strong>${lv.workerName}</strong><br/><code>${lv.workerCode}</code></td>
+                  <td>${lv.teamName} (${lv.projectId})</td>
+                  <td>
+                    <span class="badge ${lv.workCredit === 0 ? 'badge-danger' : 'badge-orange'}">
+                      ${lv.leaveTypeLabel}
+                    </span>
+                  </td>
+                  <td>${lv.reason}</td>
+                  <td>
+                    ${lv.status === 'DA_DUYET'
+                      ? `<span class="badge badge-success">✓ Đã duyệt (${lv.approvedBy})</span>`
+                      : `<span class="badge badge-warning">⏳ Chờ QLCT / GĐ duyệt</span>`
+                    }
+                  </td>
+                  <td>
+                    ${lv.status !== 'DA_DUYET'
+                      ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.approveLeaveRequest('${lv.id}')">✓ Duyệt nghỉ</button>`
+                      : `<span style="font-size:10px; color:var(--ds-success); font-weight:700;">Đã duyệt</span>`
+                    }
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2. PHÊ DUYỆT YÊU CẦU XÓA TÀI KHOẢN / NHÂN SỰ -->
       <div class="section-card" style="border-color:var(--ds-danger);">
         <div class="section-header">
           <div>
@@ -1901,10 +2016,11 @@
         </div>
       </div>
 
+      <!-- 3. PHÊ DUYỆT ỨNG LƯƠNG (TRÊN 2 TRIỆU: GIÁM ĐỐC DUYỆT · DƯỚI 2 TRIỆU: ĐỘI TRƯỞNG DUYỆT) -->
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">PHÊ DUYỆT TÀI CHÍNH</span>
+            <span class="kicker">PHÂN CẤP DUYỆT ỨNG LƯƠNG (≤ 2TR: ĐỘI TRƯỞNG · &gt; 2TR: GIÁM ĐỐC)</span>
             <h3>Duyệt Ứng Lương &amp; Bảng Lương (${formatDateRangeLabel()})</h3>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
@@ -1922,11 +2038,9 @@
                 <th>Mã đơn</th>
                 <th>Người xin ứng</th>
                 <th>Bộ phận</th>
-                <th>Quản lý</th>
-                <th>Công</th>
-                <th>Lương lũy kế</th>
                 <th>Số tiền ứng</th>
-                <th>Kế toán</th>
+                <th>Nội dung ứng lương</th>
+                <th>Cấp thẩm quyền duyệt</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
@@ -1936,25 +2050,31 @@
                 const person = state.workers.find(x => x.code === adv.workerCode) ||
                                (state.staffAttendance || []).find(s => s.code === adv.workerCode || s.username === adv.workerCode) ||
                                state.workers[0];
+                const isOver2M = adv.amount > 2000000;
+                const tierBadge = isOver2M
+                  ? `<span class="badge badge-navy">&gt; 2tr · Giám đốc duyệt</span>`
+                  : `<span class="badge badge-orange">≤ 2tr · Đội trưởng duyệt</span>`;
                 let stBadge = '';
-                if (adv.status === 'BGD_DA_DUYET') stBadge = `<span class="badge badge-success">✓ Đã duyệt</span>`;
-                else if (adv.status === 'CHO_BGD_DUYET') stBadge = `<span class="badge badge-orange">⏳ Chờ GĐ</span>`;
-                else stBadge = `<span class="badge badge-warning">Chờ KT</span>`;
+                if (adv.status === 'BGD_DA_DUYET' || adv.status === 'DT_DA_DUYET') {
+                  stBadge = `<span class="badge badge-success">✓ Đã duyệt (${adv.approvedByBgd || 'Đã duyệt'})</span>`;
+                } else if (isOver2M) {
+                  stBadge = `<span class="badge badge-warning">⏳ Chờ Giám đốc duyệt</span>`;
+                } else {
+                  stBadge = `<span class="badge badge-warning">⏳ Chờ Đội trưởng duyệt</span>`;
+                }
 
                 return `
                   <tr>
                     <td><strong>${adv.id}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${adv.date}</span></td>
                     <td><strong>${adv.workerName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${adv.workerCode}</span></td>
                     <td>${adv.teamName || person.teamName}</td>
-                    <td><strong style="color:var(--ds-primary);">${person.managerName || 'GĐ. Nguyễn Phát'}</strong></td>
-                    <td><strong>${adv.daysWorkedSoFar || getScaledDaysWorked(person.daysMonthApproved)}c</strong></td>
-                    <td><strong>${formatVND(adv.accruedSalary || adv.accruedSalaryAtRequest || (getScaledDaysWorked(person.daysMonthApproved) * person.dailyWage))}</strong></td>
-                    <td><strong style="color:var(--ds-primary); font-size:12.5px;">${formatVND(adv.amount)}</strong><br/><span style="font-size:10px;">${adv.reason}</span></td>
-                    <td>${adv.checkedByKt ? `<span class="badge badge-navy">✓ ${adv.checkedByKt}</span>` : `<span class="badge badge-neutral">Chưa KT</span>`}</td>
+                    <td><strong style="color:var(--ds-primary); font-size:12.5px;">${formatVND(adv.amount)}</strong></td>
+                    <td>${adv.reason}</td>
+                    <td>${tierBadge}</td>
                     <td>${stBadge}</td>
                     <td>
-                      ${adv.status !== 'BGD_DA_DUYET'
-                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'BGD')">✍️ Duyệt</button>`
+                      ${(adv.status !== 'BGD_DA_DUYET' && adv.status !== 'DT_DA_DUYET')
+                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'BGD')">✍️ Duyệt ngay</button>`
                         : `<span style="font-size:10.5px; color:var(--ds-success); font-weight:700;">Đã duyệt</span>`
                       }
                     </td>
@@ -2099,7 +2219,7 @@
       <div class="section-card">
         <div class="section-header">
           <div>
-            <span class="kicker">QUẢN LÝ TẠM ỨNG</span>
+            <span class="kicker">QUẢN LÝ TẠM ỨNG (≤ 2TR: ĐỘI TRƯỞNG DUYỆT · &gt; 2TR: GIÁM ĐỐC DUYỆT)</span>
             <h3>Đơn Xin Ứng Lương</h3>
           </div>
           <button class="btn btn-primary btn-sm" onclick="window.NPApp.openPersonalAdvanceModal()">💳 + Ứng lương</button>
@@ -2111,11 +2231,9 @@
                 <th>Mã đơn</th>
                 <th>Người xin ứng</th>
                 <th>Bộ phận</th>
-                <th>Quản lý</th>
-                <th>Công</th>
-                <th>Lương lũy kế</th>
                 <th>Số tiền ứng</th>
-                <th>Tỷ lệ</th>
+                <th>Nội dung ứng lương</th>
+                <th>Thẩm quyền duyệt</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
@@ -2125,31 +2243,33 @@
                 const w = state.workers.find(x => x.code === adv.workerCode) ||
                           (state.staffAttendance || []).find(s => s.code === adv.workerCode || s.username === adv.workerCode) ||
                           state.workers[0];
-                const accSal = adv.accruedSalary || adv.accruedSalaryAtRequest || (getScaledDaysWorked(w.daysMonthApproved) * w.dailyWage);
-                const daysW = adv.daysWorkedSoFar || getScaledDaysWorked(w.daysMonthApproved);
-                const ratio = Math.round((adv.amount / Math.max(1, accSal)) * 100);
+                const isOver2M = adv.amount > 2000000;
+                const isApproved = (adv.status === 'BGD_DA_DUYET' || adv.status === 'DT_DA_DUYET');
                 return `
                   <tr>
                     <td><strong>${adv.id}</strong><br/><span style="font-size:10px;">${adv.date}</span></td>
                     <td><strong>${adv.workerName}</strong> (${adv.workerCode})</td>
                     <td>${adv.teamName || w.teamName}</td>
-                    <td><strong style="color:var(--ds-primary);">${w.managerName}</strong></td>
-                    <td><strong>${daysW}c</strong></td>
-                    <td><strong>${formatVND(accSal)}</strong></td>
-                    <td><strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong><br/><span style="font-size:10px;">${adv.reason}</span></td>
-                    <td><span class="badge ${ratio <= 70 ? 'badge-success' : 'badge-warning'}">${ratio}%</span></td>
+                    <td><strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong></td>
+                    <td>${adv.reason}</td>
                     <td>
-                      ${adv.status === 'CHO_KT_KIEM_TRA'
-                        ? `<span class="badge badge-orange">⏳ Chờ KT</span>`
-                        : adv.status === 'CHO_BGD_DUYET'
-                          ? `<span class="badge badge-navy">Trình GĐ</span>`
-                          : `<span class="badge badge-success">✓ Đã duyệt</span>`
+                      ${isOver2M
+                        ? `<span class="badge badge-navy">&gt; 2tr · Giám đốc</span>`
+                        : `<span class="badge badge-orange">≤ 2tr · Đội trưởng</span>`
                       }
                     </td>
                     <td>
-                      ${adv.status === 'CHO_KT_KIEM_TRA'
-                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'KT')">✓ Trình GĐ</button>`
-                        : `<span style="font-size:10.5px; color:var(--ds-success); font-weight:600;">✓ Đã duyệt</span>`
+                      ${isApproved
+                        ? `<span class="badge badge-success">✓ Đã duyệt (${adv.approvedByBgd || ''})</span>`
+                        : isOver2M
+                          ? `<span class="badge badge-warning">⏳ Chờ Giám đốc</span>`
+                          : `<span class="badge badge-warning">⏳ Chờ Đội trưởng</span>`
+                      }
+                    </td>
+                    <td>
+                      ${!isApproved && adv.status === 'CHO_KT_KIEM_TRA'
+                        ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'KT')">✓ Xác nhận</button>`
+                        : `<span style="font-size:10.5px; color:var(--ds-success); font-weight:600;">✓ Đã cập nhật</span>`
                       }
                     </td>
                   </tr>
@@ -2381,6 +2501,52 @@
           </div>
         </div>
       ` : ''}
+
+      <!-- KHỐI QUẢN LÝ CÔNG TRÌNH DUYỆT ĐƠN XIN NGHỈ / XẾP NGHỈ (0 CÔNG HOẶC 0.5 CÔNG) -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="kicker">XẾP NGHỈ &amp; DUYỆT NGHỈ PHÉP · ${prj.id}</span>
+            <h3>Đơn Xin Nghỉ (Nghỉ 1 ngày = 0 công · Nghỉ nửa ngày = 0.5 công)</h3>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="window.NPApp.openLeaveScheduleModal(null)">📅 + Xếp nghỉ</button>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Ngày</th>
+                <th>Nhân sự</th>
+                <th>Đội</th>
+                <th>Mức nghỉ &amp; Tính công</th>
+                <th>Lý do</th>
+                <th>Trạng thái</th>
+                <th>QLCT Duyệt</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(state.leaveRequests || []).filter(l => l.projectId === prj.id).map(lv => `
+                <tr>
+                  <td><strong>${lv.id}</strong></td>
+                  <td><strong>${lv.date}</strong></td>
+                  <td><strong>${lv.workerName}</strong> (<code>${lv.workerCode}</code>)</td>
+                  <td>${lv.teamName}</td>
+                  <td><span class="badge ${lv.workCredit === 0 ? 'badge-danger' : 'badge-orange'}">${lv.leaveTypeLabel}</span></td>
+                  <td>${lv.reason}</td>
+                  <td>${lv.status === 'DA_DUYET' ? `<span class="badge badge-success">✓ Đã duyệt (${lv.approvedBy})</span>` : `<span class="badge badge-warning">⏳ Chờ duyệt</span>`}</td>
+                  <td>
+                    ${lv.status !== 'DA_DUYET'
+                      ? `<button class="btn btn-primary btn-sm" onclick="window.NPApp.approveLeaveRequest('${lv.id}')">✓ Duyệt nghỉ</button>`
+                      : `<span style="font-size:10px; color:var(--ds-success); font-weight:700;">Đã duyệt</span>`
+                    }
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <div class="section-card">
         <div class="section-header">
@@ -2686,7 +2852,26 @@
             <span class="kicker">CHẤM CÔNG ĐỘI</span>
             <h3>Danh Sách ${teamWorkers.length} Công Nhân</h3>
           </div>
+          <button class="btn btn-soft btn-sm" onclick="window.NPApp.openLeaveScheduleModal(null)">📅 + Xếp nghỉ (0 / 0.5 công)</button>
         </div>
+
+        <!-- ĐƠN ỨNG LƯƠNG DƯỚI 2 TRIỆU ĐỘI TRƯỞNG TRỰC TIẾP DUYỆT -->
+        ${state.advances.filter(a => a.teamId === tm.id && a.amount <= 2000000).length > 0 ? `
+          <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); border-left:3px solid var(--ds-accent); border-radius:var(--ds-radius-sm); padding:8px 10px; margin-bottom:10px;">
+            <div style="font-size:10.5px; font-weight:700; color:var(--ds-primary); margin-bottom:6px;">💳 ĐƠN ỨNG LƯƠNG ≤ 2 TRIỆU THUỘC THẨM QUYỀN ĐỘI TRƯỞNG DUYỆT (TRÊN 2TR TRÌNH GIÁM ĐỐC)</div>
+            ${state.advances.filter(a => a.teamId === tm.id && a.amount <= 2000000).map(adv => `
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; background:#FFFFFF; padding:6px 8px; border-radius:6px; border:1px solid var(--ds-line); margin-bottom:4px; font-size:11px;">
+                <div><strong>${adv.workerName}</strong> · Số tiền: <strong style="color:var(--ds-primary);">${formatVND(adv.amount)}</strong> · Nội dung: ${adv.reason}</div>
+                <div>
+                  ${adv.status === 'DT_DA_DUYET' || adv.status === 'BGD_DA_DUYET'
+                    ? `<span class="badge badge-success">✓ ĐT đã duyệt</span>`
+                    : `<button class="btn btn-primary btn-sm" onclick="window.NPApp.advanceStep('${adv.id}', 'DT')">✓ Đội trưởng duyệt (≤ 2tr)</button>`
+                  }
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
 
         <div class="table-scroll">
           <table class="data-table">
@@ -3060,8 +3245,9 @@
                 <th>Mật khẩu / PIN</th>
                 <th>Họ tên</th>
                 <th>Vị trí</th>
+                <th>Ngày vào</th>
+                <th>Số tiền / ngày công</th>
                 <th>Phạm vi</th>
-                <th>Quản lý</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
@@ -3078,8 +3264,9 @@
                     </td>
                     <td><strong>${acc.fullName}</strong><br/><span style="font-size:10px; color:var(--ds-text-muted);">${acc.positionTitle}</span></td>
                     <td><span class="badge badge-navy">${cfg.badge}</span></td>
+                    <td><code>${acc.joinDate || '01/11/2026'}</code></td>
+                    <td><strong style="color:var(--ds-primary);">${acc.dailyWage ? formatVND(acc.dailyWage) : '—'}</strong></td>
                     <td>CT: <strong>${acc.projectId}</strong> · Đội: <strong>${acc.teamId}</strong></td>
-                    <td>${acc.managerName || acc.createdBy || 'Tổng Giám đốc'}</td>
                     <td>
                       <div style="display:flex; gap:4px; flex-wrap:wrap;">
                         ${isCur
@@ -3649,7 +3836,7 @@
     renderMain();
   }
 
-  // THÊM CÔNG NHÂN MỚI
+  // THÊM CÔNG NHÂN MỚI (CÓ NGÀY VÀO CÔNG TRÌNH & SỐ TIỀN / NGÀY CÔNG)
   function openAddWorkerModal() {
     const acc = getCurrentAccount();
     let allowedTeams = state.teams;
@@ -3688,13 +3875,17 @@
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <div class="form-group">
-          <label>Đơn giá ngày (VNĐ) <span class="req">*</span></label>
-          <input type="number" id="newWWage" value="480000" step="10000" />
+          <label>Ngày vào nhân công <span class="req">*</span></label>
+          <input type="text" id="newWJoinDate" value="25/11/2026" placeholder="DD/MM/YYYY" />
         </div>
         <div class="form-group">
-          <label>Công việc</label>
-          <input type="text" id="newWTask" placeholder="VD: Lắp dựng cốt thép" />
+          <label>Số tiền / ngày công (VNĐ) <span class="req">*</span></label>
+          <input type="number" id="newWWage" value="550000" step="10000" />
         </div>
+      </div>
+      <div class="form-group">
+        <label>Công việc giao trong ngày</label>
+        <input type="text" id="newWTask" placeholder="VD: Lắp dựng cốt thép / ống cứu hỏa" />
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
@@ -3710,7 +3901,8 @@
     const pin = (document.getElementById('newWPin').value || '0000').trim();
     const name = (document.getElementById('newWName').value || '').trim().toUpperCase();
     const teamId = document.getElementById('newWTeam').value;
-    const wage = Number(document.getElementById('newWWage').value || 450000);
+    const joinDate = (document.getElementById('newWJoinDate')?.value || '25/11/2026').trim();
+    const wage = Number(document.getElementById('newWWage').value || 550000);
     const task = (document.getElementById('newWTask').value || '').trim();
 
     if (!code || !name) {
@@ -3738,7 +3930,9 @@
       createdBy: acc ? acc.fullName : tm.managerName,
       assignedTaskToday: task || tm.dailyTargetTask,
       phone: '0905.888.999',
+      joinDate,
       dailyWage: wage,
+      partnerRate: 700000,
       attendanceStatus: 'DANG_LAM',
       checkInTime: '07:00:00',
       checkOutTime: null,
@@ -3773,7 +3967,9 @@
       projectId: prj.id,
       teamId: tm.id,
       workerCode: code,
+      joinDate,
       dailyWage: wage,
+      partnerRate: 700000,
       managerName: tm.managerName,
       leaderName: tm.leader,
       createdBy: acc ? acc.fullName : tm.managerName,
@@ -3786,7 +3982,7 @@
     renderMain();
   }
 
-  // MỌI CẤP ĐỀU CÓ THỂ GỬI ĐƠN XIN ỨNG LƯƠNG
+  // MỌI CẤP ĐỀU CÓ THỂ GỬI ĐƠN XIN ỨNG LƯƠNG (≤ 2 TRIỆU: ĐỘI TRƯỞNG DUYỆT · > 2 TRIỆU: GIÁM ĐỐC DUYỆT)
   function openPersonalAdvanceModal() {
     const acc = getCurrentAccount();
     const myRec = getMyOwnAttendanceRecord();
@@ -3796,17 +3992,19 @@
 
     document.getElementById('adjustModalTitle').textContent = `💳 Đơn Ứng Lương — ${myRec.name}`;
     document.getElementById('adjustModalBody').innerHTML = `
-      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm); font-size:11.5px; margin-bottom:8px;">
-        <div><strong>${myRec.name} (${myRec.code})</strong> · Công kỳ: <strong>${scaledDays} công</strong></div>
-        <div>Lương lũy kế: <strong>${formatVND(accrued)}</strong> · Tối đa (70%): <strong style="color:var(--ds-primary);">${formatVND(maxAdv)}</strong></div>
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm); font-size:11px; margin-bottom:8px;">
+        <div><strong>${myRec.name} (${myRec.code})</strong> · Công kỳ: <strong>${scaledDays} công</strong> · Lương lũy kế: <strong>${formatVND(accrued)}</strong></div>
+        <div style="margin-top:3px; color:var(--ds-primary); font-weight:700;">
+          • Ứng ≤ 2.000.000đ: Đội trưởng duyệt · Ứng &gt; 2.000.000đ: Giám đốc duyệt
+        </div>
       </div>
       <div class="form-group">
         <label>Số tiền ứng (VNĐ) <span class="req">*</span></label>
-        <input type="number" id="personalAdvAmount" value="${Math.min(3000000, maxAdv)}" step="100000" max="${maxAdv}" />
+        <input type="number" id="personalAdvAmount" value="${Math.min(1500000, maxAdv)}" step="100000" />
       </div>
       <div class="form-group">
-        <label>Lý do <span class="req">*</span></label>
-        <input type="text" id="personalAdvReason" value="Tạm ứng lương trong kỳ" />
+        <label>Nội dung ứng lương <span class="req">*</span></label>
+        <input type="text" id="personalAdvReason" value="Ứng lương sinh hoạt trong kỳ" placeholder="Nhập nội dung ứng lương..." />
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
@@ -3824,28 +4022,31 @@
     const scaledDays = getScaledDaysWorked(myRec.daysMonthApproved);
     const accrued = scaledDays * myRec.dailyWage;
 
-    if (amount <= 0 || amount > accrued) {
-      alert('Số tiền xin ứng không hợp lệ hoặc vượt quá lương lũy kế đã làm!');
+    if (amount <= 0) {
+      alert('Vui lòng nhập số tiền ứng hợp lệ!');
       return;
     }
 
-    // Nếu chính Kế toán xin ứng lương thì tự động đánh dấu Kế toán đã kiểm tra và trình thẳng Tổng Giám đốc duyệt
-    const isKtSelf = (acc && acc.roleId === 'KT');
+    const isOver2M = amount > 2000000;
+    const tier = isOver2M ? 'BGD' : 'DT';
+    const nextStatus = isOver2M ? 'CHO_BGD_DUYET' : 'CHO_DT_DUYET';
 
     state.advances.unshift({
       id: 'UL-0' + (state.advances.length + 1),
       workerId: myRec.id,
       workerCode: myRec.code,
-      workerName: `${myRec.name} (${acc ? acc.positionTitle : myRec.roleName})`,
+      workerName: `${myRec.name}`,
+      teamId: myRec.teamId,
       teamName: myRec.teamName,
       projectId: myRec.projectId,
       amount,
-      reason: reason || 'Ứng lương cá nhân',
+      reason: reason || 'Ứng lương trong kỳ',
+      approvalTier: tier,
       daysWorkedSoFar: scaledDays,
       accruedSalary: accrued,
-      date: '22/11/2026',
-      status: isKtSelf ? 'CHO_BGD_DUYET' : 'CHO_KT_KIEM_TRA',
-      checkedByKt: isKtSelf ? acc.fullName : '',
+      date: '25/11/2026',
+      status: nextStatus,
+      checkedByKt: '',
       approvedByBgd: ''
     });
 
@@ -3853,27 +4054,191 @@
     closeModal('adjustModal');
     renderRoleNavigationAndHeader();
     renderMain();
-    alert(`Đã gửi đơn xin ứng lương ${formatVND(amount)} của ${myRec.name} thành công!`);
+    alert(`Đã gửi đơn ứng ${formatVND(amount)} (${isOver2M ? 'Trên 2 triệu → Trình Giám đốc duyệt' : 'Dưới 2 triệu → Trình Đội trưởng duyệt'})!`);
+  }
+
+  // XẾP NGHỈ / XIN NGHỈ PHÉP (NGHỈ 1 NGÀY = 0 CÔNG, NGHỈ NỬA NGÀY = 0.5 CÔNG, CÓ LÝ DO, QUẢN LÝ HOẶC GIÁM ĐỐC DUYỆT)
+  function openLeaveScheduleModal(workerId) {
+    const acc = getCurrentAccount();
+    const myOwn = getMyOwnAttendanceRecord();
+    let selectable = [myOwn];
+    if (acc && (acc.roleId === 'BGD' || acc.roleId === 'QLCT' || acc.roleId === 'DT1' || acc.roleId === 'KT')) {
+      selectable = getScopedWorkersForCurrentAccount();
+      if (!selectable.length) selectable = state.workers;
+    }
+    const preselected = workerId ? (findAnyPersonById(workerId) || selectable[0]) : selectable[0];
+
+    document.getElementById('adjustModalTitle').textContent = `📅 Xếp Nghỉ / Xin Nghỉ Phép`;
+    document.getElementById('adjustModalBody').innerHTML = `
+      <div class="form-group">
+        <label>Nhân sự nghỉ <span class="req">*</span></label>
+        <select id="leaveWorkerSelect">
+          ${selectable.map(p => `<option value="${p.id}" ${preselected && p.id === preselected.id ? 'selected' : ''}>${p.code} — ${p.name} (${p.teamName || p.roleName})</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="form-group">
+          <label>Ngày nghỉ <span class="req">*</span></label>
+          <input type="text" id="leaveDateInput" value="25/11/2026" />
+        </div>
+        <div class="form-group">
+          <label>Hình thức nghỉ &amp; Tính công <span class="req">*</span></label>
+          <select id="leaveTypeSelect">
+            <option value="NGHI_1_NGAY">Nghỉ 1 ngày (Tính 0 công)</option>
+            <option value="NGHI_NUA_NGAY">Nghỉ nửa ngày (Tính 0.5 công)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Lý do nghỉ (Bắt buộc) <span class="req">*</span></label>
+        <input type="text" id="leaveReasonInput" value="Giải quyết việc gia đình (Có xin phép)" placeholder="Nhập lý do xin nghỉ..." />
+      </div>
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:6px 9px; border-radius:var(--ds-radius-sm); font-size:10.5px;">
+        Thẩm quyền duyệt: <strong>Quản lý Công trình</strong> hoặc <strong>Tổng Giám đốc</strong> (Kế toán không duyệt nghỉ, chỉ cập nhật bảng công).
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitLeaveSchedule()">📝 Lưu &amp; Trình duyệt</button>
+      </div>
+    `;
+    document.getElementById('adjustModal').classList.add('open');
   }
 
   function openPersonalLeaveModal() {
     const w = getMyOwnAttendanceRecord();
-    document.getElementById('adjustModalTitle').textContent = `Đơn Xin Nghỉ Phép — ${w.name} (${w.code})`;
+    openLeaveScheduleModal(w ? w.id : null);
+  }
+
+  function submitLeaveSchedule() {
+    const acc = getCurrentAccount();
+    const wId = document.getElementById('leaveWorkerSelect')?.value;
+    const w = findAnyPersonById(wId) || getMyOwnAttendanceRecord();
+    const date = (document.getElementById('leaveDateInput')?.value || '25/11/2026').trim();
+    const leaveType = document.getElementById('leaveTypeSelect')?.value || 'NGHI_1_NGAY';
+    const reason = (document.getElementById('leaveReasonInput')?.value || '').trim();
+
+    if (!reason) {
+      alert('Bắt buộc phải nhập lý do xin nghỉ!');
+      return;
+    }
+
+    const isHalf = leaveType === 'NGHI_NUA_NGAY';
+    const workCredit = isHalf ? 0.5 : 0;
+    const leaveTypeLabel = isHalf ? 'Nghỉ nửa ngày (0.5 công)' : 'Nghỉ 1 ngày (0 công)';
+    const autoApprove = acc && (acc.roleId === 'BGD' || acc.roleId === 'QLCT');
+
+    state.leaveRequests = state.leaveRequests || [];
+    state.leaveRequests.unshift({
+      id: 'NP-0' + (state.leaveRequests.length + 1),
+      workerId: w.id,
+      workerCode: w.code,
+      workerName: w.name,
+      teamId: w.teamId,
+      teamName: w.teamName,
+      projectId: w.projectId,
+      managerName: w.managerName,
+      date,
+      leaveType,
+      leaveTypeLabel,
+      workCredit,
+      reason,
+      status: autoApprove ? 'DA_DUYET' : 'CHO_DUYET',
+      approvedBy: autoApprove ? acc.fullName : ''
+    });
+
+    if (w) {
+      w.attendanceStatus = 'NGHI_PHEP';
+      w.leaveReason = `${leaveTypeLabel}: ${reason}`;
+    }
+
+    saveState();
+    closeModal('adjustModal');
+    renderMain();
+    alert(`Đã ghi nhận "${leaveTypeLabel}" cho ${w.name} (${autoApprove ? 'Đã duyệt' : 'Chờ Quản lý / Giám đốc duyệt'})!`);
+  }
+
+  function approveLeaveRequest(leaveId) {
+    const acc = getCurrentAccount();
+    if (!acc || (acc.roleId !== 'BGD' && acc.roleId !== 'QLCT')) {
+      alert('Chỉ Quản lý Công trình hoặc Tổng Giám đốc mới có thẩm quyền duyệt đơn nghỉ phép!');
+      return;
+    }
+    const lv = (state.leaveRequests || []).find(l => l.id === leaveId);
+    if (!lv) return;
+    lv.status = 'DA_DUYET';
+    lv.approvedBy = acc.fullName;
+    saveState();
+    renderMain();
+  }
+
+  // ĐIỀU CHUYỂN NHÂN SỰ GIỮA CÁC CÔNG TRÌNH / TỔ ĐỘI (GIỮ NGUYÊN LƯƠNG, CẬP NHẬT NGÀY VÀO MỚI)
+  function openTransferWorkerModal(workerId) {
+    const w = findAnyPersonById(workerId);
+    if (!w) return;
+    document.getElementById('adjustModalTitle').textContent = `🔄 Điều Chuyển Công Trình / Đội — ${w.name}`;
     document.getElementById('adjustModalBody').innerHTML = `
-      <div class="form-group">
-        <label>Ngày xin nghỉ <span class="req">*</span></label>
-        <input type="text" id="leaveDateInput" value="23/11/2026" />
+      <div style="background:var(--ds-bg-soft); border:1px solid var(--ds-line); padding:8px 10px; border-radius:var(--ds-radius-sm); font-size:11px; margin-bottom:8px;">
+        Hiện tại: <strong>${w.teamName} (${w.projectId})</strong> · Đơn giá giữ nguyên: <strong>${formatVND(w.dailyWage)}/ngày</strong>
       </div>
       <div class="form-group">
-        <label>Lý do xin nghỉ phép (Gửi cấp trên ${w.managerName}) <span class="req">*</span></label>
-        <input type="text" id="leaveReasonInput" value="Giải quyết việc gia đình (1 ngày)" />
+        <label>Chuyển sang Đội &amp; Công trình mới <span class="req">*</span></label>
+        <select id="transferTeamSelect">
+          ${state.teams.map(t => `<option value="${t.id}" ${t.id === w.teamId ? 'selected' : ''}>${t.name} (${t.projectId} — QL: ${t.managerName})</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ngày bắt đầu vào công trình mới <span class="req">*</span></label>
+        <input type="text" id="transferDateInput" value="25/11/2026" />
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="window.NPApp.closeModal('adjustModal'); alert('Đã gửi đơn xin nghỉ phép tới cấp trên ${w.managerName}!');">📝 Gửi đơn xin nghỉ</button>
+        <button class="btn btn-primary" onclick="window.NPApp.submitTransferWorker('${w.id}')">🔄 Lưu điều chuyển</button>
       </div>
     `;
     document.getElementById('adjustModal').classList.add('open');
+  }
+
+  function submitTransferWorker(workerId) {
+    const w = findAnyPersonById(workerId);
+    if (!w) return;
+    const newTeamId = document.getElementById('transferTeamSelect').value;
+    const newDate = (document.getElementById('transferDateInput').value || '25/11/2026').trim();
+    const tm = getTeam(newTeamId);
+    const prj = getProject(tm.projectId);
+    const oldInfo = `${w.teamName} (${w.projectId})`;
+
+    w.teamId = tm.id;
+    w.teamName = tm.name;
+    w.leaderName = tm.leader;
+    w.leaderUsername = tm.leaderUsername;
+    w.projectId = prj.id;
+    w.projectName = prj.name;
+    w.managerName = tm.managerName;
+    w.managerUsername = tm.managerUsername;
+    w.joinDate = newDate;
+
+    state.auditLogs.unshift({
+      id: 'LOG-TR-' + (state.auditLogs.length + 1),
+      timestamp: '25/11/2026 ' + new Date().toTimeString().slice(0, 5),
+      workerCode: w.code,
+      workerName: w.name,
+      actorName: getCurrentAccount()?.fullName || 'Admin',
+      actorRole: getCurrentAccount()?.positionTitle || 'Quản lý',
+      field: 'Điều chuyển Công trình / Đội',
+      oldVal: oldInfo,
+      newVal: `${tm.name} (${prj.id}) · Ngày vào: ${newDate}`,
+      reason: 'Điều chuyển nhân sự giữa các dự án (Giữ nguyên mức lương ngày)'
+    });
+
+    saveState();
+    closeModal('adjustModal');
+    renderMain();
+  }
+
+  function toggleAccountantPartnerPrice(allowed) {
+    state.allowAccountantSeePartnerPrice = !!allowed;
+    saveState();
+    renderMain();
   }
 
   // SỬA GIỜ CÔNG CÓ LƯU VẾT AUDIT LOG & ĐĂNG KÝ TĂNG CA
@@ -3975,12 +4340,12 @@
     renderMain();
   }
 
-  // ADMIN TẠO / SỬA TÀI KHOẢN CHO TỪNG VỊ TRÍ
+  // ADMIN TẠO / SỬA TÀI KHOẢN CHO TỪNG VỊ TRÍ (BỔ SUNG NGÀY VÀO CỦA NHÂN CÔNG & SỐ TIỀN / NGÀY CÔNG ĐÚNG THEO ẢNH KHÁCH GỬI)
   function openAccountFormModal(accId) {
     if (!isAdminAccount()) return;
     const editing = accId ? state.accounts.find(a => a.id === accId) : null;
     document.getElementById('adjustModalTitle').textContent = editing
-      ? `Chỉnh sửa Tài khoản & Mật khẩu Vị trí — ${editing.fullName}`
+      ? `Chỉnh sửa Tài khoản — ${editing.fullName}`
       : 'Tạo Tài Khoản Mới Cho Vị Trí (5 Cấp)';
 
     document.getElementById('adjustModalBody').innerHTML = `
@@ -4026,6 +4391,16 @@
           </select>
         </div>
       </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="form-group">
+          <label>Ngày vào của nhân công <span class="req">*</span></label>
+          <input type="text" id="accFormJoinDate" value="${editing && editing.joinDate ? editing.joinDate : '25/11/2026'}" placeholder="DD/MM/YYYY" />
+        </div>
+        <div class="form-group">
+          <label>Số tiền / ngày công (VNĐ) <span class="req">*</span></label>
+          <input type="number" id="accFormDailyWage" value="${editing && editing.dailyWage ? editing.dailyWage : 550000}" step="10000" />
+        </div>
+      </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
         <button class="btn btn-soft" onclick="window.NPApp.closeModal('adjustModal')">Hủy</button>
         <button class="btn btn-primary" onclick="window.NPApp.submitAccountForm('${editing ? editing.id : ''}')">💾 Lưu</button>
@@ -4041,6 +4416,8 @@
     const roleId = document.getElementById('accFormRole').value;
     const projectId = document.getElementById('accFormProject').value;
     const teamId = document.getElementById('accFormTeam').value;
+    const joinDate = (document.getElementById('accFormJoinDate')?.value || '25/11/2026').trim();
+    const dailyWage = Number(document.getElementById('accFormDailyWage')?.value || 550000);
 
     if (!username || !pin || !fullName) {
       alert('Vui lòng nhập đầy đủ Tên đăng nhập, Mã PIN và Họ tên!');
@@ -4061,6 +4438,8 @@
         acc.positionTitle = cfg.shortTitle;
         acc.projectId = projectId;
         acc.teamId = teamId;
+        acc.joinDate = joinDate;
+        acc.dailyWage = dailyWage;
       }
     } else {
       state.accounts.push({
@@ -4073,6 +4452,8 @@
         level: levelMap[roleId] || 5,
         projectId,
         teamId,
+        joinDate,
+        dailyWage,
         createdBy: 'GĐ. Nguyễn Phát',
         status: 'ACTIVE',
         perms: {
@@ -4178,8 +4559,15 @@
     const adv = state.advances.find(a => a.id === advId);
     if (!adv) return;
 
-    if (stepType === 'KT') {
-      adv.status = 'CHO_BGD_DUYET';
+    if (stepType === 'DT') {
+      if (adv.amount > 2000000 && acc && acc.roleId !== 'BGD') {
+        alert('Đơn ứng trên 2.000.000đ bắt buộc phải trình Tổng Giám đốc phê duyệt!');
+        return;
+      }
+      adv.status = 'DT_DA_DUYET';
+      adv.approvedByBgd = acc ? acc.fullName : 'Đội trưởng';
+    } else if (stepType === 'KT') {
+      adv.status = adv.amount > 2000000 ? 'CHO_BGD_DUYET' : 'CHO_DT_DUYET';
       adv.checkedByKt = acc ? acc.fullName : 'KTT. Lê Thị Thu Thảo';
     } else if (stepType === 'BGD') {
       adv.status = 'BGD_DA_DUYET';
@@ -4384,6 +4772,12 @@
       openChangeMyPasswordModal();
     } else if (params.get('openmodal') === 'delete') {
       openDeleteConfirmModal('WORKER', 'W1');
+    } else if (params.get('openmodal') === 'account') {
+      openAccountFormModal(null);
+    } else if (params.get('openmodal') === 'leave') {
+      openLeaveScheduleModal(null);
+    } else if (params.get('openmodal') === 'advance') {
+      openPersonalAdvanceModal();
     }
 
     setTimeout(refreshRealGps, 400);
@@ -4430,6 +4824,12 @@
     openPersonalAdvanceModal,
     submitPersonalAdvance,
     openPersonalLeaveModal,
+    openLeaveScheduleModal,
+    submitLeaveSchedule,
+    approveLeaveRequest,
+    openTransferWorkerModal,
+    submitTransferWorker,
+    toggleAccountantPartnerPrice,
     openAdjustModal,
     submitAdjustment,
     openOtModal,
